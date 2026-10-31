@@ -6038,7 +6038,7 @@ struct ContentView: View {
                         title: workspaceName,
                         subtitle: Self.commandPaletteSwitcherSubtitle(base: String(localized: "commandPalette.switcher.workspaceLabel", defaultValue: "Workspace"), windowLabel: context.windowLabel),
                         shortcutHint: nil,
-                        kindLabel: String(localized: "commandPalette.kind.workspace", defaultValue: "Workspace"),
+                        kindLabel: commandPaletteWorkspaceActivityLabel(for: workspace),
                         keywords: workspaceKeywords,
                         dismissOnRun: true,
                         badgeCount: TerminalNotificationStore.shared.unreadCount(forTabId: workspace.id),
@@ -6218,6 +6218,27 @@ struct ContentView: View {
             uniquingKeysWith: { first, _ in first }
         )
         return orderedIDs.compactMap { workspacesByID[$0] }
+    }
+
+    /// Fork: short activity note for a ⌘P workspace row ("waiting",
+    /// "running 3m", "done 4m"), or nil when nothing has happened there.
+    private func commandPaletteWorkspaceActivityLabel(for workspace: Workspace) -> String? {
+        let agents = workspace.customSidebarAgentSnapshots().map { agent in
+            let state: CommandPaletteWorkspaceActivity.Agent.State
+            switch agent.status {
+            case "needs_input": state = .needsInput
+            case "working": state = .working(since: agent.stateSince)
+            case "ended": state = .ended
+            default: state = .idle
+            }
+            return CommandPaletteWorkspaceActivity.Agent(state: state, lastActivityAt: agent.lastActivityAt)
+        }
+        return CommandPaletteWorkspaceActivity.label(
+            agents: agents,
+            lastCommandFinishedAt: CommandPaletteWorkspaceActivityRecorder.shared.lastCommandFinished(workspaceId: workspace.id),
+            lastNotificationAt: TerminalNotificationStore.shared.latestNotification(forTabId: workspace.id)?.createdAt,
+            now: Date()
+        )
     }
 
     private var commandPaletteWorkspaceOrder: WorkspaceSwitcherOrder {

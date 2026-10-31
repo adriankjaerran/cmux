@@ -77,7 +77,7 @@ extension Workspace {
     /// to a panel that lives elsewhere (or was closed) are excluded even when
     /// their stored workspace id matches, because that stored id goes stale
     /// across relaunches while the panel binding stays authoritative.
-    private func customSidebarAgentSnapshots() -> [CustomSidebarAgentSnapshot] {
+    func customSidebarAgentSnapshots() -> [CustomSidebarAgentSnapshot] {
         guard let service = TerminalController.shared.agentChatTranscriptService else { return [] }
         let records = service.sessionRecords(workspaceID: nil)
         guard !records.isEmpty else { return [] }

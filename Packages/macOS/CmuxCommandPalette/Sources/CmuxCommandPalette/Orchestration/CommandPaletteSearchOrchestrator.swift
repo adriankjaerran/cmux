@@ -345,6 +345,9 @@ public struct CommandPaletteSearchOrchestrator: Sendable {
         history: [String: CommandPaletteUsageEntry],
         now: TimeInterval
     ) -> Int {
+        // Fork: Go to Workspace rows keep the switcher's own order (unread
+        // first, then most recent); past picks must not reorder them.
+        guard !commandId.hasPrefix("switcher.") else { return 0 }
         guard let entry = history[commandId] else { return 0 }
 
         let ageDays = max(0, now - entry.lastUsedAt) / 86_400

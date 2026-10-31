@@ -8,6 +8,7 @@ import CmuxTerminalSharing
 import CmuxFoundation
 import CmuxPanes
 import CmuxTerminalCore
+import CmuxCommandPalette
 import CmuxGit
 import CmuxSidebar
 import CmuxSettings
@@ -3327,6 +3328,14 @@ class GhosttyApp {
         case GHOSTTY_ACTION_SELECTION_CHANGED:
             surfaceView.selectionAccessibilitySignal.request()
             return true
+        case GHOSTTY_ACTION_COMMAND_FINISHED:
+            // Fork: feeds the "done 4m" note on ⌘P workspace rows.
+            if let workspaceId = callbackTabId ?? surfaceView.tabId {
+                DispatchQueue.main.async {
+                    CommandPaletteWorkspaceActivityRecorder.shared.recordCommandFinished(workspaceId: workspaceId)
+                }
+            }
+            return false
         case GHOSTTY_ACTION_PROGRAM_STATUS:
             let status = action.action.program_status
             let copyCString: (UnsafePointer<CChar>?) -> String? = { pointer in
