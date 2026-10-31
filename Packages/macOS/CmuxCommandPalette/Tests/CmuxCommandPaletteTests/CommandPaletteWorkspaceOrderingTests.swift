@@ -64,3 +64,29 @@ struct CommandPaletteWorkspaceOrderingTests {
         #expect(ordered == [current, other])
     }
 }
+
+struct CommandPaletteWorkspaceUnreadOrderingTests {
+    @Test func unreadWorkspacesComeFirstInSidebarOrder() {
+        let current = UUID(), a = UUID(), b = UUID(), c = UUID()
+        let ordered = CommandPaletteWorkspaceOrdering().orderedWorkspaceIDs(
+            sidebarIDs: [a, current, b, c],
+            selectedID: current,
+            recentIDs: [],
+            mode: .sidebar,
+            unreadIDs: [c, a]
+        )
+        #expect(ordered == [a, c, current, b])
+    }
+
+    @Test func selectedWorkspaceIsNotPromotedEvenIfUnread() {
+        let current = UUID(), previous = UUID(), other = UUID()
+        let ordered = CommandPaletteWorkspaceOrdering().orderedWorkspaceIDs(
+            sidebarIDs: [current, previous, other],
+            selectedID: current,
+            recentIDs: [previous],
+            mode: .recent,
+            unreadIDs: [current, other]
+        )
+        #expect(ordered == [other, previous, current])
+    }
+}

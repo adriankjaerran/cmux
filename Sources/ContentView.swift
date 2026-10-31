@@ -6196,7 +6196,10 @@ struct ContentView: View {
             sidebarIDs: context.tabManager.tabs.map(\.id),
             selectedID: selectedWorkspaceId,
             recentIDs: recentWorkspaceIDs,
-            mode: commandPaletteWorkspaceOrder == .recent ? .recent : .sidebar
+            mode: commandPaletteWorkspaceOrder == .recent ? .recent : .sidebar,
+            unreadIDs: Set(context.tabManager.tabs.map(\.id).filter {
+                TerminalNotificationStore.shared.workspaceIsUnread(forTabId: $0)
+            })
         )
         let workspacesByID = Dictionary(
             context.tabManager.tabs.map { ($0.id, $0) },

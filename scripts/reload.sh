@@ -2151,6 +2151,16 @@ else
   "$PWD/scripts/install-cmux-tui-client.sh" "${cmux_tui_install_args[@]}"
 fi
 "$PWD/scripts/install-coderouter-client.sh" "$APP_PATH"
+# Fork: Xcode can replace Resources/bin after the build phase that links the
+# SwiftPM resource bundles beside the CLI, leaving the bundled CLI unable to find
+# them (it crashes at launch). Re-link them here, before signing.
+for cmux_resource_bundle in "$APP_PATH/Contents/Resources"/*.bundle; do
+  [[ -d "$cmux_resource_bundle" ]] || continue
+  cmux_resource_bundle_name="${cmux_resource_bundle##*/}"
+  if [[ ! -e "$APP_PATH/Contents/Resources/bin/$cmux_resource_bundle_name" ]]; then
+    ln -s "../$cmux_resource_bundle_name" "$APP_PATH/Contents/Resources/bin/$cmux_resource_bundle_name"
+  fi
+done
 if command -v xattr >/dev/null 2>&1; then
   xattr -cr "$APP_PATH" || true
 fi

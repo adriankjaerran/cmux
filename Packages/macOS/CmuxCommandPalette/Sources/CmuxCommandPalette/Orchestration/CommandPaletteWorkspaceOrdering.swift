@@ -14,7 +14,28 @@ public struct CommandPaletteWorkspaceOrdering: Sendable {
     public init() {}
 
     /// Returns a stable, de-duplicated workspace order.
+    ///
+    /// Workspaces in `unreadIDs` (other than the selected one) move to the top,
+    /// keeping their relative order; the rest keep the order `mode` gives them.
     public func orderedWorkspaceIDs(
+        sidebarIDs: [UUID],
+        selectedID: UUID?,
+        recentIDs: [UUID],
+        mode: Mode,
+        unreadIDs: Set<UUID> = []
+    ) -> [UUID] {
+        let ordered = baseOrderedWorkspaceIDs(
+            sidebarIDs: sidebarIDs,
+            selectedID: selectedID,
+            recentIDs: recentIDs,
+            mode: mode
+        )
+        guard !unreadIDs.isEmpty else { return ordered }
+        let isPromoted: (UUID) -> Bool = { id in id != selectedID && unreadIDs.contains(id) }
+        return ordered.filter(isPromoted) + ordered.filter { !isPromoted($0) }
+    }
+
+    private func baseOrderedWorkspaceIDs(
         sidebarIDs: [UUID],
         selectedID: UUID?,
         recentIDs: [UUID],
