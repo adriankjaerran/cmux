@@ -3,6 +3,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RELOAD_ORIGINAL_ARGS=("$@")
+# Fork: Ghostty needs exactly the Zig in ghostty/build.zig.zon (0.16.0), which
+# Homebrew doesn't ship. Use the private install when CMUX_ZIG isn't set.
+if [[ -z "${CMUX_ZIG:-}" && -x "$HOME/.local/share/zig/zig-aarch64-macos-0.16.0/zig" ]]; then
+  export CMUX_ZIG="$HOME/.local/share/zig/zig-aarch64-macos-0.16.0/zig"
+fi
 # shellcheck source=scripts/lib/mobile-attach.sh
 source "$SCRIPT_DIR/lib/mobile-attach.sh"
 # shellcheck source=scripts/lib/dev-secrets.sh
