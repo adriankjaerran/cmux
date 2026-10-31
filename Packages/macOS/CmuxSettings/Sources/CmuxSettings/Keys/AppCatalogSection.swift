@@ -61,7 +61,7 @@ public struct AppCatalogSection: SettingCatalogSection {
     /// Ordering used by the Go to Workspace command-palette switcher.
     public let goToWorkspaceOrder = DefaultsKey<WorkspaceSwitcherOrder>(
         id: "app.goToWorkspaceOrder",
-        defaultValue: .sidebar,
+        defaultValue: .recent,
         userDefaultsKey: "goToWorkspaceOrder"
     )
 
