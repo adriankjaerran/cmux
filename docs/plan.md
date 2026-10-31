@@ -1,49 +1,90 @@
 # Plan
 
-Written 2026-10-31 from [next-steps.md](next-steps.md), after checking the code for each item.
-Size: S = under an hour, M = a few hours, L = a day or more.
+Updated 2026-10-31. Chosen to build: the four "ready" items, the two config changes, ⌘O sidebar navigation,
+focus stealing, the "waiting" fix, and a new red/blue "agent needs you" mark.
+Size: S = under an hour, M = a few hours, L = a day or more. Background: [next-steps.md](next-steps.md).
 
-## Done today
+## Done
 
-- [x] Groups **Personal**, **Schjødt** and **Hoegh** and their workspaces were rebuilt in cmux Personal with
-  `cmux workspace-group`. They open as fresh shells in the right folders. Agents still running in nightly
-  stay there. The **Home** (Chief) group was left out on purpose; see step 2.
-- [x] The pinned **cmux** row at the top: Pi `--preset cmux` in `~/Code/cmux-config`, coloured indigo. It was made by
-  `~/Code/cmux-config/scripts/pin-cmux-agent.sh` with `CMUX_SOCKET_PATH=/tmp/cmux-debug-mine.sock`.
-  `zsh/cmux.zsh` restarts it after an app restart.
+- [x] Groups **Personal**, **Schjødt** and **Hoegh** and their workspaces rebuilt in cmux Personal. Home (Chief) was left
+  out on purpose.
+- [x] The pinned **cmux** row at the top (Pi `--preset cmux`, indigo) via `cmux-config/scripts/pin-cmux-agent.sh`.
 
-## Ready now (no decision needed)
+## What the unclear items actually are
 
-| # | What | Size | How |
+| Thing | What it is | What it does in your build today | After the change |
 |---|---|---|---|
-| 1 | **Turn off Sentry** (it is probably on today) | S | Now: `defaults write com.cmuxterm.app.debug.mine sendAnonymousTelemetry -bool false`. In code: `MacSentryStartupPolicy.shouldStart` → false; `CMUX_CLI_SENTRY_DISABLED=1` in `LSEnvironment`. PostHog is already off in Debug builds. |
-| 2 | **Turn off Sparkle** | S | Remove `SUFeedURL` and set `SUEnableAutomaticChecks=false` in `Resources/Info.plist`. Must come before a bundle id change, because a non-dev id turns update checks back on. |
-| 3 | **Remove the Home (Chief) group for good** | S | In the group restore (`TabManager.swift:~7300`), drop the group when `externalID == cmux.chief.home` and Chief is off. Skip the Home Chief panel (`Workspace.swift:2426`). Make `isChiefHome`/`isChiefHomeGroup` false when Chief is off so unpin and delete work. Add a test. |
-| 4 | **Skip the CodeRouter download** | S | Put `CMUX_SKIP_CODEROUTER=1` around `scripts/reload.sh:2153` and set it in `install-personal.sh`. |
-| 5 | **⌥⌘↑ / ⌥⌘↓ for previous / next workspace** | S | Config only. `prevSidebarTab`/`nextSidebarTab` already exist (default ⌃⌘[ / ⌃⌘]); rebind them in `cmux.json`. |
-| 6 | **Agents stop stealing focus (most cases)** | S | Config only. `export CMUX_FOCUS_NEW=0` in `zsh/cmux.zsh`. The CLI already reads it. |
-| 7 | **Save ⌘P "done" times across restarts** | S | Add `lastCommandFinishedAt` to `SessionWorkspaceSnapshot`, then save and restore it. |
-| 8 | **Remove the VPN TunnelExtension** | S–M | Only the Xcode project uses it: remove the target, the embed step and the dependency, then build. |
+| **Sentry** | An error and crash reporting service. When the app crashes or hits an error, it sends a report (stack trace, app version, macOS version, sometimes file paths) to the **cmux team's** Sentry account. | **On.** Your reports go to the cmux team, and you can't see them. The app and the `cmux` CLI each have their own Sentry. | Nothing is sent. You lose nothing: macOS still writes crash logs locally (Console → Crash Reports). |
+| **PostHog** | Usage analytics: which features are used and how often. | Already off in your build (it only runs in official releases). | Kept off in code, so a release build can't turn it on. |
+| **Sparkle** | The auto-updater. It checks the cmux team's update feed and offers to install a new version. | Asleep, only because your bundle id looks like a dev build. If you ever give the app its own id, it wakes up and could offer to **replace cmux Personal with the official cmux**, losing your changes. | The feed is removed, so it can never offer an update. You update by rebuilding (`install-personal.sh`). |
+| **CodeRouter** | A separate command-line tool from the cmux team (`cmux coderouter` / `cmux cr`), bundled into the app. I couldn't confirm exactly what it does, but nothing in your setup uses it. | Each build checks for it and downloads a new copy (~tens of MB) from GitHub whenever upstream bumps the version. | The build skips it: faster and works offline. If you ever run `cmux cr`, it offers to install itself. |
+| **Logs** | cmux writes its own logs locally (the debug log, notification history, agent journal in `~/Library/Application Support/cmux`). These never leave the machine. | Unchanged. | Unchanged. |
 
-## Needs a decision first
+## Phase 1: stop data leaving the machine (S, one build)
 
-| # | What | Size | Decision |
-|---|---|---|---|
-| 9 | **⌘O keyboard navigation of the compact sidebar** | M | The JS sidebar can't take keyboard focus (it isn't a web view), so this needs a "sidebar keyboard mode" in AppDelegate: ⌘O enters it, ↑/↓ select, ←/→ collapse/expand the group, Return/Esc go back to the terminal. Decide: should ↑/↓ skip collapsed groups, and do you want a visible focus ring? |
-| 10 | **Wrong "waiting" state** | S–M | It comes from agent `needs_input` that never clears (interrupted prompt, killed session, non-blocking notification). Cheap fix: in `compact.js`, ignore it when the agent has had activity since or its process is gone. Proper fix: in the agent registry. Needs one repro to confirm which case. |
-| 11 | **Global "never steal focus" setting** | S | After item 6: should the setting also block explicit focus requests (`workspace select`, `--focus true`), or only change the defaults? |
-| 12 | **Browser tabs keep running in the background** | M | WebKit pauses hidden pages, and Memory Saver discards them. A `keepRendering()` already exists for the REPL. Decide: always (more CPU, uses a private API), or only while a `browser.*` command runs? |
-| 13 | **Default browser viewport 1440×900** | S–M | `cmux browser set-viewport` already exists; this adds a `browser.defaultViewport` setting. Decide: all tabs or only agent-opened ones, and should it survive a restart? |
-| 14 | **Own bundle id** (`no.datafabric.cmux`) | M | Set it at install time (PlistBuddy, simple) or in the Xcode project (cleaner)? Either way: migrate the session, journal and settings files and pin the socket path. Do it after 1–2. |
-| 15 | **Chief** | M | Remove it, or only hide it? Item 3 fixes the Home group either way. |
+1. Sentry off in the app (`MacSentryStartupPolicy.shouldStart` → false) and in the CLI (`CMUX_CLI_SENTRY_DISABLED=1`
+   in the app's `LSEnvironment`).
+2. PostHog `isEnabled` → false.
+3. Sparkle: remove `SUFeedURL`, set `SUEnableAutomaticChecks=false` (`Resources/Info.plist`).
+4. CodeRouter: `CMUX_SKIP_CODEROUTER=1` around `scripts/reload.sh:2153`, set in `install-personal.sh`.
+5. Check: build, launch, then confirm no connection to `sentry.io` (`nettop` / Little Snitch) while forcing an error.
 
-## Later / large
+## Phase 2: the Home group goes away for good (S)
 
-- **Computer Use** removal (M: 16 files and the helper build in `reload.sh`).
-- **Cloud and Auth**: stub them behind the existing feature flag rather than deleting them (L: 300+ importers).
-- One home for `compact.js` (repo vs `~/.config/cmux/sidebars`), a smoke-test script, and a single writer for `cmux.json`.
+1. On restore (`TabManager.swift:~7300`): drop the group with `externalID == cmux.chief.home` when Chief is off.
+2. Don't restore the Home Chief panel when Chief is off (`Workspace.swift:2426`). A Home workspace left with no panels
+   is dropped.
+3. `isChiefHome` / `isChiefHomeGroup` → false when Chief is off, so unpin and delete work.
+4. Unit test: a session with a Home group restores without it when Chief is off.
 
-## Suggested order
+## Phase 3: config only, no build (S, in `~/Code/cmux-config`)
 
-1 → 2 → 4 → 3 → 5 + 6 (config) → 9 → 10 → 7 → 8 → then the decisions in 11–15.
-That order stops data from leaving the machine first, then makes the Home group go away for good, then makes the sidebar usable from the keyboard.
+1. ⌥⌘↑ / ⌥⌘↓ → `prevSidebarTab` / `nextSidebarTab` in `cmux.json`.
+2. `export CMUX_FOCUS_NEW=0` in `zsh/cmux.zsh`: CLI commands from agents no longer bring windows forward.
+
+## Phase 4: never steal focus (S)
+
+1. A `cmux.json` setting, `automation.stealFocus: false`.
+2. When off: the app sets `CMUX_FOCUS_NEW=0` in every terminal it starts. The three CLI commands that default to
+   `--focus true` (`project open`, `surface project`) follow it. `socketCommandAllowsInAppFocusMutations` refuses
+   focus changes that come from a socket command (decision A below).
+3. Your own clicks and keyboard shortcuts still move focus as usual.
+
+## Phase 5: ⌘O sidebar navigation (M)
+
+1. ⌘O (`focusSidebar`) with the compact sidebar turns on a "sidebar keyboard mode" for that window, and the terminal
+   stops receiving keys.
+2. ↑/↓ move the selection through visible workspaces, skipping members of collapsed groups (decision C).
+3. ← collapses the selected workspace's group, → expands it.
+4. Return opens the workspace and puts focus in its terminal. Esc goes back to where you were. A mouse click or any
+   other key ends the mode.
+5. `compact.js` draws a thin focus ring on the selected row while the mode is on.
+6. Test by hand plus a unit test for the key handling.
+
+## Phase 6: fix "wait" and add the red / blue marks (M)
+
+**The bug:** an agent's "needs input" state never clears in three cases: you interrupt a question or permission prompt
+with Esc or Ctrl-C, the session is killed, or Claude sends a plain notification. The row then says `wait` forever.
+
+1. Log the agent events for one session that shows the wrong `wait`, to confirm which case it is.
+2. Fix it in the agent registry (`AgentChatSessionRegistry+Lifecycle.swift`): any later activity (prompt, tool use,
+   stop) clears the state. Only real question and permission events set it. Sessions whose process is gone count as ended.
+3. Record **why** the agent is waiting: `question` (AskUserQuestion, plan approval) or `permission` (asking to run a
+   tool), and pass it to the sidebar.
+4. `compact.js` shows the mark (colours are decision B):
+   - **ask**: the agent asked you a question.
+   - **perm**: the agent wants permission to run something.
+   - `run` and `idle` as today. The "finished while you were away" dot stays.
+5. Optionally a macOS notification when a question arrives (decision D).
+6. Pi agents report differently (Pi's "your turn" isn't a question), so Phase 6 covers Claude Code first. Pi follows
+   if pi-cmux sends the same events.
+
+## Later (not chosen yet)
+
+- Background browser tabs keep running for agents, and a default 1440×900 browser viewport.
+- Save the ⌘P "done" times across restarts. Remove the TunnelExtension and Computer Use.
+- Own bundle id (do it after Phase 1). Remove or hide Chief. Stub Cloud and Auth.
+
+## Order
+
+Phase 1 → 2 (one build) → 3 (config) → 4 → 5 → 6. Commit after each phase and reinstall to try it.
