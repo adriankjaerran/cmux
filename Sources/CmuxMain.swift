@@ -45,6 +45,7 @@ enum CmuxMain {
         }
     ) {
         installCrashOnExceptionsPolicy(defaults: defaults)
+        installPersonalDefaults(defaults: defaults)
         raiseFileDescriptorLimit()
         writeAppHostReceipt()
 #if DEBUG
@@ -58,6 +59,16 @@ enum CmuxMain {
         routeWorkers()
         preloadSigningSecret()
         launchApp()
+    }
+
+    /// Fork: the built-in compact sidebar (Resources/sidebars/compact.js) is the
+    /// default workspace sidebar, so custom sidebars are on by default.
+    /// `register(defaults:)` keeps any choice the person makes in Settings.
+    static func installPersonalDefaults(defaults: UserDefaults = .standard) {
+        defaults.register(defaults: [
+            "customSidebars.beta.enabled": true,
+            CmuxExtensionSidebarSelection.defaultsKey: CmuxExtensionSidebarSelection.personalDefaultProviderId,
+        ])
     }
 
     /// Installs the AppKit policy that makes exceptions escaping the run loop fatal.

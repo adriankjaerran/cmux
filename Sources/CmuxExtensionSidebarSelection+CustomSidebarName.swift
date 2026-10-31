@@ -22,7 +22,8 @@ extension CmuxExtensionSidebarSelection {
     #endif
 
     static func customSidebarFileURL(forName name: String) -> URL? {
-        customSidebarFileURL(forName: name, sidebarsDirectory: customSidebarsDirectory)
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return customSidebarFileURL(forProviderId: customSidebarProviderPrefix + trimmed)
     }
 
     static func customSidebarFileURL(forName name: String, sidebarsDirectory: URL) -> URL? {

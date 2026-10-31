@@ -223,6 +223,13 @@ fingerprint="$({
 } | shasum | awk '{print $1}')"
 output_fingerprint_value="$(output_fingerprint)"
 
+# Fork: built-in custom sidebars (Resources/sidebars/*.js). Copied on every
+# build, before the unchanged-helpers early exit below.
+if [ -d "${SRCROOT}/Resources/sidebars" ]; then
+  mkdir -p "$DEST/sidebars"
+  rsync -a --delete "${SRCROOT}/Resources/sidebars/" "$DEST/sidebars/"
+fi
+
 helper_output_ok=true
 if [ ! -d "$CMUX_CUA_HELPER_APP" ] ||
   [ ! -f "$CMUX_CUA_HELPER_APP/Contents/Info.plist" ] ||

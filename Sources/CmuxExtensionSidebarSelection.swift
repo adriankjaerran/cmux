@@ -91,15 +91,34 @@ enum CmuxExtensionSidebarSelection {
             .appendingPathComponent(".config/cmux/sidebars", isDirectory: true)
     }
 
+    /// Fork: sidebars shipped inside the app (`Contents/Resources/sidebars`,
+    /// copied from the repo's `Resources/sidebars` at build time). A file with
+    /// the same name in ``customSidebarsDirectory`` overrides the bundled one.
+    static var bundledSidebarsDirectory: URL? {
+        #if DEBUG
+        if customSidebarsDirectoryOverrideForTesting != nil { return nil }
+        #endif
+        return Bundle.main.resourceURL?.appendingPathComponent("sidebars", isDirectory: true)
+    }
+
+    /// Fork: the sidebar the app uses until the person picks another one.
+    static let personalDefaultProviderId = customSidebarProviderPrefix + "compact"
+
     /// One provider descriptor per `<name>.swift`/`<name>.json` file in the
     /// sidebars directory (`.swift` preferred when both exist), titled by the
     /// file's base name.
     static var customSidebarDescriptors: [CmuxSidebarProviderDescriptor] {
         guard !ManagedDevicePolicy().isEnforced(.disableCustomSidebars) else { return [] }
-        guard let entries = try? FileManager.default.contentsOfDirectory(
+        var entries = (try? FileManager.default.contentsOfDirectory(
             at: customSidebarsDirectory,
             includingPropertiesForKeys: nil
-        ) else { return [] }
+        )) ?? []
+        if let bundled = bundledSidebarsDirectory {
+            entries += (try? FileManager.default.contentsOfDirectory(
+                at: bundled,
+                includingPropertiesForKeys: nil
+            )) ?? []
+        }
         // Priority when several extensions share a base name: js > swift > json.
         func priority(_ ext: String?) -> Int {
             switch ext {
@@ -134,7 +153,11 @@ enum CmuxExtensionSidebarSelection {
     /// Resolves a custom-sidebar provider id to its backing file URL
     /// (`.swift` preferred), or `nil` if neither file exists.
     static func customSidebarFileURL(forProviderId providerId: String) -> URL? {
-        customSidebarFileURL(forProviderId: providerId, sidebarsDirectory: customSidebarsDirectory)
+        if let url = customSidebarFileURL(forProviderId: providerId, sidebarsDirectory: customSidebarsDirectory) {
+            return url
+        }
+        guard let bundled = bundledSidebarsDirectory else { return nil }
+        return customSidebarFileURL(forProviderId: providerId, sidebarsDirectory: bundled)
     }
 
     static func customSidebarFileURL(forProviderId providerId: String, sidebarsDirectory: URL) -> URL? {
