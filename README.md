@@ -36,6 +36,7 @@ Then start **cmux Personal** from Spotlight or the Dock.
 | [docs/ideas.md](docs/ideas.md) | My ideas and wishes, done and open |
 | [docs/next-steps.md](docs/next-steps.md) | Open work, collected from earlier sessions, in priority order |
 | [docs/suggestions.md](docs/suggestions.md) | Suggested next steps |
+| [docs/plan.md](docs/plan.md) | What is ready to build, what needs a decision, and in what order |
 
 ## Licence
 

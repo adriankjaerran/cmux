@@ -17,7 +17,8 @@ Only open or half-done items; finished ones are in [ideas.md](ideas.md). Roughly
   unpin / delete don't stick. Fix it in the fork (drop it on restore, or remove Chief).
 - [ ] **Fix the wrong "waiting" state** (a row showed `wait` when nothing was waiting) and make rows a bit more concise.
 - [ ] **A "finished, not looked at yet" mark** that is clearer than the unread number (compact.js has a blue dot for this).
-- [ ] Bring my groups (Home, Schjødt, Personal, Hoegh) and workspaces into cmux Personal.
+- [x] Bring my groups (Personal, Schjødt, Hoegh) and workspaces into cmux Personal (done 2026-10-31 via
+  `cmux workspace-group`; Home left out on purpose, fresh shells, agents stay in nightly).
 
 ## 3. Focus stealing
 
@@ -31,7 +32,8 @@ Only open or half-done items; finished ones are in [ideas.md](ideas.md). Roughly
 
 ## 5. The cmux agent
 
-- [ ] Run the pinned Pi "cmux" agent in cmux Personal too (it works per app).
+- [x] Run the pinned Pi "cmux" agent in cmux Personal too (done 2026-10-31: `pin-cmux-agent.sh` with
+  `CMUX_SOCKET_PATH=/tmp/cmux-debug-mine.sock`).
 - [ ] Ideas from `cmux-config/plans/cmux-agent.md`: a morning summary, start a Claude/Pi agent in a group with a task,
   a "which agents are waiting for me" view, block `cmux send` / `close` when run through bash.
 - [ ] A simple overview of logs (a one-line error when the hub is down already exists).
