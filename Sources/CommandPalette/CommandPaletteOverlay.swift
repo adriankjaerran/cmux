@@ -17,6 +17,7 @@ struct CommandPaletteRenderResultRow: Identifiable, Equatable {
     let title: String
     let matchedIndices: Set<Int>
     let trailingLabel: CommandPaletteRenderTrailingLabel?
+    var badgeCount: Int = 0
 }
 
 /// Result-row fill. Selection wins over hover, and hover stays quieter than
@@ -153,7 +154,8 @@ struct CommandPaletteCommandListRowsView: View {
                             ContentView.commandPaletteRenderResultLabelContent(
                                 title: row.title,
                                 matchedIndices: row.matchedIndices,
-                                trailingLabel: row.trailingLabel
+                                trailingLabel: row.trailingLabel,
+                                badgeCount: row.badgeCount
                             )
                             .padding(.horizontal, 9)
                             .padding(.vertical, 2)

@@ -19,6 +19,8 @@ public struct CommandPaletteCommand: Identifiable {
     public let keywords: [String]
     /// Whether activating the command dismisses the palette.
     public let dismissOnRun: Bool
+    /// Unread count shown as a red badge on the row (0 hides it).
+    public let badgeCount: Int
     /// The action executed on activation.
     public let action: () -> Void
 
@@ -32,6 +34,7 @@ public struct CommandPaletteCommand: Identifiable {
         kindLabel: String?,
         keywords: [String],
         dismissOnRun: Bool,
+        badgeCount: Int = 0,
         action: @escaping () -> Void
     ) {
         self.id = id
@@ -42,6 +45,7 @@ public struct CommandPaletteCommand: Identifiable {
         self.kindLabel = kindLabel
         self.keywords = keywords
         self.dismissOnRun = dismissOnRun
+        self.badgeCount = badgeCount
         self.action = action
     }
 

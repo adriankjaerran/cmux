@@ -5474,7 +5474,8 @@ struct ContentView: View {
                 id: result.id,
                 title: result.command.title,
                 matchedIndices: result.titleMatchIndices,
-                trailingLabel: commandPaletteRenderTrailingLabel(for: result.command)
+                trailingLabel: commandPaletteRenderTrailingLabel(for: result.command),
+                badgeCount: result.command.badgeCount
             )
         }
         let selectedIndex = commandPaletteSelectedIndex(resultCount: rows.count)
@@ -5860,7 +5861,8 @@ struct ContentView: View {
     static func commandPaletteRenderResultLabelContent(
         title: String,
         matchedIndices: Set<Int>,
-        trailingLabel: CommandPaletteRenderTrailingLabel?
+        trailingLabel: CommandPaletteRenderTrailingLabel?,
+        badgeCount: Int = 0
     ) -> some View {
         HStack(spacing: 8) {
             commandPaletteHighlightedTitleText(
@@ -5870,6 +5872,15 @@ struct ContentView: View {
                 .cmuxFont(size: 13, weight: .regular)
                 .lineLimit(1)
             Spacer()
+            if badgeCount > 0 {
+                // Fork: same red unread badge as the compact sidebar.
+                Text(String(badgeCount))
+                    .cmuxFont(size: 11, weight: .semibold)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(Color(red: 0xE4 / 255, green: 0x57 / 255, blue: 0x3D / 255), in: Capsule())
+            }
             commandPaletteRenderTrailingLabelView(trailingLabel)
         }
     }
@@ -6030,6 +6041,7 @@ struct ContentView: View {
                         kindLabel: String(localized: "commandPalette.kind.workspace", defaultValue: "Workspace"),
                         keywords: workspaceKeywords,
                         dismissOnRun: true,
+                        badgeCount: TerminalNotificationStore.shared.unreadCount(forTabId: workspace.id),
                         action: {
                             focusCommandPaletteSwitcherTarget(
                                 windowId: windowId,
