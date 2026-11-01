@@ -25,6 +25,7 @@ Then start **cmux Personal** from Spotlight or the Dock.
 | ⌘P lists unread workspaces first, then by most recent use; past picks no longer reorder it | `CommandPaletteWorkspaceOrdering.swift`, `CommandPaletteSearchOrchestrator.swift` |
 | ⌘P rows show the red unread number and a short activity note (`waiting`, `running 3m`, `done 4m`) instead of "Workspace" | `ContentView.swift`, `CommandPaletteWorkspaceActivity.swift`, `GhosttyTerminalView.swift` |
 | The compact one-line sidebar is built in and is the default | `Resources/sidebars/compact.js`, `CmuxExtensionSidebarSelection.swift`, `CmuxMain.swift` |
+| Groups are folders: the header only opens/closes; its former session is the first row inside and can be moved or removed like any other | `Resources/sidebars/compact.js`, `WorkspaceGroupCoordinator.swift` |
 | Builds without upstream's git history, team login or cmux-tui client | `scripts/reload.sh`, `scripts/install-personal.sh` |
 
 ## Docs

@@ -1035,13 +1035,17 @@ struct WorkspaceCoordinatorTests {
     }
 
     @Test
-    func createWorkspaceGroupRefusesForeignAnchorsAsChildren() {
+    func createWorkspaceGroupRefusesPinnedSoleMemberAnchorsAsChildren() {
+        // Fork: other foreign anchors hand their role to the next member
+        // (WorkspaceGroupFolderAnchorTests); a pinned group's only member
+        // is still refused so the pinned header isn't orphaned.
         let (model, host, groups, _) = makeWorld()
         _ = host
         let a = CoordinatorStubTab()
         model.tabs = [a]
         let firstGroupId = groups.createWorkspaceGroup(name: "One", childWorkspaceIds: [a.id])
         let firstAnchor = model.workspaceGroups[0].anchorWorkspaceId
+        groups.setWorkspaceGroupPinned(groupId: model.workspaceGroups[0].id, isPinned: true)
 
         _ = groups.createWorkspaceGroup(name: "Two", childWorkspaceIds: [firstAnchor])
 

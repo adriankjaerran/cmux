@@ -58,8 +58,12 @@ public final class WorkspaceGroupCoordinator<Tab: WorkspaceTabRepresenting> {
         }
         // Eligible children: not currently an anchor of a different group.
         // Pulling an anchor into a new group would orphan the
-        // source group (its anchorWorkspaceId would no longer match), so we
-        // reject those silently and let the user explicitly ungroup first.
+        // source group (its anchorWorkspaceId would no longer match). Fork:
+        // hand the anchor role to the next member first; only a pinned
+        // sole-member group's anchor is still rejected.
+        for id in childWorkspaceIds {
+            _ = releaseGroupAnchorRole(of: id)
+        }
         let existingAnchorIds = Set(model.workspaceGroups.compactMap(\.liveAnchorWorkspaceId))
         var seenChildIds = Set<UUID>()
         let eligibleChildren = childWorkspaceIds.compactMap { id -> UUID? in
@@ -306,7 +310,7 @@ public final class WorkspaceGroupCoordinator<Tab: WorkspaceTabRepresenting> {
         let isAnchorOfOtherGroup = model.workspaceGroups.contains { group in
             group.id != groupId && group.liveAnchorWorkspaceId == workspaceId
         }
-        if isAnchorOfOtherGroup { return }
+        if isAnchorOfOtherGroup, !releaseGroupAnchorRole(of: workspaceId) { return }
         let originalTopLevelIds = model.sidebarTopLevelWorkspaceIdsIncludingEmptyGroups()
         let emptyHeaderId = targetGroup.isEmpty ? targetGroup.anchorWorkspaceId : nil
         let previousGroupId = tab.groupId
@@ -336,15 +340,17 @@ public final class WorkspaceGroupCoordinator<Tab: WorkspaceTabRepresenting> {
         host?.workspaceOrderDidChange(movedWorkspaceIds: [workspaceId])
     }
 
-    /// Remove a non-anchor workspace from its group. If this leaves only an
+    /// Remove a workspace from its group. Removing the anchor hands the anchor
+    /// role to the next member first (fork). If this leaves only an
     /// untouched generated anchor, that shell is removed with the group. If the
-    /// workspace is its group's anchor, the group is explicitly ungrouped
-    /// instead (other members survive as ungrouped workspaces).
+    /// workspace is its group's only member, the group is ungrouped instead.
     public func removeWorkspaceFromGroup(workspaceId: UUID) {
         guard let tab = model.tabs.first(where: { $0.id == workspaceId }),
               let groupId = tab.groupId else { return }
         if let group = model.workspaceGroups.first(where: { $0.id == groupId }),
-           group.liveAnchorWorkspaceId == workspaceId {
+           group.liveAnchorWorkspaceId == workspaceId,
+           !handOffGroupAnchor(from: workspaceId) {
+            // Sole member: nothing left to promote, so the group dissolves.
             ungroupWorkspaceGroup(groupId: groupId)
             return
         }
@@ -357,6 +363,38 @@ public final class WorkspaceGroupCoordinator<Tab: WorkspaceTabRepresenting> {
             return
         }
         host?.workspaceOrderDidChange(movedWorkspaceIds: [workspaceId])
+    }
+
+    /// Fork: the group header is only a folder, so its anchor is an ordinary
+    /// member row that may move to another group. Hands the anchor role to
+    /// the next member; a sole-member unpinned group dissolves (an empty
+    /// folder has nothing to show). A pinned sole-member group is kept, so
+    /// its durable header isn't orphaned.
+    /// - Parameter workspaceId: The workspace about to join another group.
+    /// - Returns: `true` when the workspace is no longer any group's anchor.
+    func releaseGroupAnchorRole(of workspaceId: UUID) -> Bool {
+        guard let group = model.workspaceGroups.first(where: { $0.liveAnchorWorkspaceId == workspaceId }) else {
+            return true
+        }
+        if handOffGroupAnchor(from: workspaceId) { return true }
+        guard !group.isPinned else { return false }
+        ungroupWorkspaceGroup(groupId: group.id)
+        return true
+    }
+
+    /// Moves the anchor role off `workspaceId` to the next member of its group
+    /// (tabs order), so the workspace can leave like any other member.
+    /// - Parameter workspaceId: The current live anchor.
+    /// - Returns: `true` when another member took over; `false` when the
+    ///   workspace is not an anchor or is its group's only member.
+    @discardableResult
+    func handOffGroupAnchor(from workspaceId: UUID) -> Bool {
+        guard let group = model.workspaceGroups.first(where: { $0.liveAnchorWorkspaceId == workspaceId }),
+              let next = model.tabs.first(where: { $0.groupId == group.id && $0.id != workspaceId }) else {
+            return false
+        }
+        setWorkspaceGroupAnchor(groupId: group.id, workspaceId: next.id)
+        return true
     }
 
     /// Removes an untouched generated anchor after its last real member leaves.

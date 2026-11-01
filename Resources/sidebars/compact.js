@@ -10,6 +10,12 @@
 // Group collapse is optimistic (a local signal flips instantly) and syncs via
 // workspace.group.collapse/expand so the built-in sidebar agrees.
 //
+// Folders (fork): a group header is only a folder. It has no session of its
+// own: clicking it collapses/expands, and the group's anchor workspace shows
+// as an ordinary first member row. The app keeps the anchor first in the
+// block, so a drop that changes a group's first row hands the anchor role
+// to that row (workspace.group.set_anchor) before reordering.
+//
 // Compact variant: one line per workspace, title left, agent state right.
 // Open:     cmux sidebar open compact
 // Select:   cmux sidebar select compact
@@ -173,11 +179,21 @@ function toggleCollapse(g) {
 // --- data helpers ------------------------------------------------------------
 const groupById = (id) => (data.groups() ?? []).find((g) => g.id === id);
 const membersOf = (id) => visibleWorkspaces().filter((w) => w.group === id);
-// The anchor workspace IS the header (matching the built-in sidebar).
-const memberRowsOf = (id) => {
-  const g = groupById(id);
-  return membersOf(id).filter((w) => !g || w.id !== g.anchorId);
-};
+// Every member is a row, the anchor included: the header is just a folder.
+const memberRowsOf = (id) => membersOf(id);
+
+// After a drop the app re-hoists each group's anchor to the front of its
+// block. Make the row that will be first in `order` the anchor, so the drop
+// sticks instead of snapping back. `groupOf(id)` is the post-drop group.
+function syncAnchors(order, groupOf, groupIds) {
+  for (const gid of groupIds) {
+    const g = groupById(gid);
+    const first = order.find((x) => groupOf(x) === gid);
+    if (g && first && first !== g.anchorId) {
+      cmux("workspace.group.set_anchor", { group_id: gid, workspace_id: first });
+    }
+  }
+}
 
 // One flat entry list. A group renders (header + expanded member rows) at
 // its ANCHOR's tabs position - the app's canonical block position - so a
@@ -246,13 +262,30 @@ function handleMove(id, index, extra) {
   // frames after a bulk or group move.
   const ws = visibleWorkspaces();
 
+  // Dropped ONTO a folder header (it highlights while hovered): the
+  // workspace (or the whole multi-selection) joins that folder at its end.
+  if (extra && extra.into && !extra.block && !id.startsWith("h:")) {
+    const gid = String(extra.into).replace(/^h:/, "").replace(/:edit$/, "");
+    if (!groupById(gid)) return;
+    multiTick();
+    const ids = multiSelected.has(id) && multiSelected.size > 1
+      ? visibleRowIds().filter((rid) => multiSelected.has(rid) || rid === id)
+      : [id];
+    for (const rid of ids) {
+      const row = ws.find((w) => w.id === rid);
+      if (row && row.group !== gid) cmux("workspace.group.add", { group_id: gid, workspace_id: rid });
+    }
+    clearMultiSelect();
+    return;
+  }
+
   if (extra && extra.block && id.startsWith("h:")) {
     // Whole-group move. workspace.group.move is NOT usable here: its
     // to_index is a group-slot index (position among groups, clamped to the
     // pin tier), so a tabs index overshoots to "last group" and a drop
     // between ungrouped rows is unreachable. Instead send the full tabs
-    // order with the block extracted and re-inserted contiguously (anchor
-    // first) at the drop slot - the app's contiguity normalization keeps it.
+    // order with the block extracted and re-inserted contiguously (in its
+    // visible order) at the drop slot - the app's contiguity normalization keeps it.
     const gid = id.slice(2);
     const memberIds = new Set(membersOf(gid).map((w) => w.id));
     const entries = flatEntries().filter((e) => e.id !== id && e.groupId !== gid);
@@ -263,12 +296,7 @@ function handleMove(id, index, extra) {
     const nextId = nextEntry
       ? (nextEntry.kind === "header" ? groupById(nextEntry.groupId)?.anchorId : nextEntry.wsId)
       : null;
-    const anchorId = groupById(gid)?.anchorId;
     const blockIds = ws.map((x) => x.id).filter((x) => memberIds.has(x));
-    if (anchorId && blockIds.includes(anchorId)) {
-      blockIds.splice(blockIds.indexOf(anchorId), 1);
-      blockIds.unshift(anchorId);
-    }
     const rest = ws.map((x) => x.id).filter((x) => !memberIds.has(x));
     let insertAt = nextId ? rest.indexOf(nextId) : rest.length;
     if (insertAt < 0) insertAt = rest.length;
@@ -353,10 +381,34 @@ function handleMove(id, index, extra) {
     let insertAt = nextWorkspace ? rest.indexOf(nextWorkspace.id) : rest.length;
     if (insertAt < 0) insertAt = rest.length;
     const full = [...rest.slice(0, insertAt), ...movingIds, ...rest.slice(insertAt)];
+    const groupOf = (x) => (moving.has(x) ? container : ws.find((w) => w.id === x)?.group ?? null);
+    syncAnchors(full, groupOf, new Set([container, ...movingIds.map((x) => ws.find((w) => w.id === x)?.group)].filter(Boolean)));
     setOrderOverride(full); // gather instantly; reorder_many echoes behind it
     cmux("workspace.reorder_many", { workspace_ids: JSON.stringify(full) });
     clearMultiSelect();
     return;
+  }
+
+  // A drop that changes a group's first row (into first place, or the
+  // anchor moved down) needs the anchor handed over, then an absolute order.
+  {
+    const rest = ws.map((x) => x.id).filter((x) => x !== id);
+    let insertAt = nextWorkspace ? rest.indexOf(nextWorkspace.id) : rest.length;
+    if (insertAt < 0) insertAt = rest.length;
+    const full = [...rest.slice(0, insertAt), id, ...rest.slice(insertAt)];
+    const groupOf = (x) => (x === id ? container : ws.find((w) => w.id === x)?.group ?? null);
+    const touched = [container, dragged.group].filter(Boolean);
+    const changesFirst = touched.some((gid) => {
+      const first = full.find((x) => groupOf(x) === gid);
+      return first && first !== groupById(gid)?.anchorId;
+    });
+    if (changesFirst) {
+      syncAnchors(full, groupOf, new Set(touched));
+      setOrderOverride(full);
+      cmux("workspace.reorder_many", { workspace_ids: JSON.stringify(full) });
+      clearMultiSelect();
+      return;
+    }
   }
 
   if (nextWorkspace) {
@@ -409,6 +461,13 @@ const doneTracker = computed(() => {
   return new Set(doneUnseen);
 });
 const isDoneUnseen = (w) => !!w && doneTracker().has(w.id);
+
+// New workspace inside a folder; opens the folder so the new row shows.
+function newWorkspaceInGroup(g) {
+  if (!g) return;
+  if (isCollapsed(g)) toggleCollapse(g);
+  cmux("workspace.group.new_workspace", { group_id: g.id });
+}
 
 // --- rows ----------------------------------------------------------------------
 function workspaceMenu(w) {
@@ -541,36 +600,46 @@ function workspaceEditRow(w, entry) {
 
 function groupHeader(groupId) {
   const g = () => groupById(groupId) ?? { id: groupId, name: "", collapsed: false, pinned: false };
-  const anchor = () => (data.workspaces() ?? []).find((w) => w.id === g().anchorId);
   const groupAct = (action) => () =>
     cmux("workspace.group.action", { group_id: groupId, action });
   return HStack({ spacing: 6 }, [
-    // The chevron toggles collapse; clicking anywhere else selects the
-    // group's anchor workspace (built-in sidebar behavior). Chevron only,
+    // A folder header: clicking anywhere on it toggles collapse (it has no
+    // session of its own; the anchor is a normal row below). Chevron only,
     // no folder icon. One glyph that ROTATES (right -> down on expand):
     // rotation animates as one motion with the accordion, and the fixed box
     // keeps the header height constant.
     Image("chevron.right")
       .font(10).weight("semibold").color("tertiary")
       .rotation(() => (isCollapsed(g()) ? 0 : 90))
-      .frame({ width: 14, height: 16 })
-      .onTap(() => toggleCollapse(g())),
+      .frame({ width: 14, height: 16 }),
     Text(() => g().name).font(11).weight("semibold").lineLimit(1).truncation("tail")
-      .color(() => (isSelected(anchor()) ? "primary" : "secondary")),
+      .color("secondary"),
     Spacer(),
+    // Hover-only "+" where a workspace row shows its close x: a new
+    // workspace inside this folder.
+    Image("plus")
+      .font(9).weight("semibold").color("secondary")
+      .frame({ width: 16, height: 16 })
+      .cornerRadius(8)
+      .hoverBackground("#7f7f7f4a")
+      .help("New workspace in folder")
+      .showOnHover()
+      .onTap(() => newWorkspaceInGroup(g())),
   ])
     .paddingLeading(8)
-    .paddingTrailing(10)
+    .paddingTrailing(8)
     .paddingVertical(3)
     .cornerRadius(8)
-    .background(() => (isSelected(anchor()) ? "#7f7f7f3d" : null))
-    .hoverBackground(() => (isSelected(anchor()) ? "#7f7f7f3d" : "#7f7f7f1c"))
+    .hoverBackground("#7f7f7f1c")
     .frame({ maxWidth: "infinity" })
     .fixed()
     .block("h:" + groupId)
-    .onTap(() => selectWorkspace(anchor()?.id))
+    .dropTarget()
+    .onTap(() => toggleCollapse(g()))
     .onDoubleTap(() => setEditingId("h:" + groupId))
     .contextMenu([
+      Button("New Workspace in Folder", () => newWorkspaceInGroup(g())),
+      Divider(),
       Button("Rename Group", () => setEditingId("h:" + groupId)),
       Button(() => (isCollapsed(g()) ? "Expand" : "Collapse"), () => toggleCollapse(g())),
       Button(() => (g().pinned ? "Unpin Group" : "Pin Group"), () =>
