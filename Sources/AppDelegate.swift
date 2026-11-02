@@ -1852,7 +1852,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             installMenuBarVisibilityObserver()
             syncApplicationPresentationPreferences()
             updateController.actionDelegate = self
-            updateController.startUpdaterIfNeeded()
+            // Fork: the Sparkle updater is never started. cmux Personal is built
+            // locally and must not offer upstream releases (SU* keys are gone
+            // from Info.plist too).
         }
         titlebarAccessoryController.start()
         windowDecorationsController.start()

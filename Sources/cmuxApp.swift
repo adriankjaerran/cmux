@@ -510,10 +510,7 @@ struct cmuxApp: App {
                 Button(String(localized: "menu.app.about", defaultValue: "About cmux")) {
                     showAboutPanel()
                 }
-                Button(String(localized: "menu.app.checkForUpdates", defaultValue: "Check for Updates…")) {
-                    appDelegate.checkForUpdates(nil)
-                }
-                InstallUpdateMenuItem(model: appDelegate.updateViewModel, actions: appDelegate)
+                // Fork: no "Check for Updates…" / install-update items (updater is off).
             }
 
             CommandGroup(replacing: .appTermination) {

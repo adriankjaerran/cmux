@@ -173,9 +173,7 @@ final class MenuBarExtraController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
 
-        checkForUpdatesItem.target = self
-        checkForUpdatesItem.action = #selector(checkForUpdatesAction)
-        menu.addItem(checkForUpdatesItem)
+        // Fork: no "Check for Updates…" item (updater is off).
 
         preferencesItem.target = self
         preferencesItem.action = #selector(preferencesAction)
