@@ -76,15 +76,6 @@ public protocol ControlSystemContext: AnyObject {
     /// - Returns: The open resolution.
     func controlSettingsOpen(targetRaw: String?, requestedActivate: Bool) -> ControlSettingsOpenResolution
 
-    /// Schedules the feedback composer for `feedback.open`.
-    ///
-    /// - Parameters:
-    ///   - workspaceID: The explicit `workspace_id`, if any.
-    ///   - windowID: The explicit `window_id`, if any.
-    ///   - requestedActivate: The requested `activate` flag (the app applies
-    ///     the focus-allowance policy).
-    func controlFeedbackOpen(workspaceID: UUID?, windowID: UUID?, requestedActivate: Bool)
-
     /// Snapshots the routed window's workspaces for
     /// `extension.sidebar.snapshot`.
     ///

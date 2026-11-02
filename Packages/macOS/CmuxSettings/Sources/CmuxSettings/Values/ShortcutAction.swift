@@ -40,7 +40,6 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case openChief
     case commandPaletteNext
     case commandPalettePrevious
-    case sendFeedback
     case showNotifications
     case jumpToUnread
     /// Focuses the surface where the user last submitted an agent prompt.

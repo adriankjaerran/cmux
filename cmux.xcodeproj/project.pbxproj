@@ -1551,7 +1551,6 @@
 		A117FF000000000000000001 /* CmuxFeatureFlagResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = A117FF000000000000000002 /* CmuxFeatureFlagResolution.swift */; };
 		9CE061DC06284ED280A65893 /* CmuxFeatureFlags+Cloud.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D3D4A32871442459D94B6B8 /* CmuxFeatureFlags+Cloud.swift */; };
 		A117FF000000000000000003 /* CmuxFeatureFlagSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A117FF000000000000000004 /* CmuxFeatureFlagSource.swift */; };
-		C9A2C00000000000000000C3 /* CmuxFeedback in Frameworks */ = {isa = PBXBuildFile; productRef = C9A2C00000000000000000C2 /* CmuxFeedback */; };
 		D0F1A0000000000000000003 /* CmuxFilePreviewCore in Frameworks */ = {isa = PBXBuildFile; productRef = D0F1A0000000000000000002 /* CmuxFilePreviewCore */; };
 		D0F1A0000000000000000004 /* CmuxFilePreviewCore in Frameworks */ = {isa = PBXBuildFile; productRef = D0F1A0000000000000000002 /* CmuxFilePreviewCore */; };
 		5E2701040000000000000004 /* CmuxFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 5E2701040000000000000002 /* CmuxFoundation */; };
@@ -9304,7 +9303,6 @@
 				CC0033E15A1B2C3D4E5F0013 /* CmuxDiffComments in Frameworks */,
 				C0DE45000000000000000001 /* CmuxExtensionKit in Frameworks */,
 				C0DE49000000000000000001 /* CmuxExtensionSidebarExamples in Frameworks */,
-				C9A2C00000000000000000C3 /* CmuxFeedback in Frameworks */,
 				D0F1A0000000000000000003 /* CmuxFilePreviewCore in Frameworks */,
 				CF00F00000000000000000A3 /* CmuxFoundation in Frameworks */,
 				C617000000000000000000A3 /* CmuxGit in Frameworks */,
@@ -14461,7 +14459,6 @@
 				E3B7A3000000000000000101 /* XCLocalSwiftPackageReference "CmuxWorkspaces" */,
 				C750100000000000000000A1 /* XCLocalSwiftPackageReference "CmuxControlSocket" */,
 				C9A2B00000000000000000B1 /* XCLocalSwiftPackageReference "CmuxAppKitSupportUI" */,
-				C9A2C00000000000000000C1 /* XCLocalSwiftPackageReference "CmuxFeedback" */,
 				C750200000000000000000A1 /* XCLocalSwiftPackageReference "CmuxTerminalCore" */,
 				7E1A1A0000000000000000A1 /* XCLocalSwiftPackageReference "CmuxTerminalImport" */,
 				C750500000000000000000A1 /* XCLocalSwiftPackageReference "CmuxTerminal" */,
@@ -19913,10 +19910,6 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/macOS/CmuxAppKitSupportUI;
 		};
-		C9A2C00000000000000000C1 /* XCLocalSwiftPackageReference "CmuxFeedback" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/macOS/CmuxFeedback;
-		};
 		C750200000000000000000A1 /* XCLocalSwiftPackageReference "CmuxTerminalCore" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/macOS/CmuxTerminalCore;
@@ -20261,11 +20254,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C9A2B00000000000000000B1 /* XCLocalSwiftPackageReference "CmuxAppKitSupportUI" */;
 			productName = CmuxAppKitSupportUI;
-		};
-		C9A2C00000000000000000C2 /* CmuxFeedback */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C9A2C00000000000000000C1 /* XCLocalSwiftPackageReference "CmuxFeedback" */;
-			productName = CmuxFeedback;
 		};
 		5E55200000000000000000B2 /* CmuxWindowing */ = {
 			isa = XCSwiftPackageProductDependency;

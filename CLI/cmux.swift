@@ -6700,16 +6700,6 @@ struct CMUXCLI {
             return
         }
 
-        if command == "feedback" {
-            try runFeedback(
-                commandArgs: commandArgs,
-                socketPath: resolvedSocketPath,
-                explicitPassword: socketPasswordArg,
-                jsonOutput: jsonOutput
-            )
-            return
-        }
-
         if command == "right-sidebar" {
             let parsed = try parseRightSidebarCLIArguments(commandArgs)
             _ = try rightSidebarSocketArguments(from: parsed)
@@ -10262,7 +10252,7 @@ struct CMUXCLI {
             return true
         }
         switch command {
-        case "settings", "shortcuts", "open", "diff", "restore-session", "feedback":
+        case "settings", "shortcuts", "open", "diff", "restore-session":
             return true
         default:
             return false
@@ -10446,68 +10436,6 @@ struct CMUXCLI {
 
     private func appLaunchTarget() -> String {
         CLIExecutableLocator.enclosingAppBundle()?.bundleURL.path ?? "cmux"
-    }
-
-    private func runFeedback(
-        commandArgs: [String],
-        socketPath: String,
-        explicitPassword: String?,
-        jsonOutput: Bool
-    ) throws {
-        let (emailOpt, rem0) = parseOption(commandArgs, name: "--email")
-        let (bodyOpt, rem1) = parseOption(rem0, name: "--body")
-        let (imagePaths, rem2) = parseRepeatedOption(rem1, name: "--image")
-        let remaining = rem2.filter { $0 != "--" }
-
-        if let unknown = remaining.first {
-            throw CLIError(message: "feedback: unknown flag '\(unknown)'. Known flags: --email <email>, --body <text>, --image <path>")
-        }
-
-        let client = try connectClient(
-            socketPath: socketPath,
-            explicitPassword: explicitPassword,
-            launchIfNeeded: true
-        )
-        defer { client.close() }
-
-        if emailOpt == nil && bodyOpt == nil && imagePaths.isEmpty {
-            var params: [String: Any] = [:]
-            let env = ProcessInfo.processInfo.environment
-            if let workspaceId = env["CMUX_WORKSPACE_ID"]?.trimmingCharacters(in: .whitespacesAndNewlines),
-               !workspaceId.isEmpty {
-                params["workspace_id"] = workspaceId
-                params["activate"] = false
-            } else {
-                params["activate"] = true
-            }
-            let response = try client.sendV2(method: "feedback.open", params: params)
-            if jsonOutput {
-                print(jsonString(response))
-            } else {
-                print("OK")
-            }
-            return
-        }
-
-        guard let email = emailOpt?.trimmingCharacters(in: .whitespacesAndNewlines),
-              email.isEmpty == false else {
-            throw CLIError(message: "feedback requires --email <email> when sending feedback")
-        }
-        guard let body = bodyOpt, body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
-            throw CLIError(message: "feedback requires --body <text> when sending feedback")
-        }
-
-        let resolvedImages = imagePaths.map(resolvePath)
-        let response = try client.sendV2(method: "feedback.submit", params: [
-            "email": email,
-            "body": body,
-            "image_paths": resolvedImages,
-        ])
-        if jsonOutput {
-            print(jsonString(response))
-        } else {
-            print("OK")
-        }
     }
 
     private func runRestoreSession(
@@ -21573,24 +21501,6 @@ struct CMUXCLI {
             return forkSubcommandUsage()
         case "sessions", "session-debug": return sessionsUsage()
         case "session": return sessionCommandUsage()
-        case "feedback":
-            return """
-            Usage: cmux feedback
-                   cmux feedback --email <email> --body <text> [--image <path> ...]
-
-            Without args, open the Send Feedback modal in the running app.
-
-            With args, submit feedback through the app using the same feedback pipeline as the modal.
-
-            Flags:
-              --email <email>   Contact email for follow-up
-              --body <text>     Feedback body
-              --image <path>    Attach an image file, repeat for multiple images
-
-            Coding agents:
-              Double check with the end user before sending anything. Review the message and attachments for secrets,
-              private code, credentials, tokens, and other sensitive information first.
-            """
         case "feed":
             return """
             Usage: cmux feed tui [--opentui|--legacy]

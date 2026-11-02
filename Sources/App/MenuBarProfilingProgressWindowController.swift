@@ -1,12 +1,12 @@
 import AppKit
-import CmuxFeedback
 import Foundation
 
 @MainActor
 final class MenuBarProfilingProgressWindowController: NSWindowController {
     static let shared = MenuBarProfilingProgressWindowController()
 
-    let feedbackSettings = FeedbackComposerSettings()
+    /// Fork: was `FeedbackComposerSettings().storedEmailKey` (CmuxFeedback is gone).
+    let storedFeedbackEmailKey = "sidebarHelpFeedbackEmail"
     let titleLabel = NSTextField(labelWithString: "")
     let countdownLabel = NSTextField(labelWithString: "")
     let detailLabel = NSTextField(wrappingLabelWithString: "")

@@ -2602,7 +2602,6 @@ enum CmuxEmbeddedConfigSchema {
               "openChief",
               "commandPaletteNext",
               "commandPalettePrevious",
-              "sendFeedback",
               "showNotifications",
               "jumpToUnread",
               "jumpToLastPrompt",

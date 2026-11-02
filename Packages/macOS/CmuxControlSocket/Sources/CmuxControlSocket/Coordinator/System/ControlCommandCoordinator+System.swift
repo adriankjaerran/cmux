@@ -37,8 +37,6 @@ extension ControlCommandCoordinator {
             return sessionExport(request.params)
         case "settings.open":
             return settingsOpen(request.params)
-        case "feedback.open":
-            return feedbackOpen(request.params)
         case "extension.sidebar.snapshot":
             return extensionSidebarSnapshot(request.params)
         case "workspace.action":

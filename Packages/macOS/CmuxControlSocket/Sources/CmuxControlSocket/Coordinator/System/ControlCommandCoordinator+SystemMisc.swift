@@ -176,16 +176,6 @@ extension ControlCommandCoordinator {
         }
     }
 
-    /// `feedback.open` — open the feedback composer (always ok).
-    func feedbackOpen(_ params: [String: JSONValue]) -> ControlCallResult {
-        systemContext?.controlFeedbackOpen(
-            workspaceID: uuid(params, "workspace_id"),
-            windowID: uuid(params, "window_id"),
-            requestedActivate: bool(params, "activate") ?? false
-        )
-        return .ok(.object(["opened": .bool(true)]))
-    }
-
     /// `extension.sidebar.snapshot` — the sidebar extension's workspace feed.
     func extensionSidebarSnapshot(_ params: [String: JSONValue]) -> ControlCallResult {
         guard let snapshot = systemContext?.controlExtensionSidebarSnapshot(routing: routingSelectors(params)) else {

@@ -7500,7 +7500,6 @@ extension Notification.Name {
     static let agentInboxReplyFieldFocusChanged = Notification.Name("cmux.agentInboxReplyFieldFocusChanged")
     static let commandPaletteRenameInputInteractionRequested = Notification.Name("cmux.commandPaletteRenameInputInteractionRequested")
     static let commandPaletteRenameInputDeleteBackwardRequested = Notification.Name("cmux.commandPaletteRenameInputDeleteBackwardRequested")
-    static let feedbackComposerRequested = Notification.Name("cmux.feedbackComposerRequested")
     static let agentInboxRequested = Notification.Name("cmux.agentInboxRequested")
     static let ghosttyDidSetTitle = Notification.Name("ghosttyDidSetTitle")
     static let ghosttyDidFocusTab = Notification.Name("ghosttyDidFocusTab")

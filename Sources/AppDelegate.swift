@@ -15644,17 +15644,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return true
         }
 
-        if matchConfiguredShortcut(event: event, action: .sendFeedback) {
-            guard let targetContext = preferredMainWindowContextForShortcuts(event: event),
-                  let targetWindow = targetContext.window ?? windowForMainWindowId(targetContext.windowId) else {
-                return false
-            }
-            setActiveMainWindow(targetWindow)
-            bringToFront(targetWindow)
-            NotificationCenter.default.post(name: .feedbackComposerRequested, object: targetWindow)
-            return true
-        }
-
         // Check Jump to Unread shortcut
         if matchConfiguredShortcut(event: event, action: .jumpToUnread) {
 #if DEBUG

@@ -5,7 +5,6 @@ import AppKit
 import CmuxRemoteSession
 import CmuxCore
 import CmuxAuthRuntime
-import CmuxFeedback
 import CmuxBrowser
 import CmuxControlSocket
 import CmuxFoundation
@@ -1782,8 +1781,6 @@ class TerminalController {
             return v2Ok(id: request.id, result: v2AuthStatusPayload(timedOut: false))
         case _ where Self.authTeamSocketMethods.contains(request.method):
             return v2AuthTeamResponse(request)
-        case "feedback.submit":
-            return v2Result(id: request.id, v2FeedbackSubmit(params: request.params))
         case "feed.push":
             return v2Result(
                 id: request.id,
@@ -3456,9 +3453,8 @@ class TerminalController {
         case "surface.sync_codex_native_title":
             return v2Result(id: id, self.v2SurfaceSyncCodexNativeTitle(params: params))
 
-        // Settings/session/feedback: session.restore_previous, session.import,
-        // session.export, settings.open, and feedback.open handled by
-        // ControlCommandCoordinator.
+        // Settings/session: session.restore_previous, session.import,
+        // session.export, and settings.open handled by ControlCommandCoordinator.
 
         // Feed (workstream): feed.jump/feed.list handled by ControlCommandCoordinator.
         case "sidebar.custom.open":
@@ -6617,54 +6613,6 @@ class TerminalController {
             includeScrollback: includeScrollback,
             lineLimit: lineLimit
         )
-    }
-
-    private nonisolated func v2FeedbackSubmit(params: [String: Any]) -> V2CallResult {
-        guard let email = params["email"] as? String else {
-            return .err(code: "invalid_params", message: "Missing email", data: ["field": "email"])
-        }
-        guard let body = params["body"] as? String else {
-            return .err(code: "invalid_params", message: "Missing body", data: ["field": "body"])
-        }
-        let imagePaths = params["image_paths"] as? [String] ?? []
-
-        let semaphore = DispatchSemaphore(value: 0)
-        var result: V2CallResult = .err(code: "internal_error", message: "Feedback submission failed", data: nil)
-
-        Task {
-            let resolved: V2CallResult
-            do {
-                let attachmentCount = try await FeedbackComposerBridge().submit(
-                    email: email,
-                    message: body,
-                    imagePaths: imagePaths
-                )
-                resolved = .ok([
-                    "submitted": true,
-                    "attachment_count": attachmentCount,
-                ])
-            } catch let error as FeedbackComposerBridgeError {
-                let code: String
-                switch error {
-                case .invalidEmail, .emptyMessage, .messageTooLong, .tooManyImages, .invalidImagePath:
-                    code = "invalid_params"
-                case .submissionFailed:
-                    code = "request_failed"
-                }
-                resolved = .err(code: code, message: error.localizedDescription, data: nil)
-            } catch {
-                resolved = .err(code: "internal_error", message: error.localizedDescription, data: nil)
-            }
-
-            result = resolved
-            semaphore.signal()
-        }
-
-        if semaphore.wait(timeout: .now() + 35) == .timedOut {
-            return .err(code: "timeout", message: "Feedback submission timed out", data: nil)
-        }
-
-        return result
     }
 
     // MARK: - V2 Feed (workstream) handlers
@@ -15730,60 +15678,16 @@ class TerminalController {
         return .ok(workspaceObject)
     }
 
-    /// Privileged agent feedback sink (the Mac↔phone feedback loop).
-    ///
-    /// Reads `{ text, terminal_text, build_stamp, diagnostic_blob_base64 }` off
-    /// the wire and hands them to ``DogfoodFeedbackService`` (in the
-    /// `CmuxFeedback` package), which caps the fields, rejects an oversized
-    /// base64 blob without decoding, and writes a self-contained bundle
-    /// directory under `~/.cache/cmux-dogfood-feedback/<ISO8601>_<shortid>/`
-    /// (a `bundle.json` manifest plus the decoded `diagnostic.log`) off the main
-    /// actor. This method owns only the trust-boundary privilege check and the
-    /// wire mapping; the validation, allocation caps, and filesystem I/O live in
-    /// the service.
-    ///
-    /// It is protected by the same-account Stack-auth authorization the rest of
-    /// the mobile data plane enforces, so it never accepts an unauthenticated
-    /// caller. The phone only ever routes here for `@manaflow.ai` users on an
-    /// active connection, so this exists in Release builds too (the team can
-    /// dogfood beta/prod), and only a Mac that runs the watcher acts on it.
+
+    /// Fork: the upstream dogfood feedback sink (CmuxFeedback) is gone. It only
+    /// ever accepted @manaflow.ai accounts, so every caller gets the same
+    /// "unauthorized" reply it got before.
     func v2MobileDogfoodFeedbackSubmit(params: [String: Any]) async -> V2CallResult {
-        // Privilege check at the trust boundary: the mobile data plane only
-        // accepts same-account connections, so the caller is this Mac's own Stack
-        // account. The service re-enforces the @manaflow.ai gate, but we resolve
-        // the authenticated email here because it requires the main-actor
-        // `MobileHostService`. (The phone also gates the route on `@manaflow.ai`
-        // + `dogfood.v1`, but the Mac is the real boundary.)
-        let localEmail = await MobileHostService.shared.currentAuthenticatedLocalUserEmail()
-        let submission = DogfoodFeedbackSubmission(
-            text: v2RawString(params, "text") ?? "",
-            terminalText: v2RawString(params, "terminal_text") ?? "",
-            buildStamp: v2RawString(params, "build_stamp") ?? "",
-            diagnosticBlobBase64: v2RawString(params, "diagnostic_blob_base64") ?? ""
+        .err(
+            code: "unauthorized",
+            message: "Feedback agent sink is restricted to privileged accounts",
+            data: nil
         )
-        let outcome = await DogfoodFeedbackService().submit(submission, authenticatedEmail: localEmail)
-        switch outcome {
-        case let .written(bundlePath, diagnosticLogBytes):
-            return .ok([
-                "ok": true,
-                "bundle_path": bundlePath,
-                "diagnostic_log_bytes": diagnosticLogBytes,
-            ])
-        case .unauthorized:
-            return .err(
-                code: "unauthorized",
-                message: "Feedback agent sink is restricted to privileged accounts",
-                data: nil
-            )
-        case let .invalidParams(reason):
-            return .err(code: "invalid_params", message: reason, data: nil)
-        case .internalError:
-            return .err(
-                code: "internal_error",
-                message: "Failed to persist dogfood feedback bundle",
-                data: nil
-            )
-        }
     }
 
     /// Publish a `terminal.set_font` event to connected iOS device(s) so the
