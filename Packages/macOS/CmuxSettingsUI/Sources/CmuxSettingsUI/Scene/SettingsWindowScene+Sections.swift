@@ -117,15 +117,6 @@ extension SettingsWindowRoot {
             )
         }
 
-        slot(.computerUse, proxy: proxy) {
-            ComputerUseSection(
-                jsonStore: jsonStore,
-                catalog: catalog,
-                errorLog: runtime.errorLog,
-                hostActions: hostActions
-            )
-        }
-
         slot(.browser, proxy: proxy) {
             BrowserSection(
                 defaultsStore: defaultsStore,

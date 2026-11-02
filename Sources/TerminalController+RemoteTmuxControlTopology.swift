@@ -357,7 +357,6 @@ extension TerminalController {
                 }
             }
             let terminalPanel = panel as? TerminalPanel
-            let simulatorPanel = panel as? SimulatorPanel
             return [ControlSurfaceSummary(
                 surfaceID: panel.id,
                 typeRawValue: panel.panelType.rawValue,
@@ -381,11 +380,11 @@ extension TerminalController {
                     ? controlResumeBinding(from: workspace.surfaceResumeBinding(panelId: panel.id))
                     : nil,
                 renderHealthRawValue: terminalPanel?.surface.renderHealth.rawValue,
-                simulatorDeviceID: simulatorPanel?.selectedDeviceID,
-                simulatorRuntimeIdentifier: simulatorPanel?.selectedRuntimeIdentifier,
-                simulatorDeviceTypeIdentifier: simulatorPanel?.selectedDeviceTypeIdentifier,
-                simulatorDeviceName: simulatorPanel?.selectedDeviceName,
-                simulatorDeviceState: simulatorPanel?.selectedDeviceState
+                simulatorDeviceID: nil,
+                simulatorRuntimeIdentifier: nil,
+                simulatorDeviceTypeIdentifier: nil,
+                simulatorDeviceName: nil,
+                simulatorDeviceState: nil
             )]
         }
     }

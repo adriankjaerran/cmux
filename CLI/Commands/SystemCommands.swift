@@ -322,34 +322,6 @@ struct RPCCommand: SharedLegacyFacadeCommand {
     static let configuration = CommandConfiguration(commandName: "rpc", helpNames: [])
 }
 
-struct SimulatorCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("surface"), completion: surfaceCompletion) var surfaceID: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-
-    static let configuration = CommandConfiguration(
-        commandName: "simulator",
-        abstract: String(
-            localized: "cli.help.simulator",
-            defaultValue: "simulator <subcommand> [args] [--surface <id|ref|index>]"
-        ),
-        helpNames: []
-    )
-}
-
-struct IOSCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("surface"), completion: surfaceCompletion) var surfaceID: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-
-    static let configuration = CommandConfiguration(
-        commandName: "ios",
-        abstract: String(
-            localized: "cli.help.ios",
-            defaultValue: "ios <subcommand> [args] [--surface <id|ref|index>]"
-        ),
-        helpNames: []
-    )
-}
-
 struct MobileCommand: SharedLegacyFacadeCommand {
     @Option(name: .customLong("surface"), completion: surfaceCompletion) var surfaceID: String?
     @Option(name: .customLong("workspace"), completion: workspaceCompletion) var workspaceID: String?

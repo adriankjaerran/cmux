@@ -81,7 +81,7 @@ enum SettingsTaxonomyGroup: String, CaseIterable, Identifiable, Sendable {
         case .sidebarAndDock:
             return [.sidebarAppearance, .customSidebars]
         case .agentsAndAutomation:
-            return [.automation, .computerUse]
+            return [.automation]
         case .browserAndFiles:
             return [.browser, .browserImport]
         case .remoteAndDevices:

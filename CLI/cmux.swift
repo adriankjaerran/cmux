@@ -5,7 +5,6 @@ import CmuxAgentJournal
 import CmuxControlSocket
 import CmuxFoundation
 import CmuxSettings
-import CmuxSimulator
 import CmuxSudoBroker
 import CoreFoundation
 import CryptoKit
@@ -4807,7 +4806,6 @@ struct CoderouterArmServerPeerVerifier {
 struct CMUXCLI {
     let args: [String]
     let initialSIGPIPEInspectionPayload: [String: Any]?
-    let simulatorOwnedCommandRunner: any SimulatorOwnedCommandRunning
     let coderouterArmServerPeerVerifier: CoderouterArmServerPeerVerifier
 
     /// Bounded socket wait around the cmux worker's hosted arm deadline.
@@ -5188,13 +5186,10 @@ struct CMUXCLI {
     init(
         args: [String],
         initialSIGPIPEInspectionPayload: [String: Any]? = nil,
-        simulatorOwnedCommandRunner: any SimulatorOwnedCommandRunning =
-            SimulatorOwnedCommandRunner(),
         coderouterArmServerPeerVerifier: CoderouterArmServerPeerVerifier = .production
     ) {
         self.args = args
         self.initialSIGPIPEInspectionPayload = initialSIGPIPEInspectionPayload
-        self.simulatorOwnedCommandRunner = simulatorOwnedCommandRunner
         self.coderouterArmServerPeerVerifier = coderouterArmServerPeerVerifier
     }
 
@@ -8519,10 +8514,6 @@ struct CMUXCLI {
                 idFormat: idFormat
             )
 
-        case "simulator":
-            try runSimulatorNamespace(commandArgs: commandArgs, client: client, jsonOutput: jsonOutput, idFormat: idFormat, windowOverride: windowId)
-        case "ios":
-            try runIOSNamespace(commandArgs: commandArgs, client: client, jsonOutput: jsonOutput, idFormat: idFormat, windowOverride: windowId)
         case "workspace":
             try runWorkspaceNamespace(
                 commandArgs: commandArgs,
@@ -21198,10 +21189,6 @@ struct CMUXCLI {
               cmux canvas new-pane --type terminal
               cmux canvas align tidy
             """
-        case "simulator":
-            return simulatorSubcommandUsage()
-        case "ios":
-            return iosSubcommandUsage()
         case "events":
             let timeoutDescription = String(
                 localized: "cli.events.help.timeout",

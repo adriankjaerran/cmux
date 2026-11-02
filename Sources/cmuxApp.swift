@@ -1,5 +1,4 @@
 import CmuxCloud
-import CmuxComputerUse
 import AppKit
 import CmuxAppKitSupportUI
 import CmuxFoundation
@@ -19,8 +18,6 @@ import CmuxTerminal
 struct cmuxApp: App {
     /// App-owned settings graph, injected into each SwiftUI hosting root.
     private let settingsRuntime: SettingsRuntime
-    /// Single owner of the independently launched Computer Use helper daemon.
-    private let computerUseRuntimeService: ComputerUseRuntimeService
 
     /// App-owned auth graph injected into the delegate and auth consumers.
     private let authComposition: MacAuthComposition
@@ -140,48 +137,6 @@ struct cmuxApp: App {
         Self.removeInheritedClaudeNodeOptionsPreload()
         Self.configureGhosttyEnvironment()
         StartupBreadcrumbLog.append("app.init.ghosttyEnvironment.configured")
-        let computerUsePaths = ComputerUseRuntimePaths()
-        setenv(
-            ComputerUseRuntimePaths.daemonSocketEnvironmentKey,
-            computerUsePaths.daemonSocketURL.path,
-            1
-        )
-        setenv(
-            ComputerUseRuntimePaths.codexDaemonSocketEnvironmentKey,
-            computerUsePaths.codexDaemonSocketURL.path,
-            1
-        )
-        setenv(
-            ComputerUseRuntimePaths.stateDirectoryEnvironmentKey,
-            computerUsePaths.stateDirectoryURL.path,
-            1
-        )
-        setenv(
-            ComputerUseRuntimePaths.runtimeScopeEnvironmentKey,
-            computerUsePaths.scope,
-            1
-        )
-        // Codex app approval authenticates the MCP broker as the exact
-        // executable already serving this cmux-owned helper generation.
-        // Both agent wrappers use this installed helper as their MCP client;
-        // the app ships no other cmux-cua copy, and the wrappers validate the
-        // path before use.
-        setenv(
-            ComputerUseRuntimePaths.clientExecutableEnvironmentKey,
-            computerUsePaths.installedHelperExecutableURL.path,
-            1
-        )
-        // The helper bearer token is written to a private per-user runtime file
-        // and read only by the agent wrappers. Never place the capability in the
-        // app environment inherited by every terminal child.
-        unsetenv(ComputerUseRuntimePaths.authenticationTokenEnvironmentKey)
-        setenv(
-            ComputerUseRuntimePaths.authenticationTokenFileEnvironmentKey,
-            computerUsePaths.authenticationTokenFileURL.path,
-            1
-        )
-        let computerUseRuntimeService = ComputerUseRuntimeService(paths: computerUsePaths)
-        self.computerUseRuntimeService = computerUseRuntimeService
         _ = KeyboardShortcutSettings.settingsFileStore
         StartupBreadcrumbLog.append("app.init.keyboardShortcuts.loaded")
 
@@ -193,14 +148,8 @@ struct cmuxApp: App {
         let computersService = devices.computers
         let hostSettingsActions = HostSettingsActions(
             configFileURL: configFileURL,
-            computerUseRuntimeService: computerUseRuntimeService,
             browserDataImportCoordinator: browserDataImportCoordinator,
-            computersActions: devices.settingsActions,
-            runComputerUseOnboardingAction: { startingPoint in
-                AppDelegate.shared?.computerUseUXCoordinator.presentOnboardingFromSettings(
-                    startingAt: startingPoint
-                )
-            }
+            computersActions: devices.settingsActions
         )
         self.settingsRuntime = SettingsRuntime(
             catalog: settingsCatalog,
@@ -324,7 +273,6 @@ struct cmuxApp: App {
             newMachineSheetPresenter: NewMachineSheetPresenter.shared,
             automationEngine: automationEngine,
             browserDataImportCoordinator: browserDataImportCoordinator,
-            computerUseRuntimeService: computerUseRuntimeService,
             devicesRegistry: devicesRegistry,
             computersService: computersService
         )
@@ -875,11 +823,6 @@ struct cmuxApp: App {
                     appDelegate.copyFocusLogs(nil)
                 }
 
-                Divider()
-
-                Button("Trigger Sentry Test Crash") {
-                    appDelegate.triggerSentryTestCrash(nil)
-                }
             }
 #endif
 
@@ -936,12 +879,6 @@ struct cmuxApp: App {
                     }
                     splitCommandButton(title: String(localized: "menu.file.newCloudMachine", defaultValue: "New Cloud Machine"), shortcut: menuShortcut(for: .newCloudMachine)) {
                         _ = AppDelegate.shared?.performNewCloudMachineAction(tabManager: activeTabManager, debugSource: "menu.newCloudMachine")
-                    }
-                }
-
-                if CmuxFeatureFlags.shared.isSimulatorEnabled {
-                    Button(String(localized: "menu.file.newSimulatorPane", defaultValue: "New Simulator Pane")) {
-                        performNewSimulatorPaneFromMenu()
                     }
                 }
 
@@ -1761,7 +1698,6 @@ private let cmuxAuxiliaryWindowIdentifiers: Set<String> = [
     "cmux.browser-popup",
     "cmux.browserProfilePopoverDebug",
     "cmux.configEditor",
-    "cmux.computerUse.onboarding",
     "cmux.defaultTerminalRegistrationError",
     "cmux.featureFlags",
     "cmux.feedButtonStyleDebug",

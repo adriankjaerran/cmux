@@ -1,13 +1,11 @@
 import CmuxFoundation
-import CmuxSentryReporting
 import CmuxSettings
 import Darwin
 import Foundation
 
-#if canImport(Sentry)
-// Sentry Cocoa 9.3.0 is pinned in Package.resolved. This SPI stores the
-// envelope durably without blocking short-lived CLI commands; verify it before
-// any Sentry SDK upgrade.
+// The Sentry SDK was removed from this fork. The `CMUX_SENTRY` blocks below
+// are never compiled (the flag is not defined), so CLI telemetry is a no-op.
+#if CMUX_SENTRY
 @_spi(Private) import Sentry
 #endif
 
@@ -66,7 +64,7 @@ final class CLISocketSentryTelemetry {
     private let buildIdentityPolicy: SentryBuildIdentityPolicy
     private var pendingBreadcrumbs: [PendingBreadcrumb] = []
 
-#if canImport(Sentry)
+#if CMUX_SENTRY
     private static let startupLock = NSLock()
     private static var started = false
     private static let dsn = "https://ecba1ec90ecaee02a102fba931b6d2b3@o4507547940749312.ingest.us.sentry.io/4510796264636416"
@@ -160,7 +158,7 @@ final class CLISocketSentryTelemetry {
 
     func breadcrumb(_ message: String, data: [String: Any] = [:]) {
         guard shouldEmit else { return }
-#if canImport(Sentry)
+#if CMUX_SENTRY
         pendingBreadcrumbs.append(PendingBreadcrumb(message: message, data: data))
 #endif
     }
@@ -199,7 +197,7 @@ final class CLISocketSentryTelemetry {
 #if DEBUG
         recordCaptureProbe(stage: stage, error: error)
 #endif
-#if canImport(Sentry)
+#if CMUX_SENTRY
         Self.ensureStarted()
         var context = baseContext()
         context["stage"] = stage
@@ -422,7 +420,7 @@ final class CLISocketSentryTelemetry {
         try? payload.write(toFile: NSString(string: path).expandingTildeInPath, atomically: true, encoding: .utf8)
     }
 
-#if canImport(Sentry)
+#if CMUX_SENTRY
     private func recordStoreProbe(eventId: String, fingerprint: [String]) {
         guard let path = processEnv["CMUX_CLI_SENTRY_STORE_PROBE_PATH"]?.trimmingCharacters(in: .whitespacesAndNewlines),
               !path.isEmpty else {
@@ -434,7 +432,7 @@ final class CLISocketSentryTelemetry {
 #endif
 #endif
 
-#if canImport(Sentry)
+#if CMUX_SENTRY
     private static func makeErrorEvent(
         error: Error,
         context: [String: Any],
@@ -663,7 +661,7 @@ final class CLISocketSentryTelemetry {
         return sockets
     }
 
-#if canImport(Sentry)
+#if CMUX_SENTRY
     private static func ensureStarted() {
         startupLock.lock()
         defer { startupLock.unlock() }

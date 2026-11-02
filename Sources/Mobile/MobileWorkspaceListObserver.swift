@@ -2,7 +2,6 @@ import CMUXMobileCore
 import CmuxMobileHost
 import Combine
 import CmuxNotifications
-import CmuxSimulator
 import CmuxWorkspaces
 import Foundation
 import OSLog
@@ -514,12 +513,6 @@ final class MobileWorkspaceListObserver {
             for id in panelIDs {
                 hasher.combine(workspace.panelTitle(panelId: id))
                 hasher.combine(workspace.reportedPanelDirectory(panelId: id))
-                if let simulator = workspace.panels[id] as? SimulatorPanel {
-                    hasher.combine(simulator.selectedDeviceName)
-                    hasher.combine(simulator.selectedDeviceState)
-                    hasher.combine(simulator.coordinator.status.mobileWorkspaceObserverSignature)
-                    hasher.combine(simulator.coordinator.capabilities)
-                }
             }
             hasher.combine(workspace.presentedCurrentDirectory)
             // Todo mutations change the list-facing shape; without these the
@@ -558,23 +551,4 @@ final class MobileWorkspaceListObserver {
         )
     }
     #endif
-}
-
-private extension SimulatorSessionStatus {
-    var mobileWorkspaceObserverSignature: String {
-        switch self {
-        case .idle:
-            return "idle"
-        case .connecting:
-            return "connecting"
-        case .streaming:
-            return "streaming"
-        case .deviceUnavailable:
-            return "device_unavailable"
-        case .workerCrashed:
-            return "worker_crashed"
-        case .failed:
-            return "failed"
-        }
-    }
 }

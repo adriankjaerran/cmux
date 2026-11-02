@@ -261,10 +261,7 @@ extension Workspace {
             }
             newPanelId = panel.id
         case .simulator:
-            guard let panel = newSimulatorSurface(inPane: focusedPaneId, focus: focus) else {
-                return nil
-            }
-            newPanelId = panel.id
+            return nil // Simulator pane removed from this fork.
         case .chief:
             guard let panel = newChiefSurface(inPane: focusedPaneId, focus: focus) else {
                 return nil

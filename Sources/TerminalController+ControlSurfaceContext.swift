@@ -165,7 +165,6 @@ extension TerminalController: ControlSurfaceContext {
         dock: DockSplitStore
     ) -> [ControlSurfaceSummary] {
         controlDockSurfaceSummaries(dock: dock).map { summary in
-            let simulatorPanel = dock.panels[summary.surfaceID] as? SimulatorPanel
             return ControlSurfaceSummary(
                 surfaceID: summary.surfaceID,
                 typeRawValue: summary.typeRawValue,
@@ -181,11 +180,11 @@ extension TerminalController: ControlSurfaceContext {
                 isTerminal: summary.isTerminal,
                 resumeBinding: summary.resumeBinding,
                 renderHealthRawValue: summary.renderHealthRawValue,
-                simulatorDeviceID: simulatorPanel?.selectedDeviceID,
-                simulatorRuntimeIdentifier: simulatorPanel?.selectedRuntimeIdentifier,
-                simulatorDeviceTypeIdentifier: simulatorPanel?.selectedDeviceTypeIdentifier,
-                simulatorDeviceName: simulatorPanel?.selectedDeviceName,
-                simulatorDeviceState: simulatorPanel?.selectedDeviceState,
+                simulatorDeviceID: nil,
+                simulatorRuntimeIdentifier: nil,
+                simulatorDeviceTypeIdentifier: nil,
+                simulatorDeviceName: nil,
+                simulatorDeviceState: nil,
                 dockScopeRawValue: summary.dockScopeRawValue
             )
         }

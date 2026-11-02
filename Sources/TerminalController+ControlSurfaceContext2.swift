@@ -196,13 +196,7 @@ extension TerminalController {
                 initialDividerPosition: dividerPosition
             )?.id
         } else if panelType == .simulator {
-            newId = ws.newSimulatorSplit(
-                from: targetSurfaceId,
-                orientation: orientation,
-                insertFirst: insertFirst,
-                focus: focus,
-                initialDividerPosition: dividerPosition
-            )?.id
+            newId = nil // Simulator pane removed from this fork.
         } else if panelType == .chief {
             newId = ws.newChiefSplit(
                 from: targetSurfaceId,
@@ -552,10 +546,7 @@ extension TerminalController {
                 bypassRemoteProxy: useLocalContext
             )?.id
         } else if panelType == .simulator {
-            newPanelId = ws.newSimulatorSurface(
-                inPane: paneId,
-                focus: focus
-            )?.id
+            newPanelId = nil // Simulator pane removed from this fork.
         } else if panelType == .chief {
             newPanelId = ws.newChiefSurface(
                 inPane: paneId,

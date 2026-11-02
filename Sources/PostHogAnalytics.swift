@@ -1,7 +1,6 @@
 import CmuxSettings
 import AppKit
 import Foundation
-import PostHog
 
 // `@unchecked Sendable` is safe here because mutable analytics state is confined
 // to `workQueue`; `activeCheckTimer` is only touched through the main queue.
@@ -51,10 +50,9 @@ final class PostHogAnalytics: @unchecked Sendable {
         didStart: Bool = false,
         userDefaults: UserDefaults = .standard,
         now: @escaping @Sendable () -> Date = { Date() },
-        capturePostHog: @escaping @Sendable (String, [String: Any]) -> Void = { event, properties in
-            PostHogSDK.shared.capture(event, properties: properties)
-        },
-        flushPostHog: @escaping @Sendable () -> Void = { PostHogSDK.shared.flush() },
+        // The PostHog SDK was removed from this fork: analytics are a no-op.
+        capturePostHog: @escaping @Sendable (String, [String: Any]) -> Void = { _, _ in },
+        flushPostHog: @escaping @Sendable () -> Void = {},
         contextCalls: PostHogContextCalls = .live,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         telemetryEnabled: @escaping @Sendable () -> Bool = { TelemetrySettings.enabledForCurrentLaunch }
@@ -170,19 +168,9 @@ final class PostHogAnalytics: @unchecked Sendable {
             self.startIfNeededOnWorkQueue()
             guard self.didStart else { return }
             let previous = self.userDefaults.string(forKey: self.identifiedAccountIDKey)
-            let distinctID = PostHogSDK.shared.getDistinctId()
-            if previous == accountID, distinctID == accountID {
-                return
-            }
-            // The SDK ignores `identify` while it is identified as another id,
-            // so reset first when the stored account or the SDK names someone
-            // else. An anonymous SDK keeps its id so this launch's events merge.
-            let sdkIdentifiedAsOther = distinctID != PostHogSDK.shared.getAnonymousId()
-                && distinctID != accountID
-            if (previous != nil && previous != accountID) || sdkIdentifiedAsOther {
+            if previous != nil && previous != accountID {
                 self.resetPostHogIdentityOnWorkQueue()
             }
-            PostHogSDK.shared.identify(accountID)
             self.userDefaults.set(accountID, forKey: self.identifiedAccountIDKey)
             self.flushPostHog()
         }
@@ -204,10 +192,6 @@ final class PostHogAnalytics: @unchecked Sendable {
     }
 
     private func resetPostHogIdentityOnWorkQueue() {
-        PostHogSDK.shared.reset()
-        // `reset()` also clears registered super properties: restore the
-        // desktop tags and the product context (plan, sign-in, Cloud state).
-        PostHogSDK.shared.register(Self.superProperties(infoDictionary: Bundle.main.infoDictionary ?? [:]))
         if !registeredContext.isEmpty {
             contextCalls.register(registeredContext)
         }
@@ -266,39 +250,8 @@ final class PostHogAnalytics: @unchecked Sendable {
         guard !didStart else { return }
         guard isEnabled else { return }
 
-        let config: PostHogConfig
-#if DEBUG
-        // A loopback collector exercises the real SDK without sending fixture
-        // events to production. Release builds never accept this override.
-        if let rawHost = environment["CMUX_POSTHOG_TEST_HOST"],
-           let url = URL(string: rawHost),
-           url.scheme == "http", url.host == "127.0.0.1", url.port != nil,
-           url.user == nil, url.password == nil {
-            config = PostHogConfig(apiKey: "phc_cmux_e2e", host: rawHost)
-            config.flushAt = 1
-        } else {
-            config = PostHogConfig(apiKey: apiKey, host: host)
-        }
-#else
-        config = PostHogConfig(apiKey: apiKey, host: host)
-#endif
-        config.captureApplicationLifecycleEvents = false
-        config.captureScreenViews = false
-#if DEBUG
-        config.debug = ProcessInfo.processInfo.environment["CMUX_POSTHOG_DEBUG"] == "1"
-#endif
-
-        PostHogSDK.shared.setup(config)
-
-        // Tag every event so PostHog can distinguish desktop from web and
-        // break events down by released app version/build.
-        PostHogSDK.shared.register(Self.superProperties(infoDictionary: Bundle.main.infoDictionary ?? [:]))
-
-        // The SDK automatically generates and persists an anonymous distinct ID.
-
-        didStart = true
-
-        scheduleActiveCheckTimer()
+        // The PostHog SDK was removed from this fork, so analytics never start
+        // (`didStart` stays false and every capture is skipped).
     }
 
     private func scheduleActiveCheckTimer() {

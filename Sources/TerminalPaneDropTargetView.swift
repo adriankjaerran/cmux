@@ -373,20 +373,6 @@ final class PaneDropTargetView: NSView {
         return .copy
     }
 
-    static func simulatorFileDropOperation(
-        urls: [URL],
-        workspace: Workspace,
-        panelId: UUID
-    ) -> NSDragOperation? {
-        guard let canHandle = workspace.canHandleSimulatorExternalFileDrop(
-            urls: urls,
-            panelId: panelId
-        ) else {
-            return nil
-        }
-        return canHandle ? .copy : []
-    }
-
     private func paneDropZone(for sender: any NSDraggingInfo) -> DropZone {
         let location = convert(sender.draggingLocation, from: nil)
         return PaneDropRouting.zone(for: location, in: bounds.size)

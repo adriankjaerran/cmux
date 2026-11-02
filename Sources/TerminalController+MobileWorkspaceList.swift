@@ -241,17 +241,8 @@ extension TerminalController {
                 "agent_state": v2OrNull(agent?.state)
             ]
         }
-        let simulatorEncoder = MobileSimulatorWireEncoder()
-        let simulators: [[String: Any]]
-        if CmuxFeatureFlags.shared.isSimulatorEnabled {
-            simulators = mobileSimulatorPanels(in: workspace).compactMap { panel in
-                simulatorEncoder.object(MobileHostService.shared.mobileSimulatorStreamCoordinator.descriptor(
-                    panel: panel
-                ) ?? simulatorEncoder.descriptor(panel: panel, workspaceID: workspace.id))
-            }
-        } else {
-            simulators = []
-        }
+        // The Simulator pane was removed from this fork.
+        let simulators: [[String: Any]] = []
         let surfaces = mobileSurfaceDescriptors(in: workspace).map { surface -> [String: Any] in
             var payload: [String: Any] = [
                 "surface_id": surface.surfaceID,

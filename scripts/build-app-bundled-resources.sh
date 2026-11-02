@@ -19,16 +19,11 @@ GHOSTTY_SHELL_SRC="${SRCROOT}/ghostty/src/shell-integration"
 CMUX_GHOSTTY_ZSH_SRC="${SRCROOT}/ghostty/src/shell-integration/zsh/ghostty-integration"
 BUILD_GHOSTTY_HELPER="${SRCROOT}/scripts/build-ghostty-cli-helper.sh"
 GHOSTTY_HELPER_DEST="${BIN_DEST}/ghostty"
-BUILD_CMUX_CUA="${SRCROOT}/scripts/build-cmux-cua.sh"
-APPLY_CMUX_CUA_PATCH="${SRCROOT}/scripts/apply-cmux-cua-patch.sh"
-CMUX_CUA_PATCH="${SRCROOT}/scripts/cmux-cua-codex-delivery-mode.patch"
-# The cmux-cua engine ships once, as the Computer Use helper's executable.
-# Builds before that also copied it, with its license, into Resources/bin.
+# Fork: Computer Use (the cmux-cua helper) was removed. Leftovers from older
+# builds are deleted below so they do not linger in incremental builds.
 LEGACY_CMUX_CUA_CLIENT="${BIN_DEST}/cmux-cua"
 LEGACY_CMUX_CUA_LICENSE="${BIN_DEST}/cmux-cua-LICENSE.md"
 CMUX_CUA_HELPER_APP="${DEST}/../Library/cmux Computer Use.app"
-CMUX_CUA_HELPER_OWNER_MARKER="${CMUX_CUA_HELPER_APP}/Contents/Resources/.cmux-cua-managed-helper"
-CMUX_CUA_HELPER_EXEC="${CMUX_CUA_HELPER_APP}/Contents/MacOS/cmux-cua"
 INFO_PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
 
 run_git() (
@@ -137,11 +132,6 @@ output_fingerprint() {
     hash_tree "$TERMINFO_DEST"
     hash_tree "$CMUX_SHELL_DEST"
     hash_tree "$GHOSTTY_HELPER_DEST"
-    if [ -d "$CMUX_CUA_HELPER_APP" ]; then
-      hash_tree "$CMUX_CUA_HELPER_APP"
-    else
-      printf 'missing:%s\n' "$CMUX_CUA_HELPER_APP"
-    fi
   } | shasum | awk '{print $1}'
 }
 
@@ -191,24 +181,15 @@ fingerprint="$({
   printf 'configuration=%s\n' "${CONFIGURATION:-}"
   printf 'sdk=%s\n' "${SDKROOT:-}"
   printf 'deployment=%s\n' "${MACOSX_DEPLOYMENT_TARGET:-}"
-  printf 'cmux-cua-src=%s\n' "${CMUX_CUA_SRC:-}"
-  printf 'cmux-cua-repo=%s\n' "${CMUX_CUA_REPO_URL:-}"
   printf 'skip-zig=%s\n' "${CMUX_SKIP_ZIG_BUILD:-}"
   printf 'cmux-zig=%s\n' "${CMUX_ZIG:-}"
   printf 'zig-required=%s\n' "${ZIG_REQUIRED:-}"
   fingerprint_toolchain
-  printf 'helper-display=%s\n' "${CMUX_CUA_HELPER_DISPLAY_NAME:-}"
   printf 'bundle-id=%s\n' "${PRODUCT_BUNDLE_IDENTIFIER:-}"
   hash_git_worktree "${SRCROOT}/ghostty"
   hash_swiftpm_resource_bundles "$DEST"
-  if [ -n "${CMUX_CUA_SRC:-}" ]; then
-    hash_git_worktree "${CMUX_CUA_SRC}"
-  fi
   hash_tree "${SRCROOT}/scripts/build-app-bundled-resources.sh"
   hash_tree "$BUILD_GHOSTTY_HELPER"
-  hash_tree "$BUILD_CMUX_CUA"
-  hash_tree "$APPLY_CMUX_CUA_PATCH"
-  hash_tree "$CMUX_CUA_PATCH"
   hash_tree "$GHOSTTY_SRC"
   hash_tree "$FALLBACK_GHOSTTY"
   hash_tree "$TERMINFO_SRC"
@@ -217,7 +198,6 @@ fingerprint="$({
   hash_tree "$CMUX_SHELL_SRC"
   hash_tree "$GHOSTTY_SHELL_SRC"
   hash_tree "$CMUX_GHOSTTY_ZSH_SRC"
-  hash_tree "${SRCROOT}/Resources/ComputerUseHelperIcon.icns"
   hash_tree "${SRCROOT}/Resources/AppIcon.icns"
   hash_tree "${SRCROOT}/Resources/AppIcon-Debug.icns"
 } | shasum | awk '{print $1}')"
@@ -231,11 +211,7 @@ if [ -d "${SRCROOT}/Resources/sidebars" ]; then
 fi
 
 helper_output_ok=true
-if [ ! -d "$CMUX_CUA_HELPER_APP" ] ||
-  [ ! -f "$CMUX_CUA_HELPER_APP/Contents/Info.plist" ] ||
-  [ ! -f "$CMUX_CUA_HELPER_OWNER_MARKER" ] ||
-  [ ! -x "$CMUX_CUA_HELPER_EXEC" ] ||
-  [ -e "$LEGACY_CMUX_CUA_CLIENT" ]; then
+if [ -e "$CMUX_CUA_HELPER_APP" ] || [ -e "$LEGACY_CMUX_CUA_CLIENT" ]; then
   helper_output_ok=false
 fi
 if [ -f "$STAMP" ] && [ -x "$GHOSTTY_HELPER_DEST" ] \
@@ -251,6 +227,7 @@ if [ -f "$STAMP" ] && [ -x "$GHOSTTY_HELPER_DEST" ] \
 fi
 mkdir -p "$BIN_DEST" "$LIBEXEC_DEST"
 rm -f "$LEGACY_CMUX_CUA_CLIENT" "$LEGACY_CMUX_CUA_LICENSE"
+rm -rf "$CMUX_CUA_HELPER_APP"
 sync_swiftpm_resource_bundles
 if [ -d "$GHOSTTY_SRC" ]; then
   mkdir -p "$GHOSTTY_DEST"
@@ -321,17 +298,6 @@ elif [ "$HAS_ARM64" -eq 0 ] || [ "$HAS_X86_64" -eq 0 ]; then
 fi
 if [ ! -x "$GHOSTTY_HELPER_DEST" ]; then
   echo "error: Ghostty CLI helper was not created at $GHOSTTY_HELPER_DEST" >&2
-  exit 1
-fi
-if [ ! -x "$BUILD_CMUX_CUA" ]; then
-  echo "error: missing cmux-cua build script at $BUILD_CMUX_CUA" >&2
-  exit 1
-fi
-# The standalone build output is scratch; only the helper bundle ships.
-"$BUILD_CMUX_CUA" --output "${DERIVED_FILE_DIR}/cmux-cua/cmux-cua" \
-  --helper-app "$CMUX_CUA_HELPER_APP" --archs "${ARCHS:-}"
-if [ ! -x "$CMUX_CUA_HELPER_EXEC" ]; then
-  echo "error: cmux-cua was not created at $CMUX_CUA_HELPER_EXEC" >&2
   exit 1
 fi
 update_commit

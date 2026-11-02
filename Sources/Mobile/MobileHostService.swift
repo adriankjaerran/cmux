@@ -426,7 +426,6 @@ final class MobileHostService {
     /// listener starts accepting connections.
     private var auth: AuthCoordinator?
     let mobileBrowserStreamCoordinator = MobileBrowserStreamCoordinator()
-    let mobileSimulatorStreamCoordinator = MobileSimulatorStreamCoordinator()
     #if DEBUG
     private var debugAcceptedStackAuthToken: String?
     #endif
@@ -741,12 +740,6 @@ final class MobileHostService {
                 )
             }
             #endif
-            if !result.simulatorFrameShedPanelIDs.isEmpty {
-                MobileSimulatorDiagnostics.recordFrameQueueShed(
-                    panelIDStrings: result.simulatorFrameShedPanelIDs,
-                    shedByteCount: result.shedByteCount
-                )
-            }
             resyncSurfaceIDs.formUnion(result.renderGridResyncSurfaceIDs)
             // An overflow is closed by the drain, which consumes it first.
             // The hop runs once per claimed drain, not per event.
@@ -1043,15 +1036,8 @@ final class MobileHostService {
             },
             onClose: { id in
                 await MobileHostService.shared.mobileBrowserStreamCoordinator.connectionClosed(id)
-                await MobileHostService.shared.mobileSimulatorStreamCoordinator.connectionClosed(id)
                 registry.remove(id: id)
                 await MobileHostService.shared.removeConnection(id: id, registry: registry)
-            },
-            requestSimulatorFrameReplay: { connectionID, panelIDs in
-                await MobileHostService.shared.mobileSimulatorStreamCoordinator.requestFrameReplay(
-                    connectionID: connectionID,
-                    panelIDStrings: panelIDs
-                )
             }
         )
         guard await isCurrent() else {
@@ -2345,12 +2331,6 @@ actor MobileHostConnection {
         if !result.renderGridResyncSurfaceIDs.isEmpty {
             MobileTerminalRenderObserver.requestRenderGridFullResync(
                 surfaceIDStrings: result.renderGridResyncSurfaceIDs
-            )
-        }
-        if !result.simulatorFrameShedPanelIDs.isEmpty {
-            MobileSimulatorDiagnostics.recordFrameQueueShed(
-                panelIDStrings: result.simulatorFrameShedPanelIDs,
-                shedByteCount: result.shedByteCount
             )
         }
         if result.overflowed {

@@ -187,8 +187,6 @@ struct CmuxCommand: AsyncParsableCommand {
             ImportCommand.self,
             ReviewCommand.self,
             RPCCommand.self,
-            SimulatorCommand.self,
-            IOSCommand.self,
             MobileCommand.self,
             SSHCommand.self,
             MoshCommand.self,

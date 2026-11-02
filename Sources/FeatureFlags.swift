@@ -2,7 +2,6 @@ import CMUXMobileCore
 import CmuxSettings
 import Foundation
 import Observation
-import PostHog
 import os
 
 /// PostHog-backed runtime feature flags for the macOS app (PostHog project
@@ -40,7 +39,6 @@ final class CmuxFeatureFlags {
     private nonisolated static let mobileWorkspaceChangesDefault = false
     #endif
     private static let sidebarWorkspaceAgentSpinnerDefault = false
-    private static let computerUseUXDefault = true
     private nonisolated static let simulatorDefault = true
     private static let workspaceTodoControlsDefault = false
     private static let appKitSidebarListDefault = true
@@ -296,21 +294,6 @@ final class CmuxFeatureFlags {
         defaultWhenUnavailable: CmuxFeatureFlags.sidebarWorkspaceAgentSpinnerDefault
     )
 
-    // FLAG(key: computer-use-ux-enabled-release, owner: austinwang,
-    //      reviewBy: 2027-01-19, defaultWhenUnavailable: true)
-    // Shows the computer-use status item and allows automatic onboarding.
-    // The settings and terminal kill switch remain available if this UI
-    // flag is remotely disabled.
-    static let computerUseUXFlag = CmuxFeatureFlagDefinition(
-        key: "computer-use-ux-enabled-release",
-        title: String(localized: "featureFlags.computerUseUX.title", defaultValue: "cmux Computer Use UX"),
-        flagDescription: String(
-            localized: "featureFlags.computerUseUX.description",
-            defaultValue: "Shows the Computer Use menu-bar item and automatic onboarding."
-        ),
-        defaultWhenUnavailable: CmuxFeatureFlags.computerUseUXDefault
-    )
-
     // FLAG(key: workspace-todo-controls-enabled-release, owner: lawrencecchen,
     //      reviewBy: 2027-02-16, defaultWhenUnavailable: false)
     // Shows user-facing workspace todo controls that create checklist
@@ -336,8 +319,6 @@ final class CmuxFeatureFlags {
             CmuxFeatureFlags.sidebarAccountButtonFlag,
             CmuxFeatureFlags.agentChatUIFlag,
             CmuxFeatureFlags.sidebarWorkspaceAgentSpinnerFlag,
-            CmuxFeatureFlags.computerUseUXFlag,
-            CmuxFeatureFlags.simulatorFlag,
             CmuxFeatureFlags.workspaceTodoControlsFlag,
             CmuxFeatureFlags.appKitSidebarListFlag,
             CmuxFeatureFlags.mobileWorkspaceChangesFlag,
@@ -367,12 +348,10 @@ final class CmuxFeatureFlags {
         effectiveValue(for: Self.sidebarWorkspaceAgentSpinnerFlag)
     }
 
-    var isComputerUseUXEnabled: Bool {
-        effectiveValue(for: Self.computerUseUXFlag)
-    }
-    var isSimulatorEnabled: Bool {
-        effectiveValue(for: Self.simulatorFlag)
-    }
+    /// Computer Use was removed from this fork.
+    var isComputerUseUXEnabled: Bool { false }
+    /// The iOS Simulator pane was removed from this fork.
+    var isSimulatorEnabled: Bool { false }
     var isWorkspaceTodoControlsEnabled: Bool {
         effectiveValue(for: Self.workspaceTodoControlsFlag)
     }
@@ -455,7 +434,7 @@ final class CmuxFeatureFlags {
         defaults: UserDefaults = .standard,
         overrideCapability: CmuxFeatureFlagOverrideCapability = .init(),
         telemetryEnabled: Bool = TelemetrySettings.enabledForCurrentLaunch,
-        remoteFlagValueProvider: @escaping (String) -> Any? = { PostHogSDK.shared.getFeatureFlag($0) },
+        remoteFlagValueProvider: @escaping (String) -> Any? = { _ in nil },
         remoteFlagLoader: (@Sendable () async -> [String: Bool]?)? = nil,
         publishesOffMainSnapshot: Bool = false,
         pinsFlagsToLocalValues: Bool = CmuxFeatureFlags.pinsFlagsToLocalValuesForCurrentLaunch

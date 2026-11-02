@@ -456,26 +456,6 @@ extension Workspace: PaneDropContainer {
         return (panelId, panel)
     }
 
-    /// Delegates simulator drag validation to the workspace policy.
-    func simulatorFileDropOperation(
-        urls: [URL],
-        panelId: UUID
-    ) -> NSDragOperation? {
-        PaneDropTargetView.simulatorFileDropOperation(
-            urls: urls,
-            workspace: self,
-            panelId: panelId
-        )
-    }
-
-    /// Delegates simulator file handling to the workspace.
-    func performSimulatorFileDrop(
-        urls: [URL],
-        panelId: UUID
-    ) -> Bool? {
-        handleSimulatorExternalFileDrop(urls: urls, panelId: panelId)
-    }
-
     /// Applies workspace focus intent after inserting dropped text.
     func focusPanelAfterSuccessfulPaneDrop(
         panelId: UUID,

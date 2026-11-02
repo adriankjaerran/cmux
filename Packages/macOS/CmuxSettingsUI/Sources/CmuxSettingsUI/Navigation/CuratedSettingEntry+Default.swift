@@ -495,27 +495,6 @@ extension Array where Element == CuratedSettingEntry {
             .init(section: .automation, id: "port-base", title: String(localized: "settings.automation.portBase", defaultValue: "Port Base"), synonyms: "Port Base automation.portBase cmux_port start first base env environment variable"),
             .init(section: .automation, id: "port-range", title: String(localized: "settings.automation.portRange", defaultValue: "Port Range Size"), synonyms: "Port Range Size automation.portRange cmux_port_end range size count env ports"),
 
-            // Computer Use
-            .init(
-                section: .computerUse,
-                id: "enabled",
-                title: String(localized: "settings.computerUse.enabled", defaultValue: "Enable cmux Computer Use"),
-                paths: ["computerUse.enabled"],
-                synonyms: String(localized: "settings.search.alias.setting.computerUse.enabled", defaultValue: "computerUse.enabled enable disable computer use cua mcp agent sessions")
-            ),
-            .init(
-                section: .computerUse,
-                id: "permissions",
-                title: String(localized: "settings.computerUse.permissions", defaultValue: "Permissions"),
-                synonyms: String(localized: "settings.search.alias.setting.computerUse.permissions", defaultValue: "accessibility screen recording capture permissions privacy system settings grant")
-            ),
-            .init(
-                section: .computerUse,
-                id: "show-in-menu-bar",
-                title: String(localized: "settings.computerUse.showInMenuBar", defaultValue: "Show cmux Computer Use in Menu Bar"),
-                paths: ["computerUse.showInMenuBar"],
-                synonyms: String(localized: "settings.search.alias.setting.computerUse.showInMenuBar", defaultValue: "computerUse.showInMenuBar menu bar menubar status item cursor agents")
-            ),
             // Browser
             .init(section: .browser, id: "enable-browser", title: String(localized: "settings.browser.enabled", defaultValue: "Enable cmux Browser"), synonyms: "Enable cmux Browser browser.disabled enable disable webview embedded browser tabs links"),
             .init(section: .browser, id: "search-engine", title: String(localized: "settings.browser.searchEngine", defaultValue: "Default Search Engine"), synonyms: "Default Search Engine browser.defaultSearchEngine omnibar address bar google duckduckgo bing kagi brave startpage perplexity exa yahoo ecosia qwant mojeek wikipedia github baidu yandex custom search provider engine name url template"),

@@ -208,17 +208,8 @@ final class MobileStateSyncHost {
                 agentState: agent?.state
             )
         }
-        let simulatorEncoder = MobileSimulatorWireEncoder()
-        let simulators: [MobileSimulatorPanelDescriptor]
-        if CmuxFeatureFlags.shared.isSimulatorEnabled {
-            simulators = controller.mobileSimulatorPanels(in: workspace).map { panel in
-                MobileHostService.shared.mobileSimulatorStreamCoordinator.descriptor(
-                    panel: panel
-                ) ?? simulatorEncoder.descriptor(panel: panel, workspaceID: workspace.id)
-            }
-        } else {
-            simulators = []
-        }
+        // The Simulator pane was removed from this fork.
+        let simulators: [MobileSimulatorPanelDescriptor] = []
         let latestNotification = notificationStore?.latestNotification(forTabId: workspace.id)
         let unreadCount = notificationStore?.unreadCount(forTabId: workspace.id) ?? 0
         let preview = cachedPreview(workspaceID: workspace.id, latestNotification: latestNotification)

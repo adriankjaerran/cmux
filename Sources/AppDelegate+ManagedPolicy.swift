@@ -36,9 +36,6 @@ extension AppDelegate {
             enforceRemoteConnectionsPolicy: { [weak self] in
                 self?.endRemoteConnectionsForManagedPolicy()
             },
-            enforceComputerUsePolicy: { [weak self] in
-                self?.applyManagedComputerUsePolicy()
-            },
             enforceSocketControlPolicy: { [weak self] in
                 self?.reconcileSocketListenerConfiguration(source: "managed_policy")
             }
@@ -80,22 +77,6 @@ extension AppDelegate {
             }
         }
         CmuxTuiSurfaceProviderRegistry.shared.syncPollingToActivationPolicy()
-    }
-
-    /// `DisableComputerUse` transitions, both directions: activation stops the
-    /// helper (the spawn policy already withholds the tools from new agent
-    /// launches); a lift re-applies the user's own setting.
-    func applyManagedComputerUsePolicy() {
-        guard let service = computerUseRuntimeService else { return }
-        let catalog = settingsRuntime?.catalog ?? SettingCatalog()
-        let store = settingsRuntime?.jsonStore
-            ?? JSONConfigStore(fileURL: CmuxConfigLocation().userConfigFile)
-        let userEnabled = store.snapshotValue(for: catalog.computerUse.enabled)
-        Task { @MainActor in
-            // `setEnabled` applies the policy itself; passing the user's value
-            // keeps a lift symmetrical with activation.
-            await service.setEnabled(userEnabled)
-        }
     }
 
     /// `DisableAutoUpdate`: a manual "Check for Updates…" explains the managed

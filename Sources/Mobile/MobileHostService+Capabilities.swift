@@ -179,9 +179,8 @@ extension MobileHostService {
             includingWorkspaceChanges: CmuxFeatureFlags.offMainEffectiveValue(
                 for: CmuxFeatureFlags.mobileWorkspaceChangesFlag
             ),
-            includingSimulator: CmuxFeatureFlags.offMainEffectiveValue(
-                for: CmuxFeatureFlags.simulatorFlag
-            ),
+            // The Simulator pane was removed from this fork.
+            includingSimulator: false,
             includingTaskComposer: CmuxFeatureFlags.offMainEffectiveValue(
                 for: CmuxFeatureFlags.mobileTaskComposerFlag
             ),

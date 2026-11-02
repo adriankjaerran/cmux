@@ -157,7 +157,6 @@ final class CanvasPaneContentMount: CanvasPaneContentMounting {
         case .terminal(let panel, _):
             panel.surface.applyVisibilityOcclusion(rendering)
         case .hosted(let panel, _, _):
-            (panel as? SimulatorPanel)?.setCanvasRendering(rendering)
             // Offscreen browsers may hidden-discard their webview; coming
             // back into the render region restores it.
             (panel as? BrowserPanel)?.noteWebViewVisibility(
@@ -179,10 +178,6 @@ final class CanvasPaneContentMount: CanvasPaneContentMounting {
             panel.surface.applyVisibilityOcclusion(true)
             hostedView.removeFromSuperview()
         case .hosted(let panel, let view, _):
-            if let simulatorPanel = panel as? SimulatorPanel {
-                simulatorPanel.setVisibleInUI(false)
-                simulatorPanel.setCanvasRendering(nil)
-            }
             if let browserPanel = panel as? BrowserPanel {
                 browserPanel.canvasInlineHostingActive = false
                 browserPanel.noteWebViewVisibility(false, reason: "canvas.unmount")

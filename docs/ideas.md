@@ -28,9 +28,10 @@ telemetry or update feed.
 
 ## Trimming (one at a time, keeping it building)
 
-- ⬜ Remove Computer Use.
-- ⬜ Remove the VPN tunnel extension.
-- ⬜ Remove Sentry and PostHog telemetry.
+- ✅ Remove Computer Use.
+- ✅ Remove the VPN tunnel extension.
+- ✅ Remove Sentry and PostHog telemetry.
+- ✅ Remove iOS Simulator panes.
 - ⬜ Remove the Sparkle update feed.
 - ⬜ Stub out Cloud, Auth and Chief.
 

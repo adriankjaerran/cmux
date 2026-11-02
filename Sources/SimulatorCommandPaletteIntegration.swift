@@ -1,6 +1,5 @@
 import AppKit
 import CmuxCommandPalette
-import CmuxSimulator
 import CmuxSettings
 import Foundation
 
@@ -20,21 +19,10 @@ extension CommandPaletteCommandContribution {
 }
 
 extension CommandPaletteHandlerRegistry {
+    /// The iOS Simulator pane was removed from this fork; ContentView still
+    /// registers this hook, so it is a no-op.
     @MainActor
-    mutating func registerNewSimulatorPane(tabManager: TabManager, windowId: UUID) {
-        register(commandId: "palette.newSimulatorPane") {
-            guard CmuxFeatureFlags.shared.isSimulatorEnabled,
-                  let appDelegate = AppDelegate.shared,
-                  appDelegate.executeConfiguredCmuxAction(
-                    id: CmuxSurfaceTabBarBuiltInAction.newSimulator.configID,
-                    tabManager: tabManager,
-                    preferredWindow: appDelegate.mainWindow(for: windowId)
-                  ) else {
-                NSSound.beep()
-                return
-            }
-        }
-    }
+    mutating func registerNewSimulatorPane(tabManager: TabManager, windowId: UUID) {}
 }
 
 extension KeyboardShortcutSettings.Action {
@@ -78,37 +66,5 @@ extension KeyboardShortcutSettings.Action {
         default:
             preconditionFailure("Not a Simulator shortcut action")
         }
-    }
-}
-
-extension AppDelegate {
-    func handleSimulatorShortcut(_ event: NSEvent) -> Bool {
-        guard CmuxFeatureFlags.shared.isSimulatorEnabled else { return false }
-        let focusContext = shortcutEventFocusContext(event)
-        guard focusContext.allowsSimulatorShortcutRouting,
-              let panel = focusContext.simulatorPanel,
-              let action = KeyboardShortcutSettings.Action.simulatorActions.first(where: {
-                  matchConfiguredShortcut(event: event, action: $0)
-              }) else {
-            return false
-        }
-        guard !event.isARepeat else { return true }
-
-        switch action {
-        case .simulatorHome:
-            panel.coordinator.press(.home)
-        case .simulatorRotateLeft:
-            panel.coordinator.rotateLeft()
-        case .simulatorRotateRight:
-            panel.coordinator.rotateRight()
-        case .simulatorToggleAppearance:
-            let coordinator = panel.coordinator
-            Task { @MainActor [weak coordinator] in await coordinator?.toggleAppearance() }
-        case .simulatorToggleSoftwareKeyboard:
-            panel.coordinator.toggleSoftwareKeyboard()
-        default:
-            return false
-        }
-        return true
     }
 }

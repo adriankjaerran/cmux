@@ -3,7 +3,6 @@ import CmuxCloud
 import CmuxCloudBannerCore
 import CmuxProductAnalytics
 import CmuxCloudTui
-import CmuxComputerUse
 import CmuxCloudMachines
 import AppKit
 import CmuxAppKitSupportUI
@@ -31,13 +30,11 @@ import CoreServices
 import CoreGraphics
 import UserNotifications
 import CMUXMobileCore
-import Sentry
 import WebKit
 import Combine
 import ObjectiveC.runtime
 import Darwin
 import CmuxFoundation
-import CmuxSentryReporting
 import CmuxSidebar
 import CmuxGit
 import os
@@ -620,11 +617,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private var isRunningUnderXCTestCached: Bool {
         Self.cachedIsRunningUnderXCTest
     }
-    /// Bridges the Mac host's transport diagnostic ring into Sentry
-    /// (breadcrumbs, structured logs, throttled failure events with the ring
-    /// export attached). Created after `SentrySDK.start`; delivery no-ops when
-    /// the SDK is off.
-    private var transportSentryReporter: TransportSentryReporter?
     private let cmuxThemePreviewReloadScheduler = MainActorDeferredActionScheduler()
     private let connectivityInvalidationSubscriberCoordinator = ConnectivityInvalidationSubscriberCoordinator()
     let workspacePresenceController = WorkspacePresenceController()
@@ -864,9 +856,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private var mobileWorkspaceListObservers: [ObjectIdentifier: MobileWorkspaceListObserver] = [:]
     private let agentChatTranscriptService = AgentChatTranscriptService()
     var settingsRuntime: SettingsRuntime?
-    /// Injected before the coordinator is used; the managed-policy extension
-    /// re-applies `DisableComputerUse` through it.
-    var computerUseRuntimeService: ComputerUseRuntimeService?
     private(set) var browserDataImportCoordinator: BrowserDataImportCoordinator?
     weak var fileExplorerState: FileExplorerState?
     weak var fullscreenControlsViewModel: TitlebarControlsViewModel?
@@ -1009,37 +998,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     var menuBarExtraController: MenuBarExtraController?
     private var transientGlobalSearchMenuBarExtraController: MenuBarExtraController?
     private var lastMenuBarExtraShouldInstall: Bool?
-    /// App-owned computer-use graph; all runtime dependencies are injected here.
-    private(set) lazy var computerUseUXCoordinator: ComputerUseUXCoordinator = {
-        guard let computerUseRuntimeService else {
-            preconditionFailure("ComputerUseRuntimeService must be injected before coordinator use")
-        }
-        let catalog = settingsRuntime?.catalog ?? SettingCatalog()
-        let configStore = settingsRuntime?.jsonStore
-            ?? JSONConfigStore(fileURL: CmuxConfigLocation().userConfigFile)
-        return ComputerUseUXCoordinator(
-            liveAgentIndex: SharedLiveAgentIndex.shared,
-            stateRepository: ComputerUseStateRepository(
-                authenticationKey: computerUseRuntimeService.stateAuthenticationKey
-            ),
-            stateDirectoryURL: computerUseRuntimeService.stateDirectoryURL,
-            configStore: configStore,
-            enabledKey: catalog.computerUse.enabled,
-            showInMenuBarKey: catalog.computerUse.showInMenuBar,
-            liveSettingRepository: ComputerUseLiveSettingRepository(
-                fileURL: TerminalSurface.computerUseLiveSettingFileURL(
-                    homeDirectory: FileManager.default.homeDirectoryForCurrentUser
-                )
-            ),
-            runtimeService: computerUseRuntimeService,
-            userDefaults: .standard,
-            workspaceTitle: { [weak self] in self?.tabTitle(for: $0) },
-            featureEnabled: { CmuxFeatureFlags.shared.isComputerUseUXEnabled },
-            ownsSurface: { [weak self] surfaceID, workspaceID in
-                self?.ownsLocalComputerUseSurface(surfaceID, workspaceID: workspaceID) == true
-            }
-        )
-    }()
     internal lazy var mainWindowVisibilityController = MainWindowVisibilityController(
         dependencies: .init(
             isActivationSuppressed: {
@@ -1847,80 +1805,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
 #endif
 
-        if sentryStartupPolicy.shouldStart {
-            // Pre-warm locale before Sentry to avoid a startup data race.
-            // Locale initialization (os.locale.ensureLocale / NSLocale._preferredLanguages)
-            // on the main thread can race with Sentry's background init thread
-            // calling posix.getenv, causing a SIGSEGV ~134ms after launch.
-            // Forcing locale access here before SentrySDK.start eliminates the race.
-            // Related to: #836
-            _ = Locale.current
-            _ = NSLocale.preferredLanguages
-
-            StartupBreadcrumbLog.append("appDelegate.didFinish.sentry.begin")
-            SentrySDK.start { options in
-                options.dsn = "https://ecba1ec90ecaee02a102fba931b6d2b3@o4507547940749312.ingest.us.sentry.io/4510796264636416"
-                #if DEBUG
-                options.environment = "development"
-                options.debug = true
-                #else
-                options.environment = "production"
-                options.debug = false
-                #endif
-                options.sendDefaultPii = false
-
-                // Performance tracing is disabled. The auto-instrumented root
-                // `SentryTransaction.trace` serializes its `data` / `tags` /
-                // `description` into the payload *after* `beforeSend` runs, and
-                // the root tracer is not reachable through the public Sentry API,
-                // so those fields cannot be scrubbed. Disabling transactions
-                // removes that un-scrubbable egress path while keeping crash,
-                // error, and app-hang reporting (which are independent of the
-                // trace sample rate). cmux does not consume these performance
-                // traces today.
-                options.tracesSampleRate = 0.0
-                // Keep app-hang tracking enabled, but avoid reporting short main-thread stalls
-                // as hangs in normal user interaction flows.
-                options.appHangTimeoutInterval = 8.0
-                // Attach stack traces to all events
-                options.attachStacktrace = true
-                // Avoid recursively capturing failed requests from Sentry's own ingestion endpoint.
-                options.enableCaptureFailedRequests = false
-                // Report Objective-C exceptions that reach NSApplication's
-                // reportException: hook with their reason and throw stack. The
-                // matching executor-corruption path reaches this hook before
-                // AppKit terminates the process. Some macOS 26+ drawing paths
-                // call the class-level _crashOnException: method directly and
-                // remain outside Sentry Cocoa 9.3.0's hook; a future SDK upgrade
-                // can cover those paths too.
-                options.enableUncaughtNSExceptionReporting = true
-                // Structured logs power the transport diagnostics bridge
-                // (TransportSentryReporter on the host diagnostic ring below).
-                options.enableLogs = true
-                // Redact file paths, emails, and secrets from every outgoing
-                // event, breadcrumb, structured log, and (belt-and-suspenders,
-                // if tracing is ever re-enabled) child performance span before
-                // it leaves the device.
-                let scrubber = SentryEventScrubber()
-                options.beforeSend = { event in scrubber.scrub(event) }
-                options.beforeBreadcrumb = { breadcrumb in scrubber.scrub(breadcrumb) }
-                options.beforeSendSpan = { span in scrubber.scrub(span) }
-                options.beforeSendLog = { log in scrubber.scrub(log) }
-            }
-            // Bridge the Mac host's transport diagnostic ring into Sentry:
-            // every retained event becomes a breadcrumb + budget-limited log
-            // line, and gated failures become events carrying the ring export.
-            // The tap delivers on the ring's drain task, off the main thread.
-            let transportReporter = TransportSentryReporter(
-                role: .macHost,
-                exportRing: { await MobileHostDiagnostics.log.export() }
-            )
-            transportSentryReporter = transportReporter
-            MobileHostDiagnostics.log.setEventTap { event in
-                transportReporter.ingest(event)
-            }
-            StartupBreadcrumbLog.append("appDelegate.didFinish.sentry.complete")
-        }
+        // Sentry crash reporting was removed from this fork.
 
         if telemetryEnabled && !isRunningUnderXCTest {
             StartupBreadcrumbLog.append("appDelegate.didFinish.posthog.begin")
@@ -2230,14 +2115,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     private func deferTerminateForOwnedCleanupAndFreshSnapshot(reason: String) -> Bool {
         let markedForKill = remoteTmuxController.windowsMarkedForKillOnClose()
-        let simulatorCleanupTasks = SimulatorPanel.beginApplicationTerminationCleanup()
         let hasSudoApprovalRuntime = sudoApprovalCoordinator?.requiresShutdown == true
         // A mirror that owes tmux a goodbye is owned cleanup too. Without this the app can quit
         // with the deferred phase never running, and the remote half keeps the tmux client —
         // along with the per-window size claims that pin those windows for everyone else.
         let mirrorsOwingDetach = remoteTmuxController.connectionsOwingDeliberateDetach.count
         let hasOwnedRuntimeCleanup = !markedForKill.isEmpty
-            || !simulatorCleanupTasks.isEmpty
             || mirrorsOwingDetach > 0
         let hasLocalTerminalSurfaces = hasLocalTerminalSurfacesForQuit
         guard hasOwnedRuntimeCleanup || hasLocalTerminalSurfaces
@@ -2249,7 +2132,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 "appDelegate.shouldTerminate.cleanupLater",
                 fields: [
                     "windows": String(markedForKill.count),
-                    "simulatorPanels": String(simulatorCleanupTasks.count),
                     "mirrorsOwingDetach": String(mirrorsOwingDetach),
                     "freshAgentIndex": "1",
                     "sudoApproval": hasSudoApprovalRuntime ? "1" : "0",
@@ -2267,17 +2149,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                     await self.remoteTmuxController.killMarkedSessionsBeforeTerminate()
                 }
                 guard !Task.isCancelled else { return }
-                for cleanupTask in simulatorCleanupTasks {
-                    await cleanupTask.value
-                    guard !Task.isCancelled else { return }
-                }
-                let simulatorCleanupSucceeded = await TerminalController.shared
-                    .simulatorCameraCleanupOwnershipScope
-                    .waitForPendingCleanup()
-                guard simulatorCleanupSucceeded else {
-                    self.cancelTerminationAfterSimulatorCleanupFailure()
-                    return
-                }
                 self.terminateCleanupPhase = .freshSnapshot
                 let ttyDeviceBindings = self.currentSurfaceTTYDeviceBindings()
                 // A complete census is useful when it is already warm, but it is
@@ -2321,18 +2192,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             }
             terminateOwnedCleanupTask = cleanupTask
             // Remote SSH cleanup force-stops its subprocess on cancellation.
-            // Simulator camera disable can legitimately consume its 120-second
-            // worker deadline before durable simctl rollback begins. The
-            // watchdog requests cancellation after that contract plus cleanup
-            // headroom. It cancels the actual panel and rollback tasks, joins
-            // rollback only for a bounded grace period, then explicitly cancels
-            // this quit request. Once owned cleanup succeeds, the fresh agent-index
-            // load is the only remaining work; its timeout falls back to cached
-            // indexes and lets termination proceed without reporting cleanup failure.
+            // Once owned cleanup succeeds, the fresh agent-index load is the
+            // only remaining work; its timeout falls back to cached indexes
+            // and lets termination proceed without reporting cleanup failure.
             var cleanupDeadline: Duration
-            if !simulatorCleanupTasks.isEmpty {
-                cleanupDeadline = .seconds(155)
-            } else if !markedForKill.isEmpty {
+            if !markedForKill.isEmpty {
                 cleanupDeadline = .milliseconds(8_500)
             } else {
                 cleanupDeadline = .seconds(5)
@@ -2366,26 +2230,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                     self.replyToTerminateOnce(true)
                     return
                 }
-                SimulatorPanel.cancelApplicationTerminationCleanup()
-                let cleanupJoined = await TerminalController.shared
-                    .simulatorCameraCleanupOwnershipScope
-                    .cancelPendingCleanupAndWait(timeout: .seconds(5))
-                StartupBreadcrumbLog.append(
-                    "appDelegate.shouldTerminate.cleanupDeadline",
-                    fields: ["rollbackJoined": cleanupJoined ? "1" : "0"]
-                )
-                self.cancelTerminationAfterSimulatorCleanupFailure()
+                StartupBreadcrumbLog.append("appDelegate.shouldTerminate.cleanupDeadline")
+                self.cancelTerminationAfterRuntimeCleanupFailure()
             }
         }
         return true
     }
 
-    private func cancelTerminationAfterSimulatorCleanupFailure() {
+    private func cancelTerminationAfterRuntimeCleanupFailure() {
         guard isAwaitingTerminateCleanup else { return }
         StartupBreadcrumbLog.append(
-            "appDelegate.shouldTerminate.simulatorCleanupFailed"
+            "appDelegate.shouldTerminate.runtimeCleanupFailed"
         )
-        SimulatorPanel.cancelApplicationTerminationCleanup()
         isTerminatingApp = false
         isQuitWarningConfirmed = false
         replyToTerminateOnce(false)
@@ -2394,12 +2250,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = String(
-            localized: "dialog.simulatorCameraCleanupFailed.title",
-            defaultValue: "Couldn’t Finish Simulator Cleanup"
+            localized: "dialog.runtimeCleanupFailed.title",
+            defaultValue: "Couldn’t Finish Cleanup"
         )
         alert.informativeText = String(
-            localized: "dialog.simulatorCameraCleanupFailed.message",
-            defaultValue: "cmux stayed open because it could not restore a Simulator app’s camera state. Quit again to retry cleanup."
+            localized: "dialog.runtimeCleanupFailed.message",
+            defaultValue: "cmux stayed open because cleanup before quitting did not finish. Quit again to retry."
         )
         alert.addButton(withTitle: String(localized: "common.ok", defaultValue: "OK"))
         _ = alert.runCmuxModal()
@@ -2413,7 +2269,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     private func prepareForConfirmedAppTermination() {
         isTerminatingApp = true
-        computerUseUXCoordinator.teardownForTermination()
         // Sudo broker observation and recovery must be released, but a slow
         // recovery join must not delay session persistence or AppKit termination.
         sudoApprovalCoordinator?.stopInBackgroundForTermination()
@@ -2524,7 +2379,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             } else {
                 reason = "policy"
             }
-            // Finish Simulator rollback and any explicitly marked remote-session
+            // Finish any explicitly marked remote-session
             // kills before AppKit begins synchronous process teardown.
             if deferTerminateForOwnedCleanupAndFreshSnapshot(reason: reason) {
                 return .terminateLater
@@ -2585,7 +2440,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         isTerminatingApp = true
         mainWindowLifecycleCoordinator.cancelAllWindowlessRouteFreezeTasks()
         MemoryPressureMonitor.shared.stop()
-        computerUseUXCoordinator.teardownForTermination()
         if needsTerminationSnapshotBackstop {
             _ = saveSessionSnapshotIncludingProcessDetectedIndexes(includeScrollback: true, removeWhenEmpty: false)
         }
@@ -2660,7 +2514,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         newMachineSheetPresenter: any NewMachineSheetPresenting,
         automationEngine: AutomationEngine,
         browserDataImportCoordinator: BrowserDataImportCoordinator,
-        computerUseRuntimeService: ComputerUseRuntimeService,
         devicesRegistry: DeviceSurfaceProviderRegistry? = nil,
         computersService: HiveComputersService? = nil
     ) {
@@ -2687,7 +2540,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         )
         self.newMachineSheetPresenter = newMachineSheetPresenter
         self.browserDataImportCoordinator = browserDataImportCoordinator
-        self.computerUseRuntimeService = computerUseRuntimeService
         let cloudUploader = CloudTelemetryUploader(
             auth: auth.coordinator, baseURL: CloudTelemetryUploader.telemetryBaseURL, client: .current()
         )
@@ -2798,9 +2650,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         TerminalController.shared.agentChatTranscriptService = agentChatTranscriptService
         TerminalController.shared.attachAutomationEngine(automationEngine)
         automationEngine.start()
-        if !isRunningUnderXCTest(ProcessInfo.processInfo.environment) {
-            TerminalController.shared.startSimulatorMutationRecovery()
-        }
         auth.start()
         ensureMobileWorkspaceListObserver(for: tabManager)
         MobileTerminalRenderObserver.shared.start()
@@ -11267,14 +11116,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         MenuBarOnlySettings.normalizeLegacyStoredPreference(defaults: defaults)
         syncActivationPolicy(defaults: defaults)
         syncMenuBarExtraVisibility(defaults: defaults)
-        computerUseUXCoordinator.install {
-            [weak self] workspaceID, surfaceID, effectIsCurrent in
-            _ = self?.focusTerminal(
-                tabId: workspaceID,
-                surfaceId: surfaceID,
-                while: effectIsCurrent
-            )
-        }
     }
 
     private func installMobileHostSettingsObserver() {
@@ -12510,10 +12351,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         )
     }
 
-    @objc func triggerSentryTestCrash(_ sender: Any?) {
-        guard SentrySDK.isEnabled else { return }
-        SentrySDK.crash()
-    }
 #endif
 
 #if DEBUG
@@ -15604,7 +15441,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return true
         }
         if cmuxCloseFocusedTerminalFindForEscape(event: event, appDelegate: self) { return true }
-        if handleSimulatorShortcutRouting(event) { return true }
         if matchConfiguredShortcut(event: event, action: .find) {
             if performFocusedDockShortcut(
                 .startFind,
@@ -18402,7 +18238,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 )
                 if workspace != nil { onExecuted?() }
                 return workspace != nil
-            case .newSimulator: return performConfiguredNewSimulatorAction(context: context, onExecuted: onExecuted)
+            case .newSimulator: return false // Simulator pane removed from this fork.
             case .newTerminal:
                 context.tabManager.newSurface()
                 onExecuted?()

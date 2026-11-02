@@ -1,7 +1,5 @@
 import CmuxSidebarInterpreterClient
 import CmuxSidebarRemoteRender
-import CmuxSimulator
-import CmuxSimulatorWorker
 import Darwin
 
 /// Routes a re-executed cmux process into its requested isolated worker mode.
@@ -23,9 +21,6 @@ struct CmuxWorkerEntrypoint {
                     arguments: arguments
                 )
             )
-        }
-        if arguments.contains(SimulatorWorkerClient.workerModeArgument) {
-            runSimulatorWorker()
         }
         if arguments.contains(RenderWorkerClient.workerModeArgument) {
             runSidebarRenderWorker()

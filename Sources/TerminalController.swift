@@ -29,7 +29,6 @@ import WebKit
 import CmuxSidebar
 import CmuxWorkspaces
 import CmuxNotifications
-import CmuxSimulator
 private let mobileReconnectDebugLog = Logger(subsystem: "dev.cmux", category: "mobile-reconnect-debug")
 extension Notification.Name {
     static let socketListenerDidStart = Notification.Name("cmux.socketListenerDidStart")
@@ -196,11 +195,6 @@ class TerminalController {
     /// `WorkspaceRemoteSessionController`; ownership moves to the composition root with the
     /// planned `RemoteSessionCoordinator` wiring.
     nonisolated let remoteProxyBroker: any RemoteProxyBrokering
-    /// App-owned location mutation scope injected into every Simulator pane.
-    let simulatorLocationOwnershipScope: SimulatorLocationOwnershipScope
-    /// App-owned camera cleanup scope injected into every Simulator pane.
-    let simulatorCameraCleanupOwnershipScope: SimulatorCameraCleanupOwnershipScope
-    private var simulatorMutationRecoveryTask: Task<Void, Never>?
     /// Process-wide native SSH master owner and per-host reconnect coordinator.
     nonisolated let nativeSSHConnectionBroker: NativeSSHConnectionBroker
     // Stateless Sendable structs from CmuxControlSocket; injected at construction.
@@ -641,28 +635,6 @@ class TerminalController {
                 )
             )
         }
-        let simulatorOwnershipFileManager = FileManager()
-        let simulatorApplicationSupportDirectory = simulatorOwnershipFileManager.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        )[0]
-        let simulatorDurableRecoveryDirectory = simulatorApplicationSupportDirectory
-            .appendingPathComponent(
-                "com.cmux.simulator-ownership",
-                isDirectory: true
-            )
-        let simulatorOwnershipDirectory = simulatorOwnershipFileManager.temporaryDirectory
-            .appendingPathComponent(
-                "com.cmux.simulator-ownership",
-                isDirectory: true
-            )
-        self.simulatorLocationOwnershipScope = SimulatorLocationOwnershipScope(
-            ownershipDirectory: simulatorOwnershipDirectory,
-            recoveryDirectory: simulatorDurableRecoveryDirectory
-        )
-        self.simulatorCameraCleanupOwnershipScope = SimulatorCameraCleanupOwnershipScope(
-            directory: simulatorOwnershipDirectory
-        )
         self.nativeSSHConnectionBroker = nativeSSHConnectionBroker
         let serverEventTarget = ServerEventTarget()
         let socketServer = SocketControlServer(
@@ -1145,29 +1117,6 @@ class TerminalController {
     @MainActor
     func attachCaffeineController(_ controller: CaffeineController) {
         caffeineController = controller
-    }
-
-    func startSimulatorMutationRecovery() {
-        guard simulatorMutationRecoveryTask == nil else { return }
-        let locationOwnershipScope = simulatorLocationOwnershipScope
-        let cameraOwnershipScope = simulatorCameraCleanupOwnershipScope
-        simulatorMutationRecoveryTask = Task { @MainActor [weak self] in
-            let service = SimulatorControlService(
-                locationOwnershipScope: locationOwnershipScope,
-                cameraCleanupOwnershipScope: cameraOwnershipScope
-            )
-            async let cameraSucceeded = service.recoverOrphanedCameraAuthorizations()
-            async let locationSucceeded = service.recoverOrphanedLocationRoutes()
-            let results = await (cameraSucceeded, locationSucceeded)
-            StartupBreadcrumbLog.append(
-                "simulator.mutation.launchRecovery",
-                fields: [
-                    "cameraSucceeded": results.0 ? "1" : "0",
-                    "locationSucceeded": results.1 ? "1" : "0",
-                ]
-            )
-            self?.simulatorMutationRecoveryTask = nil
-        }
     }
 
     func start(
@@ -15670,11 +15619,8 @@ class TerminalController {
                 connectionID: executionContext?.connectionID
             )
         case let method where method.hasPrefix("mobile.simulator."):
-            result = await v2MobileSimulatorDispatch(
-                method: method,
-                params: request.params,
-                connectionID: executionContext?.connectionID
-            )
+            // The Simulator pane was removed from this fork.
+            result = .err(code: "capability_disabled", message: "Simulator panes are disabled", data: nil)
         case let method where method.hasPrefix("mobile.todo."):
             result = v2MobileTodoDispatch(method: method, params: request.params)
         case "mobile.status.set", "mobile.status.cycle":

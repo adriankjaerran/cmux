@@ -496,7 +496,7 @@ extension TerminalController {
             ]
             methods.removeAll { workspaceChangesMethods.contains($0) }
         }
-        methods.append(contentsOf: ControlCommandExecutionPolicy.simulatorMethods)
+        // Simulator methods are not advertised: the Simulator pane was removed from this fork.
 #if DEBUG
         methods.append("chief.approve")
         methods.append("chief.answer")

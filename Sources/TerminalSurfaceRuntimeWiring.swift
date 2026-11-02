@@ -75,8 +75,6 @@ struct TerminalSurfaceViewFactory: TerminalSurfaceViewProviding {
 /// `SidebarWorkspaceDetailDefaults`, and `TerminalController`'s socket path).
 @MainActor
 final class TerminalSurfaceSpawnPolicyBridge: TerminalSurfaceSpawnPolicyProviding {
-    private let computerUseConfigStore = JSONConfigStore(fileURL: CmuxConfigLocation().userConfigFile)
-    private let computerUseEnabledKey = SettingCatalog().computerUse.enabled
 
     func currentSpawnPolicy() -> TerminalSurfaceSpawnPolicy {
         let integrations = AgentIntegrationSettingsStore(defaults: .standard)
@@ -95,10 +93,8 @@ final class TerminalSurfaceSpawnPolicyBridge: TerminalSurfaceSpawnPolicyProvidin
             shellIntegrationEnabled: UserDefaults.standard.object(forKey: "sidebarShellIntegration") as? Bool ?? true,
             watchGitStatusEnabled: SidebarWorkspaceDetailDefaults.watchGitStatusValue(defaults: .standard),
             showPullRequestsEnabled: SidebarWorkspaceDetailDefaults.showPullRequestsValue(defaults: .standard),
-            // `DisableComputerUse` (MDM) wins over the user setting on every
-            // spawn, so a new agent launch never receives the tools.
-            computerUseEnabled: computerUseConfigStore.snapshotValue(for: computerUseEnabledKey)
-                && !ManagedDevicePolicy().isEnforced(.disableComputerUse),
+            // Computer Use was removed from this fork.
+            computerUseEnabled: false,
             piHooksEnabled: integrations.piHooksEnabled
         )
     }

@@ -1364,7 +1364,7 @@ final class MobileHostIrxRuntime: MobileHostPairingRuntime {
                 // closes the previous session's lane.
                 Task {
                     let stream = lane.bidirectional()
-                    let handler = MobileHostIrohSimulatorStreamLaneHandler()
+                    let handler = MobileHostIrohRejectingSimulatorStreamLaneHandler()
                     let didTakeOwnership = await handler.handleSimulatorStreamLane(
                         resourceID: resource,
                         stream: stream,

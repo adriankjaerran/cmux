@@ -148,25 +148,8 @@ struct PanelContentView: View {
                 }
             }
         case .simulator:
-            if let simulatorPanel = panel as? SimulatorPanel {
-                if CmuxFeatureFlags.shared.isSimulatorEnabled,
-                   simulatorPanel.isFeatureReady {
-                    SimulatorPanelView(
-                        panel: simulatorPanel,
-                        isFocused: isFocused,
-                        isVisibleInUI: isVisibleInUI,
-                        allowsPointerInput: allowsPointerInput,
-                        pointerEntryEventFilter: pointerEntryEventFilter,
-                        appearance: appearance,
-                        onRequestPanelFocus: onRequestPanelFocus
-                    )
-                } else {
-                    SimulatorFeatureDisabledView(
-                        panel: simulatorPanel,
-                        appearance: appearance
-                    )
-                }
-            }
+            // The Simulator pane was removed from this fork.
+            EmptyView()
         case .agentSession:
             if let agentSessionPanel = panel as? AgentSessionPanel {
                 AgentSessionPanelView(

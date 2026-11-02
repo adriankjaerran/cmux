@@ -113,7 +113,7 @@ enum MobileHostIrxLegacyDialectServer {
             artifactHandler: MobileHostIrohArtifactLaneHandler(
                 registry: artifactTransfers
             ),
-            simulatorStreamHandler: MobileHostIrohSimulatorStreamLaneHandler()
+            simulatorStreamHandler: MobileHostIrohRejectingSimulatorStreamLaneHandler()
         )
         let supervisor = CmxIrohAdmittedConnectionSupervisor(
             runControl: {

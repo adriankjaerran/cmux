@@ -1,5 +1,4 @@
 import CmuxCloud
-import CmuxComputerUse
 import AppKit
 import CMUXMobileCore
 import CmuxWorkspaces
@@ -22,9 +21,6 @@ final class HostSettingsActions: SettingsHostActions {
     private let automationConfigStore: AutomationConfigStore
     private let openAutomationRulesFile: @MainActor (URL) -> Void
     private let reportAutomationRulesError: @MainActor (Error) -> Void
-    let computerUseRuntimeService: ComputerUseRuntimeService
-    var runComputerUseOnboardingAction:
-        @MainActor (ComputerUseOnboardingWindowController.StartingPoint) -> Void = { _ in }
     /// Serializes font-size config writes so rapid slider saves persist in order.
     private let fontConfigWriter = FontConfigWriter()
 
@@ -57,7 +53,6 @@ final class HostSettingsActions: SettingsHostActions {
 
     init(
         configFileURL: URL,
-        computerUseRuntimeService: ComputerUseRuntimeService,
         browserDataImportCoordinator: BrowserDataImportCoordinator,
         automationConfigStore: AutomationConfigStore = AutomationConfigStore(),
         openAutomationRulesFile: @escaping @MainActor (URL) -> Void = {
@@ -76,9 +71,7 @@ final class HostSettingsActions: SettingsHostActions {
             alert.runModal()
         },
         computersActions: ComputersSettingsActions? = nil,
-        cloudActivationCoordinator: CloudActivationCoordinator? = nil,
-        runComputerUseOnboardingAction:
-            @escaping @MainActor (ComputerUseOnboardingWindowController.StartingPoint) -> Void
+        cloudActivationCoordinator: CloudActivationCoordinator? = nil
     ) {
         self.computersActions = computersActions ?? ComputersSettingsActions()
         self.cloudActivationCoordinator = cloudActivationCoordinator
@@ -86,9 +79,7 @@ final class HostSettingsActions: SettingsHostActions {
         self.automationConfigStore = automationConfigStore
         self.openAutomationRulesFile = openAutomationRulesFile
         self.reportAutomationRulesError = reportAutomationRulesError
-        self.computerUseRuntimeService = computerUseRuntimeService
         self.browserDataImportCoordinator = browserDataImportCoordinator
-        self.runComputerUseOnboardingAction = runComputerUseOnboardingAction
         startObservingAppIconMode()
     }
 

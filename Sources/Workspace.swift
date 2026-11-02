@@ -790,9 +790,8 @@ extension Workspace {
             terminalSnapshot = nil; browserSnapshot = nil; markdownSnapshot = nil; filePreviewSnapshot = nil; rightSidebarToolSnapshot = nil
             customSidebarSnapshot = snapshot; agentSessionSnapshot = nil; projectSnapshot = nil
         case .simulator:
-            guard let snapshot = simulatorSessionSnapshot(for: panel) else { return nil }
-            terminalSnapshot = nil; browserSnapshot = nil; markdownSnapshot = nil; filePreviewSnapshot = nil; rightSidebarToolSnapshot = nil
-            simulatorSnapshot = snapshot; agentSessionSnapshot = nil; projectSnapshot = nil
+            // The Simulator pane was removed from this fork.
+            return nil
         case .agentSession:
             guard let agentPanel = panel as? AgentSessionPanel else { return nil }
             terminalSnapshot = nil
@@ -2384,7 +2383,7 @@ extension Workspace {
             applySessionPanelMetadata(snapshot, toPanelId: toolPanel.id)
             return toolPanel.id
         case .customSidebar: return restoreCustomSidebarPanel(from: snapshot, inPane: paneId)
-        case .simulator: return restoreSimulatorPanel(from: snapshot, inPane: paneId)
+        case .simulator: return nil // Simulator pane removed from this fork.
         case .agentSession:
             guard let agentSession = snapshot.agentSession,
                   let agentPanel = newAgentSessionSurface(
@@ -4746,7 +4745,7 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         switch action {
         case .mobileConnect: return CmuxFeatureFlags.shared.isMobileConnectButtonEnabled
         case .newAgentChat: return CmuxFeatureFlags.shared.isAgentChatUIEnabled
-        case .newSimulator: return CmuxFeatureFlags.shared.isSimulatorEnabled
+        case .newSimulator: return false
         case .newBrowser:
             return BrowserAvailabilitySettings.offersBrowserAffordance(
                 isEnabled: BrowserAvailabilitySettings.isEnabled()
@@ -15448,7 +15447,7 @@ extension Workspace: BonsplitDelegate {
                     )
                 }
             case .newSimulator:
-                _ = newSimulatorSurface(inPane: pane, focus: true)
+                NSSound.beep() // Simulator pane removed from this fork.
             case .copyWorkingDirectory, .copyProjectRoot, .copyScreen:
                 if let copyAction = builtInAction.terminalCopyAction {
                     // Target the tab selected in the pane whose button was
