@@ -15175,18 +15175,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return true
         }
 
-        // Open Chief: toggles Home, so the same keys return to the workspace.
-        // When chief.enabled is off the shortcut is not consumed, so the
-        // keystroke still reaches the focused surface.
-        if matchConfiguredShortcut(event: event, action: .openChief),
-           openChiefHome(
-               preferredWindow: preferredMainWindowContextForShortcutRouting(event: event)?.window,
-               toggle: true,
-               source: "shortcut.openChief"
-           ) {
-            return true
-        }
-
         if commandPaletteEffectiveInTargetWindow {
             if matchConfiguredShortcut(event: event, action: .commandPalette) {
                 let targetWindow = commandPaletteTargetWindow ?? event.window ?? shortcutRoutingActiveWindow

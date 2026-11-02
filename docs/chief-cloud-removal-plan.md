@@ -63,7 +63,8 @@ and rebuild. Check the same in `~/Applications/cmux Personal.app` after the fina
 - ⬜ The cmux agent works: `cmux_overview`, `cmux_sessions`, `cmux_send` with **multi-line** text (that's
   `send --paste`), `cmux_message_agent`, `cmux_config`.
 - ⬜ `T="$HOME/Library/Developer/Xcode/DerivedData/cmux-test/Build/Products/Debug/cmux DEV test.app/Contents/Resources/bin/cmux"`,
-  then `"$T" --version`, `"$T" config doctor` (clean), `"$T" tree --all`.
+  **and `export CMUX_SOCKET_PATH=/tmp/cmux-debug-test.sock; unset CMUX_WORKSPACE_ID CMUX_SURFACE_ID CMUX_TAB_ID`**
+  (shells inside cmux Personal point at `/tmp/cmux-debug-mine.sock`; without this the checks hit Personal), then `"$T" --version`, `"$T" config doctor` (clean), `"$T" tree --all`.
 - ⬜ ⌘Q the test app and open it again: everything comes back.
 - ⬜ Commit. Don't install into cmux Personal until the end (see the last section).
 
@@ -89,9 +90,9 @@ and `Workspace+TerminalRespawn.swift`. `agent message` / `agent.message.*` (not 
 **Done:** commit "Phase 8.1: Chief off for good". As planned. `startChiefIfEnabled()` body is now empty (no
 early `return` before dead code). The Home-group drop on restore matches the literal `"cmux.chief.home"` (not
 `ChiefHomeNavigation.homeGroupExternalID`) so it survives 8.3/8.4. Checked by CLI: build, `--version`,
-`config doctor` clean, `tree --all` matches baseline (14 workspaces, 16 terminals, 1 browser), no `chief`
-in `system.capabilities`, a new terminal running `claude` showed `claude_code=Idle` in `sidebar-state` and
-the status went away after closing it. Not checked (needs clicking): ⌘⇧P, View menu, pinned row, group
+`config doctor` clean. Correction (written in 8.2): the 8.1 `tree`/`capabilities`/`claude` checks went to
+cmux Personal, not the test app, because `CMUX_SOCKET_PATH=/tmp/cmux-debug-mine.sock` is set in shells inside
+Personal. They were redone against the test app after 8.2 (see 8.2). Not checked (needs clicking): ⌘⇧P, View menu, pinned row, group
 unpin/delete, ⌘Q restore, cmux agent tools, notifications.
 
 **What it removes:** nothing yet. Chief can no longer be switched on, and the Home rules stop applying.
@@ -122,7 +123,29 @@ flip UI on a config change; with `isEnabled` false the views it gates find nothi
 - ⬜ The pinned cmux row still can't be closed or unpinned. Close its terminal: a fresh agent starts.
 - ⬜ A group (e.g. Obsidian) can be unpinned and deleted.
 
-### ⬜ 8.2 Chief commands, menus, settings card and shortcut (M, low risk)
+### ✅ 8.2 Chief commands, menus, settings card and shortcut (M, low risk)
+
+**Done:** commit "Phase 8.2: ...". Differs from the plan:
+- `Sources/Chief/ChiefSettingsCard.swift`, `ChiefSettingsPanel.swift`, `ChiefSettingsActions.swift`,
+  `ChiefSettingsBrainHint.swift`, `ChiefSettingsStrings.swift` are **kept**: they are the settings drawer inside the
+  Chief pane (`ChiefTranscriptView`), not the Settings window card. They go with the rest of `Sources/Chief/` in 8.4.
+- Also removed: the `palette.newChiefSplit` palette command, the View menu `chiefEnabled` `@AppStorage` in
+  `cmuxApp.swift`, the `chief.*` mobile route in `TerminalController.swift` (`chiefMobileResult`), the
+  `chief.*` async route in `TerminalController+ControlSocketAsync.swift`, `chief` from `topLevelCommandNames`
+  (`CMUXCLI+CommandSuggestions.swift`), the `chief` pre-focus rule (`CMUXCLI+WindowDispatch.swift`), the `chief …`
+  lines in `CMUXCLI+TaskHelp.swift`, the `ChiefCommand` facade (`CLI/Commands/SystemCommands.swift`), and the
+  pbxproj entries of the missing test files `CLIChiefDispatchPlanTests.swift` and `ChiefControlRequestTests.swift`.
+  The chief rows in `ControlCommandExecutionPolicyTests.swift` went too.
+- `SidebarChiefHomeRow.shortcutKeys` now returns `nil` (it read `.openChief`); the row goes in 8.3.
+- Left for Phase 9: `chief.*` entries in `Sources/Mobile/MobileHostService+Capabilities.swift` and
+  `+TicketAuthorization.swift`; the relay deny-list for `chief.*` in `CmuxRemoteWorkspace`. Localized strings
+  for the removed text are left in the `.xcstrings` files.
+- `new-pane`/`new-surface --type chief` stay until 8.3.
+Checked against the test app: `--version`, `config doctor` clean (cmux.json still has `"chief"`), `tree --all`
+has the same workspace names as Personal, `chief status` → "Unknown command 'chief'", `rpc chief.status` →
+`method_not_found`, `config get chief.enabled` → `false`, no `chief` in `system.capabilities`, a new terminal
+running `claude` showed `claude_code=Idle`, then `Running` during a prompt, then `Idle`; closing it cleared the
+status.
 
 **What it removes:** every way to reach Chief: `cmux chief …`, the `chief.*` socket methods, the Chief card in
 Settings → Automation, the "Open Chief" menu item, palette commands and shortcut.
@@ -156,8 +179,8 @@ chief.enabled` should still work.
 An old NIGHTLY CLI calling `chief.*` now gets "unknown method"; you don't call it.
 
 - ⬜ Standard checks. `config doctor` clean with `"chief": {"enabled": false}` still in `cmux.json`.
-- ⬜ `"$T" chief status` → unknown command. `"$T" rpc chief.status` → unknown method.
-- ⬜ `"$T" config get chief.enabled` → `false`.
+- ✅ `"$T" chief status` → unknown command. `"$T" rpc chief.status` → unknown method.
+- ✅ `"$T" config get chief.enabled` → `false`.
 - ⬜ Settings → Automation has no Chief card. Settings → Keyboard Shortcuts has no "Open Chief".
 
 ### ⬜ 8.3 Chief panes out of workspaces, Dock, sidebar and drag-and-drop (M, medium risk)

@@ -36,7 +36,6 @@ extension ShortcutAction {
         case .goToAnyWorkspace: return String(localized: "menu.file.goToAnyWorkspace", defaultValue: "Go to Any Workspace…")
         case .commandPalette: return String(localized: "menu.file.commandPalette", defaultValue: "Command Palette…")
         case .agentInbox: return String(localized: "shortcut.agentInbox.label", defaultValue: "Show Agent Inbox")
-        case .openChief: return String(localized: "shortcut.openChief.label", defaultValue: "Open Chief")
         case .commandPaletteNext: return "Command Palette: Next"
         case .commandPalettePrevious: return "Command Palette: Previous"
         case .showNotifications: return "Show Notifications"

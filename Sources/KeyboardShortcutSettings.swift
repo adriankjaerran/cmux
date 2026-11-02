@@ -106,7 +106,6 @@ enum KeyboardShortcutSettings {
         case goToAnyWorkspace
         case commandPalette
         case agentInbox
-        case openChief
         case commandPaletteNext
         case commandPalettePrevious
         case showNotifications
@@ -265,7 +264,6 @@ enum KeyboardShortcutSettings {
             case .goToAnyWorkspace: return String(localized: "menu.file.goToAnyWorkspace", defaultValue: "Go to Any Workspace…")
             case .commandPalette: return String(localized: "menu.file.commandPalette", defaultValue: "Command Palette…")
             case .agentInbox: return String(localized: "shortcut.agentInbox.label", defaultValue: "Show Agent Inbox")
-            case .openChief: return String(localized: "shortcut.openChief.label", defaultValue: "Open Chief")
             case .commandPaletteNext: return String(localized: "shortcut.commandPaletteNext.label", defaultValue: "Command Palette: Next")
             case .commandPalettePrevious: return String(localized: "shortcut.commandPalettePrevious.label", defaultValue: "Command Palette: Previous")
             case .showNotifications: return String(localized: "shortcut.showNotifications.label", defaultValue: "Show Notifications")
@@ -489,8 +487,6 @@ enum KeyboardShortcutSettings {
                 return .unbound
             case .agentInbox:
                 return StoredShortcut(key: "i", command: true, shift: true, option: false, control: false)
-            case .openChief:
-                return StoredShortcut(key: "c", command: true, shift: true, option: false, control: false)
             case .commandPaletteNext:
                 return StoredShortcut(key: "n", command: false, shift: false, option: false, control: true)
             case .commandPalettePrevious:

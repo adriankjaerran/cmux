@@ -172,11 +172,8 @@ struct SidebarChiefHomeBackRow: View {
         .accessibilityIdentifier("SidebarChiefHomeBackToWorkspaces")
     }
 
-    /// The Open Chief shortcut (it toggles Home); nil when unbound.
-    private static var shortcutKeys: String? {
-        let shortcut = KeyboardShortcutSettings.shortcut(for: .openChief)
-        return shortcut.isUnbound ? nil : shortcut.displayString
-    }
+    /// Fork: the Open Chief shortcut was removed, so there are no keys to show.
+    private static var shortcutKeys: String? { nil }
 
     private func font(_ baseSize: CGFloat, weight: Font.Weight) -> Font {
         .system(

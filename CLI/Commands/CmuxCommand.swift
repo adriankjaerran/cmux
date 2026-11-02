@@ -209,7 +209,6 @@ struct CmuxCommand: AsyncParsableCommand {
             SudoCommand.self,
             VaultCommand.self,
             TodoCommand.self,
-            ChiefCommand.self,
             CommentsCommand.self,
             SidebarCommand.self,
             PullRequestCommand.self,

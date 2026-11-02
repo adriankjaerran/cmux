@@ -98,7 +98,7 @@ extension KeyboardShortcutSettings.Action {
              .toggleSidebar, .focusSidebar, .showWindowHints, .newTab, .newLocalWorkspace, .newBrowserWorkspace, .newCloudWorkspace, .newCloudMachine,
              .saveLayoutTemplate, .openFolder,
              .reopenPreviousSession, .goToWorkspace, .goToAnyWorkspace,
-             .commandPalette, .agentInbox, .openChief,
+             .commandPalette, .agentInbox,
              .showNotifications, .jumpToUnread, .jumpToLastPrompt, .toggleUnread,
              .markOldestUnreadAndJumpNext,
              .markAllNotificationsRead, .clearAllNotifications,

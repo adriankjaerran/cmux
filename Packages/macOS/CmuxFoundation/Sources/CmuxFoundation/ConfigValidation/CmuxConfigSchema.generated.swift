@@ -2599,7 +2599,6 @@ enum CmuxEmbeddedConfigSchema {
               "goToAnyWorkspace",
               "commandPalette",
               "agentInbox",
-              "openChief",
               "commandPaletteNext",
               "commandPalettePrevious",
               "showNotifications",
