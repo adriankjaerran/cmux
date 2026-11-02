@@ -133,6 +133,54 @@ public final class SidebarJSRuntime {
             .call(withArguments: [nodeId, event, json])
     }
 
+    // MARK: - Keyboard mode
+
+    /// Whether the program registered an `onKey` handler, i.e. it can run
+    /// sidebar keyboard mode.
+    public var handlesKeys: Bool {
+        guard let context, errorMessage == nil else { return false }
+        return context.objectForKeyedSubscript("__hasKeyHandler")?
+            .call(withArguments: [])?.toBool() ?? false
+    }
+
+    /// Turns the program's `keyboardMode()` signal on or off.
+    public func setKeyboardMode(_ active: Bool) {
+        guard let context else { return }
+        context.objectForKeyedSubscript("__setKeyboardMode")?
+            .call(withArguments: [active])
+    }
+
+    /// Delivers one key press to the program's `onKey` handler.
+    ///
+    /// Runs as a user gesture (like a click), so the handler may write the
+    /// clipboard. A program error or a missing handler reads as unhandled.
+    public func dispatchKey(_ key: SidebarKeyPress) -> SidebarKeyResult {
+        guard let context, errorMessage == nil else { return .unhandled }
+        let payload: [String: Any] = [
+            "key": key.key,
+            "shift": key.shift,
+            "command": key.command,
+            "option": key.option,
+            "control": key.control,
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8) else { return .unhandled }
+        userActivationDepth += 1
+        defer { userActivationDepth -= 1 }
+        guard let raw = context.objectForKeyedSubscript("__key")?
+            .call(withArguments: [json])?.toString(),
+              errorMessage == nil else {
+            return .unhandled
+        }
+        return SidebarKeyResult(json: raw)
+    }
+
+    /// Evaluates `script` in the live program context and returns its value
+    /// as a string (tests drive the prelude's pure helpers through this).
+    func evaluateForTesting(_ script: String) -> String? {
+        context?.evaluateScript(script)?.toString()
+    }
+
     // MARK: - Clipboard
 
     /// Backs `clipboard.write(text)`: writes plain text through the host's

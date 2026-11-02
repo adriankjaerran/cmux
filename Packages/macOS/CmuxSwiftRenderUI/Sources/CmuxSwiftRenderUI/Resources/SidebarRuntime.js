@@ -490,8 +490,135 @@
   });
 
   // ---------------------------------------------------------------------
+  // Keyboard mode
+  // ---------------------------------------------------------------------
+  // The host's Focus Sidebar shortcut puts the window in "sidebar keyboard
+  // mode": the terminal stops getting keys and every key-down goes to the
+  // program's `onKey(fn)` handler instead. `keyboardMode()` is a reactive
+  // read of whether that mode is on (draw a cursor ring with it);
+  // `onKeyboardMode(fn)` runs on every change. A sidebar without `onKey`
+  // never enters the mode.
+  //
+  // fn({ key, shift, command, option, control }) gets the key as "up",
+  // "down", "left", "right", "return", "space", "escape", "tab", "delete",
+  // or the typed character ("c"). It returns:
+  //   true / { handled: true }  - consumed, stay in the mode
+  //   false / undefined         - not handled: the host ends the mode and
+  //                               the key goes on to its normal target
+  //   { exit: true }            - consumed, leave the mode (focus returns
+  //                               to the panel that had it)
+  //   { open: workspaceId }     - consumed, leave the mode, select that
+  //                               workspace and focus its terminal
+  let keyHandler = null;
+  let keyModeHandler = null;
+  const [keyboardActive, setKeyboardActive] = createSignal(false);
+  g.keyboardMode = () => keyboardActive();
+  g.onKey = (fn) => {
+    keyHandler = typeof fn === "function" ? fn : null;
+  };
+  g.onKeyboardMode = (fn) => {
+    keyModeHandler = typeof fn === "function" ? fn : null;
+  };
+
+  // Pure list navigation for keyboard mode, shared by sidebars built from a
+  // flat row list with collapsible groups.
+  //
+  // rows: the VISIBLE rows, top to bottom. A group header is
+  //   { id, header: true, group, collapsed }; any other row is
+  //   { id, group } (group null/undefined when ungrouped). Members of a
+  //   collapsed group are simply not in the list.
+  // cursor: the current row id (an id not in `rows` starts at the top).
+  // key: the onKey key string.
+  //
+  // Returns { cursor, handled } plus at most one effect:
+  //   collapse / expand / toggle: group id to change
+  //   open: row id to open (Return/Space on a non-header row)
+  //   exit: true (Escape)
+  // Up/Down stop at the ends. Left on a row in a group jumps to its header
+  // and collapses the group; Left on an expanded header collapses it.
+  // Right on a collapsed header expands it; on an expanded header it steps
+  // into the first member. Return/Space toggle a header and open a row.
+  g.sidebarKeyNav = (rows, cursor, key) => {
+    const list = Array.isArray(rows) ? rows : [];
+    let at = list.findIndex((r) => r && r.id === cursor);
+    if (at < 0) at = list.length > 0 ? 0 : -1;
+    const row = at >= 0 ? list[at] : null;
+    const out = { cursor: row ? row.id : null, handled: true };
+    const headerOf = (group) => list.find((r) => r.header && r.group === group);
+    switch (key) {
+      case "up":
+        if (at > 0) out.cursor = list[at - 1].id;
+        return out;
+      case "down":
+        if (at >= 0 && at < list.length - 1) out.cursor = list[at + 1].id;
+        return out;
+      case "left":
+        if (!row) return out;
+        if (row.header) {
+          if (!row.collapsed) out.collapse = row.group;
+        } else if (row.group) {
+          const header = headerOf(row.group);
+          if (header) {
+            out.cursor = header.id;
+            if (!header.collapsed) out.collapse = row.group;
+          }
+        }
+        return out;
+      case "right":
+        if (!row || !row.header) return out;
+        if (row.collapsed) {
+          out.expand = row.group;
+        } else {
+          const next = list[at + 1];
+          if (next && !next.header && next.group === row.group) out.cursor = next.id;
+        }
+        return out;
+      case "return":
+      case "space":
+        if (!row) return out;
+        if (row.header) out.toggle = row.group;
+        else out.open = row.id;
+        return out;
+      case "escape":
+        out.exit = true;
+        return out;
+      default:
+        out.handled = false;
+        return out;
+    }
+  };
+
+  // ---------------------------------------------------------------------
   // Host entry points
   // ---------------------------------------------------------------------
+  g.__hasKeyHandler = () => keyHandler !== null;
+
+  g.__setKeyboardMode = (on) => {
+    const active = !!on;
+    setKeyboardActive(active);
+    if (keyModeHandler) keyModeHandler(active);
+    runPending();
+  };
+
+  // Returns a JSON string { handled, exit, open } for the host.
+  g.__key = (json) => {
+    if (!keyHandler) return JSON.stringify({ handled: false });
+    let result;
+    try {
+      result = keyHandler(JSON.parse(json));
+    } finally {
+      runPending();
+    }
+    if (result === true) return JSON.stringify({ handled: true });
+    if (!result || typeof result !== "object") return JSON.stringify({ handled: false });
+    const open = result.open === undefined || result.open === null ? null : String(result.open);
+    return JSON.stringify({
+      handled: result.handled !== false || open !== null || !!result.exit,
+      exit: !!result.exit || open !== null,
+      open,
+    });
+  };
+
   g.__setData = (key, json) => {
     dataSignal(key)[1](JSON.parse(json));
     runPending();

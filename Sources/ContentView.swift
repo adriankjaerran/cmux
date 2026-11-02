@@ -1091,6 +1091,8 @@ struct ContentView: View {
     @State private var commandPalettePendingActivation: CommandPalettePendingActivation?
     @State private var commandPaletteResultsRevision: UInt64 = 0
     @State private var commandPaletteUsageHistoryByCommandId: [String: CommandPaletteUsageEntry] = [:]
+    /// Fork: ⌘⇧P (Go to Any Workspace) sets this; ⌘P hides workspaces in collapsed folders.
+    @State private var commandPaletteSwitcherIncludesCollapsedFolders = false
     @State private var isFeedbackComposerPresented = false
     @AppStorage(AppCatalogSection().renameSelectsExistingName.userDefaultsKey)
     private var commandPaletteRenameSelectAllOnFocus = AppCatalogSection().renameSelectsExistingName.defaultValue
@@ -3179,7 +3181,8 @@ struct ContentView: View {
                 keyWindow: NSApp.keyWindow,
                 mainWindow: NSApp.mainWindow
             ) else { return }
-            openCommandPaletteSwitcher()
+            let includeCollapsed = (notification.userInfo?[CommandPaletteSwitcherRequestKeys.includeCollapsedFolders] as? Bool) ?? false
+            openCommandPaletteSwitcher(includeCollapsedFolders: includeCollapsed)
         })
 
         view = AnyView(view.onReceive(NotificationCenter.default.publisher(for: .defaultTerminalRegistrationDidChange)) { _ in
@@ -5463,7 +5466,7 @@ struct ContentView: View {
         }
 
         if let kindLabel = command.kindLabel {
-            return CommandPaletteRenderTrailingLabel(text: kindLabel, style: .kind)
+            return CommandPaletteRenderTrailingLabel(text: kindLabel, style: command.kindLabelIsRunning ? .running : .kind)
         }
         return nil
     }
@@ -5475,7 +5478,8 @@ struct ContentView: View {
                 title: result.command.title,
                 matchedIndices: result.titleMatchIndices,
                 trailingLabel: commandPaletteRenderTrailingLabel(for: result.command),
-                badgeCount: result.command.badgeCount
+                badgeCount: result.command.badgeCount,
+                leadingLabel: result.command.leadingLabel
             )
         }
         let selectedIndex = commandPaletteSelectedIndex(resultCount: rows.count)
@@ -5798,6 +5802,14 @@ struct ContentView: View {
         }
         var fingerprint = CommandPaletteSwitcherFingerprintContext.fingerprint(windowContexts: fingerprintContexts)
         fingerprint = fingerprint &* 31 &+ workspaceOrder.rawValue.hashValue
+        fingerprint = fingerprint &* 31 &+ (commandPaletteSwitcherIncludesCollapsedFolders ? 1 : 0)
+        for context in windowContexts {
+            for group in context.tabManager.workspaceGroups {
+                fingerprint = fingerprint &* 31 &+ group.id.hashValue
+                fingerprint = fingerprint &* 31 &+ group.name.hashValue
+                fingerprint = fingerprint &* 31 &+ (group.isCollapsed ? 1 : 0)
+            }
+        }
         if workspaceOrder == .recent {
             for context in windowContexts {
                 fingerprint = fingerprint &* 31 &+ Int(truncatingIfNeeded: context.tabManager.focusHistoryRevision)
@@ -5854,6 +5866,12 @@ struct ContentView: View {
                     .cmuxFont(size: 11, weight: .regular)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+            case .running:
+                // Same blue as "run" in Resources/sidebars/compact.js (#4C8DFF).
+                Text(trailingLabel.text)
+                    .cmuxFont(size: 11, weight: .regular)
+                    .foregroundStyle(Color(red: 0x4C / 255, green: 0x8D / 255, blue: 0xFF / 255))
+                    .lineLimit(1)
             }
         }
     }
@@ -5862,9 +5880,19 @@ struct ContentView: View {
         title: String,
         matchedIndices: Set<Int>,
         trailingLabel: CommandPaletteRenderTrailingLabel?,
-        badgeCount: Int = 0
+        badgeCount: Int = 0,
+        leadingLabel: String? = nil
     ) -> some View {
         HStack(spacing: 8) {
+            if let leadingLabel {
+                // Fork: sidebar folder name in a fixed column so titles stay aligned.
+                Text(leadingLabel)
+                    .cmuxFont(size: 11, weight: .regular)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(width: 110, alignment: .leading)
+            }
             commandPaletteHighlightedTitleText(
                 title,
                 matchedIndices: matchedIndices
@@ -6019,6 +6047,7 @@ struct ContentView: View {
             for workspace in workspaces {
                 let workspaceName = workspaceDisplayName(workspace)
                 let workspaceCommandId = "switcher.workspace.\(workspace.id.uuidString.lowercased())"
+                let folderLabel = commandPaletteWorkspaceFolderLabel(for: workspace, in: context.tabManager)
                 let workspaceKeywords = CommandPaletteSwitcherSearchIndexer(
                     baseKeywords: [
                         "workspace",
@@ -6026,7 +6055,7 @@ struct ContentView: View {
                         "go",
                         "open",
                         workspaceName
-                    ] + windowKeywords,
+                    ] + (folderLabel.isEmpty ? [] : [folderLabel]) + windowKeywords,
                     metadata: commandPaletteWorkspaceSearchMetadata(for: workspace),
                     detail: .workspace
                 ).keywords
@@ -6042,6 +6071,8 @@ struct ContentView: View {
                         keywords: workspaceKeywords,
                         dismissOnRun: true,
                         badgeCount: TerminalNotificationStore.shared.unreadCount(forTabId: workspace.id),
+                        leadingLabel: folderLabel,
+                        kindLabelIsRunning: CommandPaletteWorkspaceActivity.isRunning(agents: commandPaletteWorkspaceActivityAgents(for: workspace)),
                         action: {
                             focusCommandPaletteSwitcherTarget(
                                 windowId: windowId,
@@ -6087,6 +6118,7 @@ struct ContentView: View {
                             kindLabel: surfaceKindLabel,
                             keywords: surfaceKeywords,
                             dismissOnRun: true,
+                            leadingLabel: "",
                             action: {
                                 focusCommandPaletteSwitcherSurfaceTarget(
                                     windowId: windowId,
@@ -6124,6 +6156,7 @@ struct ContentView: View {
                     kindLabel: cloudWorkspaceKind,
                     keywords: keywords,
                     dismissOnRun: true,
+                    leadingLabel: "",
                     action: {
                         self.openCommandPaletteCloudWorkspace(target)
                     }
@@ -6217,13 +6250,39 @@ struct ContentView: View {
             context.tabManager.tabs.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
         )
-        return orderedIDs.compactMap { workspacesByID[$0] }
+        let ordered = orderedIDs.compactMap { workspacesByID[$0] }
+        guard !commandPaletteSwitcherIncludesCollapsedFolders else { return ordered }
+        // Fork: ⌘P lists what the sidebar shows; workspaces inside collapsed
+        // folders only appear in ⌘⇧P. The selected workspace always stays.
+        let collapsedGroupIDs = Set(context.tabManager.workspaceGroups.filter(\.isCollapsed).map(\.id))
+        guard !collapsedGroupIDs.isEmpty else { return ordered }
+        return ordered.filter { workspace in
+            guard let groupId = workspace.groupId else { return true }
+            return workspace.id == selectedWorkspaceId || !collapsedGroupIDs.contains(groupId)
+        }
+    }
+
+    /// Fork: the sidebar folder name shown left of a ⌘P row ("" when the
+    /// workspace is in no folder, so titles stay aligned).
+    private func commandPaletteWorkspaceFolderLabel(for workspace: Workspace, in tabManager: TabManager) -> String {
+        guard let groupId = workspace.groupId,
+              let group = tabManager.workspaceGroups.first(where: { $0.id == groupId }) else { return "" }
+        return group.name
     }
 
     /// Fork: short activity note for a ⌘P workspace row ("waiting",
     /// "running 3m", "done 4m"), or nil when nothing has happened there.
     private func commandPaletteWorkspaceActivityLabel(for workspace: Workspace) -> String? {
-        let agents = workspace.customSidebarAgentSnapshots().map { agent in
+        CommandPaletteWorkspaceActivity.label(
+            agents: commandPaletteWorkspaceActivityAgents(for: workspace),
+            lastCommandFinishedAt: CommandPaletteWorkspaceActivityRecorder.shared.lastCommandFinished(workspaceId: workspace.id),
+            lastNotificationAt: TerminalNotificationStore.shared.latestNotification(forTabId: workspace.id)?.createdAt,
+            now: Date()
+        )
+    }
+
+    private func commandPaletteWorkspaceActivityAgents(for workspace: Workspace) -> [CommandPaletteWorkspaceActivity.Agent] {
+        workspace.customSidebarAgentSnapshots().map { agent in
             let state: CommandPaletteWorkspaceActivity.Agent.State
             switch agent.status {
             case "needs_input": state = .needsInput
@@ -6233,12 +6292,6 @@ struct ContentView: View {
             }
             return CommandPaletteWorkspaceActivity.Agent(state: state, lastActivityAt: agent.lastActivityAt)
         }
-        return CommandPaletteWorkspaceActivity.label(
-            agents: agents,
-            lastCommandFinishedAt: CommandPaletteWorkspaceActivityRecorder.shared.lastCommandFinished(workspaceId: workspace.id),
-            lastNotificationAt: TerminalNotificationStore.shared.latestNotification(forTabId: workspace.id)?.createdAt,
-            now: Date()
-        )
     }
 
     private var commandPaletteWorkspaceOrder: WorkspaceSwitcherOrder {
@@ -10325,19 +10378,24 @@ struct ContentView: View {
         agentInboxItems = []
     }
 
-    private func openCommandPaletteSwitcher() {
+    private func openCommandPaletteSwitcher(includeCollapsedFolders: Bool = false) {
         invalidateCommandPaletteCloudWorkspaceTargets()
-        handleCommandPaletteListRequest(scope: .switcher)
+        // Switching between ⌘P and ⌘⇧P while open swaps the list instead of closing.
+        let modeChanged = isCommandPalettePresented
+            && commandPaletteSwitcherIncludesCollapsedFolders != includeCollapsedFolders
+        commandPaletteSwitcherIncludesCollapsedFolders = includeCollapsedFolders
+        handleCommandPaletteListRequest(scope: .switcher, forceReset: modeChanged)
     }
 
-    private func handleCommandPaletteListRequest(scope: CommandPaletteListScope) {
+    private func handleCommandPaletteListRequest(scope: CommandPaletteListScope, forceReset: Bool = false) {
         let initialQuery = (scope == .commands) ? Self.commandPaletteCommandsPrefix : ""
         guard isCommandPalettePresented else {
             presentCommandPalette(initialQuery: initialQuery)
             return
         }
 
-        if case .commands = commandPaletteMode,
+        if !forceReset,
+           case .commands = commandPaletteMode,
            commandPaletteListScope == scope {
             dismissCommandPalette()
             return
@@ -13142,6 +13200,7 @@ struct VerticalTabsSidebar: View, Equatable {
                         rendersInProcess: inMemoryTemplatePreview != nil || customSidebarRenderer == .inProcess,
                         client: $sidebarRenderWorkerClient
                     )
+                    .environment(\.customSidebarKeyboard, sidebarState.customSidebarKeyboard)
                 }
             }
             .mask(

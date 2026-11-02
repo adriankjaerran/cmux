@@ -6204,11 +6204,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         )
     }
 
-    func requestCommandPaletteSwitcher(preferredWindow: NSWindow? = nil, source: String = "api.commandPaletteSwitcher") {
+    func requestCommandPaletteSwitcher(
+        preferredWindow: NSWindow? = nil,
+        source: String = "api.commandPaletteSwitcher",
+        includeCollapsedFolders: Bool = false
+    ) {
         postCommandPaletteRequest(
             kind: .switcher,
             preferredWindow: preferredWindow,
-            source: source
+            source: source,
+            userInfo: [CommandPaletteSwitcherRequestKeys.includeCollapsedFolders: includeCollapsedFolders]
         )
     }
 
@@ -15115,6 +15120,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             }
         }
 
+        // Custom-sidebar keyboard mode (Focus Sidebar with a JS sidebar):
+        // every key belongs to the sidebar until it hands one back.
+        if CustomSidebarKeyboardMode.shared.isActive,
+           handleCustomSidebarKeyboardModeKey(event, in: resolvedShortcutEventWindow(event) ?? NSApp.keyWindow) {
+            return true
+        }
+
         if let textBoxShortcutTabManager = terminalTextShortcutBypassTabManagerBeforeContextResolution(
             event: event,
             normalizedFlags: flags.subtracting([.numericPad, .function, .capsLock])
@@ -15454,6 +15466,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 return true
             }
 
+            if !hasFocusedAddressBarInShortcutContext,
+               matchConfiguredShortcut(event: event, action: .goToAnyWorkspace) {
+                let targetWindow = commandPaletteTargetWindow ?? event.window ?? shortcutRoutingActiveWindow
+                requestCommandPaletteSwitcher(preferredWindow: targetWindow, source: "shortcut.goToAnyWorkspace", includeCollapsedFolders: true)
+                return true
+            }
+
             if activeConfiguredShortcutChordPrefixForCurrentEvent == nil,
                armConfiguredShortcutChordIfNeeded(event: event, actions: [.commandPalette]) {
                 return true
@@ -15461,7 +15480,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
             if activeConfiguredShortcutChordPrefixForCurrentEvent == nil,
                !hasFocusedAddressBarInShortcutContext,
-               armConfiguredShortcutChordIfNeeded(event: event, actions: [.goToWorkspace]) {
+               armConfiguredShortcutChordIfNeeded(event: event, actions: [.goToWorkspace, .goToAnyWorkspace]) {
                 return true
             }
         }
@@ -15721,6 +15740,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return true
         }
 
+        if !hasFocusedAddressBarInShortcutContext,
+           matchConfiguredShortcut(event: event, action: .goToAnyWorkspace) {
+            let targetWindow = commandPaletteTargetWindow ?? event.window ?? shortcutRoutingActiveWindow
+            requestCommandPaletteSwitcher(preferredWindow: targetWindow, source: "shortcut.goToAnyWorkspace", includeCollapsedFolders: true)
+            return true
+        }
+
         if matchConfiguredShortcut(event: event, action: .quit) {
             return handleQuitShortcutWarning()
         }
@@ -15758,6 +15784,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         if matchConfiguredShortcut(event: event, action: .focusSidebar) {
             _ = focusSidebarForKeyboard(preferredWindow: mainWindowForShortcutEvent(event))
+            return true
+        }
+
+        if matchConfiguredShortcut(event: event, action: .toggleCollapseAllWorkspaceGroups),
+           toggleCollapseAllWorkspaceGroups(preferredWindow: mainWindowForShortcutEvent(event)) {
             return true
         }
 

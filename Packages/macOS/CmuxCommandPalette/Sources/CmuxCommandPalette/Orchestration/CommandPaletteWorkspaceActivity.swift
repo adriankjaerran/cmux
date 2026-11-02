@@ -52,6 +52,16 @@ public enum CommandPaletteWorkspaceActivity {
         return "\(done) \(age(from: latest, to: now))"
     }
 
+    /// Whether the label is the "running" note: some agent is working and none
+    /// is waiting for input. The ⌘P row tints it with the sidebar's run blue.
+    public static func isRunning(agents: [Agent]) -> Bool {
+        guard !agents.contains(where: { $0.state == .needsInput }) else { return false }
+        return agents.contains { agent in
+            if case .working = agent.state { return true }
+            return false
+        }
+    }
+
     /// Compact age: "now", "4m", "3h", "2d".
     public static func age(from date: Date, to now: Date) -> String {
         let seconds = max(0, Int(now.timeIntervalSince(date)))

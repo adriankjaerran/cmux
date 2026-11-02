@@ -20,7 +20,8 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
 
     // MARK: Workspace
     case toggleSidebar
-    /// Gives the workspace sidebar the keyboard (arrows, Return), revealing it first.
+    /// Gives the workspace sidebar the keyboard (arrows, Return), revealing it
+    /// first; pressing it again hands the keyboard back to the terminal.
     case focusSidebar
     /// Labels the window's clickable controls; typing a label clicks it.
     case showWindowHints
@@ -33,6 +34,7 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case openFolder
     case reopenPreviousSession
     case goToWorkspace
+    case goToAnyWorkspace
     case commandPalette
     case agentInbox
     case openChief
@@ -111,6 +113,8 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case groupSelectedWorkspaces
     /// Toggles collapse for the group containing the focused workspace.
     case toggleFocusedWorkspaceGroupCollapsed
+    /// Collapses every workspace group, or expands them all when none is open.
+    case toggleCollapseAllWorkspaceGroups
     case reopenClosedWorkspace
     case reopenClosedBrowserPanel
     case newSurface

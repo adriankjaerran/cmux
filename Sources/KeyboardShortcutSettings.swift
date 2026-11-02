@@ -103,6 +103,7 @@ enum KeyboardShortcutSettings {
         case openFolder
         case reopenPreviousSession
         case goToWorkspace
+        case goToAnyWorkspace
         case commandPalette
         case agentInbox
         case openChief
@@ -153,6 +154,7 @@ enum KeyboardShortcutSettings {
         case newWorkspaceGroup
         case groupSelectedWorkspaces
         case toggleFocusedWorkspaceGroupCollapsed
+        case toggleCollapseAllWorkspaceGroups
         case reopenClosedWorkspace
         case reopenClosedBrowserPanel
         case newSurface
@@ -263,6 +265,7 @@ enum KeyboardShortcutSettings {
             case .openFolder: return String(localized: "shortcut.openFolder.label", defaultValue: "Open Folder")
             case .reopenPreviousSession: return String(localized: "shortcut.reopenPreviousSession.label", defaultValue: "Restore Previous App Launch")
             case .goToWorkspace: return String(localized: "menu.file.goToWorkspace", defaultValue: "Go to Workspace…")
+            case .goToAnyWorkspace: return String(localized: "menu.file.goToAnyWorkspace", defaultValue: "Go to Any Workspace…")
             case .commandPalette: return String(localized: "menu.file.commandPalette", defaultValue: "Command Palette…")
             case .agentInbox: return String(localized: "shortcut.agentInbox.label", defaultValue: "Show Agent Inbox")
             case .openChief: return String(localized: "shortcut.openChief.label", defaultValue: "Open Chief")
@@ -320,6 +323,7 @@ enum KeyboardShortcutSettings {
             case .newWorkspaceGroup: return String(localized: "shortcut.newWorkspaceGroup.label", defaultValue: "New Workspace Group")
             case .groupSelectedWorkspaces: return String(localized: "shortcut.groupSelectedWorkspaces.label", defaultValue: "Group Selected Workspaces")
             case .toggleFocusedWorkspaceGroupCollapsed: return String(localized: "shortcut.toggleFocusedWorkspaceGroupCollapsed.label", defaultValue: "Toggle Focused Workspace's Group Collapse")
+            case .toggleCollapseAllWorkspaceGroups: return String(localized: "shortcut.toggleCollapseAllWorkspaceGroups.label", defaultValue: "Collapse or Expand All Workspace Groups")
             case .reopenClosedWorkspace: return String(localized: "menu.history.reopenClosedWorkspace", defaultValue: "Reopen Closed Workspace")
             case .reopenClosedBrowserPanel: return String(localized: "menu.history.reopenLastClosed", defaultValue: "Reopen Last Closed")
             case .newSurface: return String(localized: "shortcut.newSurface.label", defaultValue: "New Surface")
@@ -485,8 +489,11 @@ enum KeyboardShortcutSettings {
                 return StoredShortcut(key: "o", command: true, shift: true, option: false, control: false)
             case .goToWorkspace:
                 return StoredShortcut(key: "p", command: true, shift: false, option: false, control: false)
-            case .commandPalette:
+            case .goToAnyWorkspace:
                 return StoredShortcut(key: "p", command: true, shift: true, option: false, control: false)
+            case .commandPalette:
+                // Fork: ⌘⇧P is Go to Any Workspace; commands stay reachable via ">" in ⌘P.
+                return .unbound
             case .agentInbox:
                 return StoredShortcut(key: "i", command: true, shift: true, option: false, control: false)
             case .openChief:
@@ -573,6 +580,10 @@ enum KeyboardShortcutSettings {
                 // Ctrl+Cmd+period — matches the Ctrl+Cmd modifier family used by other group ops,
                 // with "." as the collapse mnemonic. No-ops gracefully when the focused workspace isn't in a group.
                 return StoredShortcut(key: ".", command: true, shift: false, option: false, control: true)
+            case .toggleCollapseAllWorkspaceGroups:
+                // Option+Cmd+O: next to Focus Sidebar (bound to Cmd+O by people
+                // who use sidebar keyboard mode); unused by cmux defaults.
+                return StoredShortcut(key: "o", command: true, shift: false, option: true, control: false)
             case .reopenClosedWorkspace:
                 return .unbound
             case .reopenClosedBrowserPanel:

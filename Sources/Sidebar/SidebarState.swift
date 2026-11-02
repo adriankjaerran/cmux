@@ -1,3 +1,4 @@
+import CmuxSwiftRenderUI
 import CmuxWorkspaces
 import Combine
 import CoreGraphics
@@ -9,6 +10,8 @@ final class SidebarState: ObservableObject {
     /// Hidden because the window was too narrow (SidePanelWidthFit), not by the
     /// person; session snapshots save it as visible.
     var isAutoCollapsed = false
+    /// Hands Focus Sidebar keys to this window's custom JS sidebar.
+    let customSidebarKeyboard = CustomSidebarKeyboardChannel()
     private var visibilityWillChangeOwnerId: UUID?
     private var visibilityWillChange: ((Bool) -> Void)?
 

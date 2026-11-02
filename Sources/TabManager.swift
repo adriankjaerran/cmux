@@ -7608,3 +7608,10 @@ enum CloseDontAskAgainCheckbox {
         CloseTabWarningStore(defaults: defaults).disableWarnings(dismissibleKinds)
     }
 }
+
+/// Fork: userInfo keys for `.commandPaletteSwitcherRequested`.
+enum CommandPaletteSwitcherRequestKeys {
+    /// Bool. ⌘⇧P (Go to Any Workspace) lists workspaces inside collapsed
+    /// sidebar folders too; plain ⌘P hides them.
+    static let includeCollapsedFolders = "includeCollapsedFolders"
+}

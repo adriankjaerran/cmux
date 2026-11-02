@@ -24,6 +24,7 @@ public struct JSSidebarHostView: View {
     private let dispatch: SidebarActionDispatch
 
     @State private var engine = JSSidebarEngine()
+    @Environment(\.customSidebarKeyboard) private var keyboard
 
     /// Creates the host for one JS sidebar program.
     ///
@@ -56,6 +57,18 @@ public struct JSSidebarHostView: View {
         }
         .onChange(of: SyncTrigger(source: source, dataContext: dataContext), initial: true) { _, trigger in
             engine.sync(source: trigger.source, dataContext: trigger.dataContext, dispatch: dispatch)
+        }
+        .background {
+            if let keyboard {
+                CustomSidebarKeyboardAnchor(channel: keyboard)
+            }
+        }
+        .onAppear { keyboard?.engine = engine }
+        .onChange(of: keyboard.map(ObjectIdentifier.init)) { _, _ in keyboard?.engine = engine }
+        .onDisappear {
+            if keyboard?.engine === engine {
+                keyboard?.engine = nil
+            }
         }
     }
 
@@ -95,7 +108,22 @@ final class JSSidebarEngine {
     private var lastSource: String?
     private var lastData: [String: SwiftValue] = [:]
 
+    /// Sidebar keyboard mode as last set by the host; re-applied when the
+    /// program restarts (source edit) so the cursor ring survives a reload.
+    private var keyboardModeActive = false
+
     var errorMessage: String? { runtime?.errorMessage }
+    var handlesKeys: Bool { runtime?.handlesKeys ?? false }
+
+    func setKeyboardMode(_ active: Bool) {
+        keyboardModeActive = active
+        runtime?.setKeyboardMode(active)
+    }
+
+    func dispatchKey(_ key: SidebarKeyPress) -> SidebarKeyResult {
+        guard let runtime else { return .unhandled }
+        return runtime.dispatchKey(key)
+    }
     var rootId: String? { runtime?.store.rootId }
     var store: SceneStore? { runtime?.store }
 
@@ -130,6 +158,9 @@ final class JSSidebarEngine {
             runtime.dispatch = dispatch
             self.runtime = runtime
             runtime.start(source: source)
+            if keyboardModeActive {
+                runtime.setKeyboardMode(true)
+            }
         } else {
             runtime?.dispatch = dispatch
         }

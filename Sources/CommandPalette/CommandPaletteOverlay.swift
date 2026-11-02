@@ -5,6 +5,8 @@ import SwiftUI
 enum CommandPaletteRenderTrailingLabelStyle: Equatable {
     case shortcut
     case kind
+    /// Fork: a "running" activity note, in the compact sidebar's run blue.
+    case running
 }
 
 struct CommandPaletteRenderTrailingLabel: Equatable {
@@ -18,6 +20,7 @@ struct CommandPaletteRenderResultRow: Identifiable, Equatable {
     let matchedIndices: Set<Int>
     let trailingLabel: CommandPaletteRenderTrailingLabel?
     var badgeCount: Int = 0
+    var leadingLabel: String? = nil
 }
 
 /// Result-row fill. Selection wins over hover, and hover stays quieter than
@@ -155,7 +158,8 @@ struct CommandPaletteCommandListRowsView: View {
                                 title: row.title,
                                 matchedIndices: row.matchedIndices,
                                 trailingLabel: row.trailingLabel,
-                                badgeCount: row.badgeCount
+                                badgeCount: row.badgeCount,
+                                leadingLabel: row.leadingLabel
                             )
                             .padding(.horizontal, 9)
                             .padding(.vertical, 2)

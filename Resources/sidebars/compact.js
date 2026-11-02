@@ -250,6 +250,94 @@ const flatEntries = computed(() => {
   return [...pinned, ...rest];
 });
 
+// --- keyboard mode -------------------------------------------------------------
+// Focus Sidebar (cmd+O) hands the keyboard to this list; the terminal gets
+// no keys until the mode ends. A cursor (thin blue ring) walks the visible
+// rows - folder headers included, members of collapsed folders skipped -
+// starting on the selected workspace:
+//   up/down       move the cursor
+//   left          collapse the folder (from a member: jump to its header)
+//   right         expand a collapsed folder (on an open one: step in)
+//   return/space  open the workspace (focus its terminal, mode ends) or
+//                 toggle the folder
+//   c             collapse all folders, or expand all when none is open
+//   escape        back to the terminal (as does cmd+O again)
+// Any other key ends the mode and goes on to the terminal as usual.
+// Navigation itself is the runtime's pure sidebarKeyNav (unit-tested).
+const [cursorId, setCursorId] = signal(null);
+
+function navRows() {
+  return flatEntries().map((e) => (e.kind === "header"
+    ? {
+        id: "h:" + e.groupId,
+        header: true,
+        group: e.groupId,
+        collapsed: isCollapsed(groupById(e.groupId) ?? { id: e.groupId, collapsed: false }),
+      }
+    : { id: e.wsId, group: e.groupId }));
+}
+
+// The cursor row as shown: the remembered row when it is visible, else the
+// header that hides it, else the selected workspace (or its header), else
+// the first row.
+function resolveCursor(rows) {
+  const has = (id) => !!id && rows.some((r) => r.id === id);
+  const headerHiding = (id) => {
+    const w = id ? (data.workspaces() ?? []).find((x) => x.id === id) : null;
+    return w && w.group && has("h:" + w.group) ? "h:" + w.group : null;
+  };
+  const c = cursorId();
+  if (has(c)) return c;
+  const sel = visibleWorkspaces().find((w) => isSelected(w));
+  return headerHiding(c)
+    ?? (sel && has(sel.id) ? sel.id : headerHiding(sel && sel.id))
+    ?? (rows[0] ? rows[0].id : null);
+}
+
+const cursorRow = computed(() => (keyboardMode() ? resolveCursor(navRows()) : null));
+const CURSOR_RING = "#4C8DFFd9";
+const cursorRing = (id) => (cursorRow() !== null && cursorRow() === id ? CURSOR_RING : null);
+
+// Collapse every open folder; when none is open, expand them all.
+function toggleCollapseAll() {
+  const groups = data.groups() ?? [];
+  const anyOpen = groups.some((g) => !isCollapsed(g));
+  for (const g of groups) {
+    if (anyOpen ? !isCollapsed(g) : isCollapsed(g)) toggleCollapse(g);
+  }
+}
+
+onKeyboardMode((on) => {
+  if (on) setCursorId(data.selectedId() ?? null);
+});
+
+onKey((e) => {
+  if (e.command || e.control || e.option) return false;
+  const rows = navRows();
+  const current = resolveCursor(rows);
+  if (e.key === "c") {
+    setCursorId(current);
+    toggleCollapseAll();
+    return true;
+  }
+  const r = sidebarKeyNav(rows, current, e.key);
+  if (!r.handled) return false;
+  setCursorId(r.cursor);
+  const group = (gid) => (gid ? groupById(gid) : null);
+  if (group(r.collapse) && !isCollapsed(group(r.collapse))) toggleCollapse(group(r.collapse));
+  if (group(r.expand) && isCollapsed(group(r.expand))) toggleCollapse(group(r.expand));
+  if (group(r.toggle)) toggleCollapse(group(r.toggle));
+  if (r.open) {
+    // The host selects it and focuses its terminal; paint the selection now.
+    selectOverride = r.open;
+    setSelectTick(selectTick() + 1);
+    clearMultiSelect();
+    return { open: r.open };
+  }
+  if (r.exit) return { exit: true };
+  return true;
+});
+
 // --- drop resolution ---------------------------------------------------------
 // `index` is the dragged row's slot in the flat list (headers included).
 // `extra.side` resolves the ambiguous boundary slots: "above" nests with the
@@ -606,6 +694,8 @@ function workspaceRow(w, entry) {
     .marginLeading(() => (entry().groupId ? 12 : 0))
     .cornerRadius(8)
     .background(() => (isMultiSelected(w()) ? "#4C9EEB33" : (isSelected(w()) ? "#7f7f7f3d" : null)))
+    .borderColor(() => cursorRing(entry().wsId))
+    .borderWidth(1.5)
     .hoverBackground(() => (isMultiSelected(w()) ? "#4C9EEB33" : (isSelected(w()) ? "#7f7f7f3d" : "#7f7f7f24")))
     .frame({ maxWidth: "infinity" })
     .block(() => (entry().groupId ? "h:" + entry().groupId : null))
@@ -676,6 +766,8 @@ function groupHeader(groupId) {
     .paddingVertical(3)
     .cornerRadius(8)
     .hoverBackground("#7f7f7f1c")
+    .borderColor(() => cursorRing("h:" + groupId))
+    .borderWidth(1.5)
     .frame({ maxWidth: "infinity" })
     .fixed()
     .block("h:" + groupId)

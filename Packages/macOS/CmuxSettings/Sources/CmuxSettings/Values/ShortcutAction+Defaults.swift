@@ -88,7 +88,8 @@ extension ShortcutAction {
         case .openFolder: return ShortcutStroke(key: "o", command: true)
         case .reopenPreviousSession: return ShortcutStroke(key: "o", command: true, shift: true)
         case .goToWorkspace: return ShortcutStroke(key: "p", command: true)
-        case .commandPalette: return ShortcutStroke(key: "p", command: true, shift: true)
+        case .goToAnyWorkspace: return ShortcutStroke(key: "p", command: true, shift: true)
+        case .commandPalette: return nil
         case .agentInbox: return ShortcutStroke(key: "i", command: true, shift: true)
         case .openChief: return ShortcutStroke(key: "c", command: true, shift: true)
         case .commandPaletteNext: return ShortcutStroke(key: "n", control: true)
@@ -129,6 +130,7 @@ extension ShortcutAction {
         case .newWorkspaceGroup: return ShortcutStroke(key: "g", command: true, control: true)
         case .groupSelectedWorkspaces: return ShortcutStroke(key: "g", command: true, shift: true)
         case .toggleFocusedWorkspaceGroupCollapsed: return ShortcutStroke(key: ".", command: true, control: true)
+        case .toggleCollapseAllWorkspaceGroups: return ShortcutStroke(key: "o", command: true, option: true)
         case .reopenClosedWorkspace: return nil
         case .reopenClosedBrowserPanel: return ShortcutStroke(key: "t", command: true, shift: true)
         case .focusLeft: return ShortcutStroke(key: "←", command: true, option: true)

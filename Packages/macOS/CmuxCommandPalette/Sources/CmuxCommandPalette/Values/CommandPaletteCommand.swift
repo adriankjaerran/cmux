@@ -21,6 +21,12 @@ public struct CommandPaletteCommand: Identifiable {
     public let dismissOnRun: Bool
     /// Unread count shown as a red badge on the row (0 hides it).
     public let badgeCount: Int
+    /// Small fixed-width label left of the title (the sidebar folder name in
+    /// the switcher). nil hides the column; "" keeps it blank for alignment.
+    public let leadingLabel: String?
+    /// Whether the kind label is a "running" activity note (drawn in the
+    /// sidebar's run blue).
+    public let kindLabelIsRunning: Bool
     /// The action executed on activation.
     public let action: () -> Void
 
@@ -35,6 +41,8 @@ public struct CommandPaletteCommand: Identifiable {
         keywords: [String],
         dismissOnRun: Bool,
         badgeCount: Int = 0,
+        leadingLabel: String? = nil,
+        kindLabelIsRunning: Bool = false,
         action: @escaping () -> Void
     ) {
         self.id = id
@@ -46,6 +54,8 @@ public struct CommandPaletteCommand: Identifiable {
         self.keywords = keywords
         self.dismissOnRun = dismissOnRun
         self.badgeCount = badgeCount
+        self.leadingLabel = leadingLabel
+        self.kindLabelIsRunning = kindLabelIsRunning
         self.action = action
     }
 

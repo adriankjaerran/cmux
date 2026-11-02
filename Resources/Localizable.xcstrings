@@ -388048,6 +388048,23 @@
         }
       }
     },
+    "shortcut.toggleCollapseAllWorkspaceGroups.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse or Expand All Workspace Groups"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slå sammen eller utvid alle arbeidsområdegrupper"
+          }
+        }
+      }
+    },
     "shortcut.toggleFocusedWorkspaceGroupCollapsed.label": {
       "extractionState": "manual",
       "localizations": {
