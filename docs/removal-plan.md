@@ -1,6 +1,8 @@
 # Removal plan: what's left from upstream
 
-Written 2026-11-02, against `61dca2e`. This is a plan, not done work. Nothing here has been changed yet.
+Written 2026-11-02, against `61dca2e`. Phases 1–7 were done on 2026-11-02 (`edbd4f6` … `7e6c136`), each built and
+smoke-tested in the test app (`--version`, `tree --all`, `config doctor`). Not yet installed into cmux Personal.
+Phases 0, 8 and 9 are still open.
 Model for how to do a removal: `git show --stat 61dca2e` (Simulator, Computer Use, VPN, PostHog, Sentry).
 
 ✅ done · ⬜ open · Size: S = under an hour, M = a few hours, L = a day or more.
@@ -25,13 +27,13 @@ Model for how to do a removal: `git show --stat 61dca2e` (Simulator, Computer Us
 | # | Phase | Size | Risk | Touches Swift? |
 |---|---|---|---|---|
 | 0 | Install what's already committed | S | none | no |
-| 1 | CodeRouter download off in the build | S | very low | no |
-| 2 | Sparkle feed off, then Sparkle gone | S, then M | low | yes |
-| 3 | Remote feature-flag fetch off (found while checking) | S | low | yes, 1 guard |
-| 4 | Delete packages nothing links | S | very low | no (only folders) |
-| 5 | Leftovers from the last removal (`cmux vpn`, Computer Use bits) | S | low | yes |
-| 6 | The 5 "Simulator: …" shortcuts and `simulator.*` stubs | M | low–medium | yes |
-| 7 | Send Feedback | S–M | low | yes |
+| ✅ 1 | CodeRouter download off in the build | S | very low | no |
+| ✅ 2 | Sparkle feed off, then Sparkle gone | S, then M | low | yes |
+| ✅ 3 | Remote feature-flag fetch off (found while checking) | S | low | yes, 1 guard |
+| ✅ 4 | Delete packages nothing links | S | very low | no (only folders) |
+| ✅ 5 | Leftovers from the last removal (`cmux vpn`, Computer Use bits) | S | low | yes |
+| ✅ 6 | The 5 "Simulator: …" shortcuts and `simulator.*` stubs | M | low–medium | yes |
+| ✅ 7 | Send Feedback | S–M | low | yes |
 | 8 | Chief and Chief Home | M–L | medium | yes |
 | 9 | Cloud, Auth, mobile pairing, cmux-tui / Machines, `cmux vm` | L (several commits) | high | yes |
 
@@ -174,7 +176,7 @@ it. Install it and use it for a day.
 - ⬜ After install, `ls ~/Applications/cmux\ Personal.app/Contents/Resources/bin` has no `PostHog_PostHog.bundle`
   or `CmuxSimulator_*` link any more. If they're still there, `install-personal.sh` copied over an old bundle.
 
-## Phase 1: CodeRouter download off (S, very low risk)
+## ✅ Phase 1: CodeRouter download off (S, very low risk)
 
 **What it is:** CodeRouter is a separate command-line tool from the cmux team (`cmux coderouter` / `cmux cr`).
 Every build downloads it (`coderouter-darwin-arm64`, v0.3.16) from `manaflow-ai/coderouter-releases` on GitHub
@@ -196,12 +198,15 @@ mention it.
 **Risk:** none for the running setup. An incremental build keeps the old `coderouter` binary in the app; that's
 harmless. A clean build won't have it.
 
-- ⬜ Build with `scripts/test-app.sh`; the log no longer shows a CodeRouter download or `coderouter --version`.
-- ⬜ Open the test app; a zsh terminal shows the folder and git branch in the sidebar.
-- ⬜ In the test app: `claude` and `pi` start and show `run` / `wait` / `idle`.
+**Done in `edbd4f6`:** step 1 only (the call in `reload.sh` is commented out with a fork note). The app-side
+`cmux coderouter` / `cmux cr` code and the guide panel are still there (step 2, optional, not done).
+
+- ✅ Build; the log no longer shows a CodeRouter download, and `Resources/bin/coderouter` is gone from the built app.
+- ⬜ Open the test app; a zsh terminal shows the folder and git branch in the sidebar (check by hand).
+- ✅ The shims start `claude` and `pi` (`--version` through the shim folder). ⬜ `run` / `wait` / `idle` in the sidebar (check by hand).
 - ⬜ `scripts/install-personal.sh`.
 
-## Phase 2: Sparkle update feed (S first, then M)
+## ✅ Phase 2: Sparkle update feed (S first, then M)
 
 **What it is:** the auto-updater. It reads upstream's feed
 (`SUFeedURL = https://github.com/manaflow-ai/cmux/releases/latest/download/appcast.xml`) and can offer to install
@@ -232,12 +237,22 @@ views, which is the fiddly part.
 **Risk:** low. The only real trap is the quit path: `AppDelegate` has Sparkle-specific relaunch handling. Make sure
 ⌘Q still saves the layout (that's what `install-personal.sh` relies on).
 
-- ⬜ `scripts/test-app.sh`; no "Check for Updates" in the app menu, menu bar extra or ⌘⇧P.
-- ⬜ ⌘Q the test app, start it again: workspaces and groups come back.
-- ⬜ Shells and agents in the test app work (folder, branch, `run`/`wait`).
+**Done in `883957f` (step A) and `032f629` (step B).** A: all six `SU*` keys gone from `Info.plist`, updater
+never started, "Check for Updates…" removed from the app menu, Help menu, menu bar extra, sidebar help popover and
+⌘⇧P (also "Apply Update" / "Attempt Update"). B: `CmuxUpdater`, `CmuxUpdaterUI` and the Sparkle package deleted
+(pbxproj + `Package.resolved`); `updateViewModel` no longer threaded through the sidebar; update pill, debug
+"Update Pill" menu and the relaunch-for-update quit path removed. Kept: `Sources/Update/UpdateTitlebarAccessory.swift`
+(despite its name it is the titlebar controls and notifications popover, not Sparkle) and `UpdateLogStore.swift`
+(a file logger the titlebar and UI-test code still write to; its `UpdateLogging` conformance is gone). The managed
+policy key `DisableAutoUpdate` in `CmuxSettings` is left (harmless). `scripts/ci/package-test-lane.sh` still names
+the two packages (upstream CI, not used).
+
+- ✅ No "Check for Updates" in code for the app menu, menu bar extra, Help menu, sidebar help or ⌘⇧P. ⬜ Look once by hand.
+- ✅ Quit (AppleScript quit) and reopen the test app: workspaces come back, "cmux" first and pinned.
+- ⬜ Shells and agents in the test app work (folder, branch, `run`/`wait`) (check by hand).
 - ⬜ `scripts/install-personal.sh`.
 
-## Phase 3: remote feature flags off (S, found while checking)
+## ✅ Phase 3: remote feature flags off (S, found while checking)
 
 **What it is:** at launch and every 30 minutes the app POSTs to `https://cmux.com/api/client-config` with an
 anonymous install id, to fetch upstream's feature switches (`Sources/FeatureFlags.swift`, started at
@@ -250,11 +265,17 @@ their built-in defaults, which is what the code already does when the fetch fail
 **Confidence:** high that it's upstream-only. Check once that no flag you rely on is on only remotely: compare
 Settings → Beta Features before and after.
 
-- ⬜ `scripts/test-app.sh`; no connection to `cmux.com` at launch (Little Snitch or `nettop -p "cmux DEV test"`).
-- ⬜ Beta Features shows the same switches as before. Shells and agents work.
+**Done in `7cef649`:** `CmuxFeatureFlags.shared.start()` is no longer called (fork comment in `AppDelegate`).
+Flags resolve from local overrides, the last cached remote value and the built-in defaults. Before the change, the
+test app's only cached remote value was `sidebar-appkit-list-experiment = true`, which equals its default, so no
+switch changes. (The cache stays authoritative and is never refreshed again; that is fine.)
+
+- ✅ No open network connections from the test app after launch (`lsof -i -p <pid>`; short-lived ones would need
+  Little Snitch or `nettop` to rule out).
+- ⬜ Beta Features shows the same switches as before (check by hand). Shells and agents work.
 - ⬜ `scripts/install-personal.sh`.
 
-## Phase 4: delete packages nothing links (S, very low risk)
+## ✅ Phase 4: delete packages nothing links (S, very low risk)
 
 These folders are in `Packages/` but the Xcode project doesn't use them, directly or through another package. They
 only add noise to searches.
@@ -271,10 +292,17 @@ CmuxSettingsUI and ~30 others), `CmuxAgentChat`, `CmuxTerminalPrediction` or `Cm
 
 **Plan:** delete the folders, run a clean test build. If it fails, the error names the package to put back.
 
-- ⬜ `scripts/test-app.sh` builds; the test app opens; shells and agents work.
+**Done in `190efab`:** 21 `Packages/iOS/*` folders (all except `CmuxMobileDiagnostics`, `CmuxMobilePairedMac`,
+`CmuxMobileRPC`, `CmuxMobileShellModel`, `CmuxMobileSupport`, `CmuxMobileTransport`, which the app reaches),
+`Packages/iOS/AGENTS.md` and `CLAUDE.md`, the six `Packages/Shared/` packages listed above and
+`Packages/macOS/CmuxLiveEval`. Checked first with a script that walks the pbxproj package references and every
+`Package.swift` `path:` dependency: exactly these were unreachable. Built incrementally (not from a clean
+DerivedData); SwiftPM re-resolves the local package graph on every build, so a missing package would have failed.
+
+- ✅ Builds; the test app opens; `--version`, `tree`, `config doctor` unchanged. ⬜ Shells and agents (by hand).
 - ⬜ `scripts/install-personal.sh`.
 
-## Phase 5: leftovers from the last removal (S, low risk)
+## ✅ Phase 5: leftovers from the last removal (S, low risk)
 
 - `cmux vpn` is still in the CLI: `CLI/CMUXCLI+VPN.swift`, `CLI/CMUXCLI+VPNAppManaged.swift` (the tunnel it
   controls is gone).
@@ -285,11 +313,18 @@ CmuxSettingsUI and ~30 others), `CmuxAgentChat`, `CmuxTerminalPrediction` or `Cm
 - `Resources/ComputerUseHelper.icon`.
 - Data folder `~/Library/Application Support/cmux/cmux-cua` (not part of the repo; leave it, or delete by hand).
 
-- ⬜ `scripts/test-app.sh`; `cmux vpn` says unknown command; a new terminal still gets the `claude`/`pi` shims
-  (`ls ~/.cmuxterm/cmux-cli-shims/$CMUX_SURFACE_ID`).
+**Done in `45ec320`:** `CLI/CMUXCLI+VPN*.swift`, `VPNCommand` and its help text; the three Computer Use files in
+`CmuxSettingsUI` and the matching `SettingsHostActions` requirements; the `computerUseSettingFileURL` parameter and
+the dead `cmux_computer_use_*` lines it fed in the generated shim script (they set a shell variable nothing read);
+`Resources/ComputerUseHelper.icon`. Not touched: the Cloud guide text that mentions `cmux vpn` (Phase 9), the
+`computerUse` settings keys in `CmuxSettings`, and the `cmux-cua` MCP injection inside
+`Resources/bin/cmux-claude-wrapper` (it finds no helper and skips; wrappers were out of scope).
+
+- ✅ `cmux vpn` says unknown command; new terminals get the shims (`agy amp claude codex hermes pi`), `claude
+  --version` and `pi --version` run through them.
 - ⬜ `scripts/install-personal.sh`.
 
-## Phase 6: Simulator shortcuts and `simulator.*` stubs (M, low–medium risk)
+## ✅ Phase 6: Simulator shortcuts and `simulator.*` stubs (M, low–medium risk)
 
 **What it is:** five shortcuts that do nothing (Simulator: Home, Rotate Left, Rotate Right, Toggle Appearance,
 Toggle Software Keyboard) in Settings → Keyboard Shortcuts, and socket methods `simulator.*` that answer
@@ -318,12 +353,24 @@ For this phase: about 12 files for the shortcuts, about 30 for the socket stubs.
 - After this, an old NIGHTLY CLI calling `simulator.*` gets "unknown method" instead of "unavailable". You don't
   call it, so that's fine.
 
-- ⬜ `scripts/test-app.sh --seed`; Settings → Keyboard Shortcuts has no "Simulator:" rows; your own bindings
-  (⌘O, ⌥⌘↑/↓) still work.
-- ⬜ `"<test app>/Contents/Resources/bin/cmux" --version` works; `cmux config doctor` is clean.
-- ⬜ Shells and agents in the test app work. `scripts/install-personal.sh`.
+**Done in `b9f12ee`:** the five `simulator*` cases in `ShortcutAction` and `KeyboardShortcutSettings.Action` and
+every switch arm, their names in `CmuxConfigSchema.generated.swift`; `.newSimulator` in
+`CmuxSurfaceTabBarBuiltInAction` (tab-bar "+", new-workspace menu) and the "New Simulator Pane" palette command
+(`SimulatorCommandPaletteIntegration.swift` deleted); `Coordinator/Simulator/` (25 files),
+`ControlCommandExecutionPolicy+Simulator.swift`, the `simulator.*` routing and `ControlSimulatorContext`
+(`TerminalController+ControlSimulatorContext.swift` deleted); the optional `simulator` field in
+`SessionPanelSnapshot` and `Workspace+SimulatorSessionPersistence.swift`. Kept: `PanelType.simulator` (rule 3), the
+`simulatorFocus` shortcut-context atom and `.simulatorPanel` context (other shortcuts use them in "not focused"
+clauses), `isSimulatorEnabled` / the flag definition, the `simulator_*` fields in `surface.list` output, and
+`AppDelegate+SimulatorShortcutRouting.swift` (only its Simulator line went; the rest is the general
+`isMenuBackedShortcutAction`).
 
-## Phase 7: Send Feedback (S–M, low risk)
+- ✅ `cmux rpc simulator.context` → "Unknown method". ⬜ Settings → Keyboard Shortcuts has no "Simulator:" rows;
+  ⌘O, ⌥⌘↑/↓ still work (check by hand).
+- ✅ `"<test app>/Contents/Resources/bin/cmux" --version` works; `cmux config doctor` unchanged (clean).
+- ⬜ Shells and agents in the test app work (by hand). `scripts/install-personal.sh`.
+
+## ✅ Phase 7: Send Feedback (S–M, low risk)
 
 **What it is:** a feedback form (sidebar footer button and Help menu) that uploads to
 `https://cmux.com/api/feedback`. Package `CmuxFeedback` (~1,690 lines), 7 app files, e.g.
@@ -331,7 +378,16 @@ For this phase: about 12 files for the shortcuts, about 30 for the socket stubs.
 
 **Confidence:** high that you don't need it.
 
-- ⬜ `scripts/test-app.sh`; the footer shows no feedback button; nothing else in the footer moved.
+**Done in `7e6c136`:** the `CmuxFeedback` package (pbxproj), the composer sheet and its notification, "Send
+Feedback" in the Help menu and the sidebar help popover (the footer itself has no separate button), the
+`sendFeedback` shortcut (both enums, schema name), the "Send Feedback" button on the Cloud VM loading-failed panel,
+`cmux feedback`, and the socket methods `feedback.open` / `feedback.submit`. `dogfood.feedback.submit` (a mobile
+data-plane verb that only ever accepted `@manaflow.ai` accounts) now always answers "unauthorized", as it did for
+you before; it goes with Phase 9. The profiling window keeps its saved email under the same defaults key. Kept:
+`SettingsHostActions.sendFeedback()` (opens GitHub issues; nothing in Settings calls it).
+
+- ✅ `cmux feedback` → unknown command; `feedback.open` → unknown method. ⬜ The help popover has no "Send Feedback"
+  and nothing else in the footer moved (check by hand).
 - ⬜ Shells and agents work. `scripts/install-personal.sh`.
 
 ## Phase 8: Chief and Chief Home (M–L, medium risk)

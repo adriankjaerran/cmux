@@ -32,8 +32,15 @@ telemetry or update feed.
 - ✅ Remove the VPN tunnel extension.
 - ✅ Remove Sentry and PostHog telemetry.
 - ✅ Remove iOS Simulator panes.
-- ⬜ Remove the Sparkle update feed.
-- ⬜ Stub out Cloud, Auth and Chief.
+- ✅ Remove the Sparkle update feed (and the Sparkle package).
+- ✅ Stop the CodeRouter download in the build.
+- ✅ Stop the remote feature-flag fetch to cmux.com.
+- ✅ Delete the packages nothing links.
+- ✅ Remove the VPN / Computer Use / Simulator leftovers.
+- ✅ Remove Send Feedback.
+- ⬜ Install all of the above into cmux Personal (removal plan Phase 0, then reinstall).
+- ⬜ Remove Chief and Chief Home (removal plan Phase 8).
+- ⬜ Stub out Cloud and Auth (removal plan Phase 9).
 
 ## cmux agent (from `~/Code/cmux-config`)
 

@@ -15,7 +15,7 @@ Only the macOS app and what it needs to build were copied. Everything else staye
 | ✅ | `Resources/` | Info.plist, entitlements, shell integration, bundled web views, `sidebars/compact.js` (new) |
 | ✅ | `Assets.xcassets`, `AppIcon.icon` | Images and app icon |
 | ✅ | `cmux-Bridging-Header.h`, `ghostty.h` | C headers for Ghostty |
-| ✅ | `Packages/` | ~86 local Swift packages (`macOS/`, `Shared/`, `iOS/`); all kept so the project builds |
+| ✅ | `Packages/` | Local Swift packages (`macOS/`, `Shared/`, `iOS/`); the ones nothing linked were deleted later (see below) |
 | ✅ | `Native/` | Rust/C helpers built during the app build (e.g. command-palette search) |
 | ✅ | `vendor/stack-auth-swift-sdk-prerelease` | Vendored library |
 | ✅ | `vendor/bonsplit` | Split-pane library, git submodule at `58b73fd` |
@@ -49,9 +49,9 @@ These build and ship today. They are the trimming list in [ideas.md](ideas.md).
 
 | | Feature | Note |
 |---|---|---|
-| ⚠️ | Sparkle update feed | `CmuxUpdater`; would offer upstream's builds |
-| ⚠️ | Cloud, Auth, Chief, mobile pairing | `CmuxCloud*`, `CMUXAuthCore`, `CmuxChief`, `CmuxMobile*` |
-| ⚠️ | CodeRouter client | Downloaded during every build by `scripts/install-coderouter-client.sh` |
+| ⚠️ | Cloud, Auth, mobile pairing, `cmux vm` | `CmuxCloud*`, `CMUXAuthCore`, `CmuxAuthRuntime`, `CmuxMobile*`, Iroh (removal plan Phase 9) |
+| ⚠️ | Chief and Chief Home | `CmuxChief`, `CmuxHomeCore`, `CmuxHomeRender`, `CmuxMessagesLab` (Phase 8) |
+| ⚠️ | CodeRouter CLI commands | `cmux coderouter` / `cmux cr` and the guide panel are still in the app; the binary is no longer downloaded |
 | ❌ | cmux-tui client (cloud Machines panel) | Skipped by `reload.sh` |
 
 ## Fork changes so far
@@ -66,6 +66,10 @@ See the table in the [README](../README.md#whats-different-from-upstream-cmux) a
 | Computer Use | `CmuxComputerUse`, the `cmux Computer Use.app` helper, `skills/cmux-cua`, its Settings section |
 | VPN tunnel extension | `TunnelExtension/`, `vendor/WireGuardKit`, the wireguard-go build step |
 | Telemetry | PostHog SDK and Sentry SDK; the app's call sites are now no-ops |
-
-Leftovers: five "Simulator: …" shortcuts still show in Settings → Keyboard Shortcuts and do nothing,
-and the control socket answers `simulator.*` calls with "unavailable".
+| CodeRouter download | `reload.sh` no longer fetches the `coderouter` binary (`edbd4f6`) |
+| Sparkle update feed | `SU*` keys, "Check for Updates…" everywhere, `CmuxUpdater`, `CmuxUpdaterUI`, the Sparkle package, the update pill (`883957f`, `032f629`) |
+| Remote feature flags | No more POST to `cmux.com/api/client-config`; flags use local defaults (`7cef649`) |
+| Unlinked packages | 21 `Packages/iOS/*`, 6 `Packages/Shared/*`, `CmuxLiveEval` (`190efab`) |
+| VPN / Computer Use leftovers | `cmux vpn`, Computer Use settings stubs, `ComputerUseHelper.icon` (`45ec320`) |
+| Simulator leftovers | The five "Simulator: …" shortcuts, "New Simulator Pane", `simulator.*` socket stubs (`b9f12ee`); `PanelType.simulator` stays so old layouts load |
+| Send Feedback | `CmuxFeedback`, the Help/sidebar items, `cmux feedback`, `feedback.open` / `feedback.submit` (`7e6c136`) |
