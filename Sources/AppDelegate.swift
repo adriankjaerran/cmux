@@ -551,7 +551,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     let cloudBannerDismissalStore: CloudBannerDismissalStore
     /// Composition-root owner for the persisted per-SSH-machine clipboard-write policy.
     let sshClipboardWriteTrustStore: SSHClipboardWriteTrustStore
-    private(set) var devicesRegistry: DeviceSurfaceProviderRegistry?
     /// Stateless control-socket syscall layer (CmuxControlSocket); composition-root owned.
     nonisolated let socketTransport = SocketTransport()
     nonisolated let processSnapshotService = CmuxTopProcessSnapshot.makeProcessSnapshotService()
@@ -833,7 +832,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private(set) lazy var cloudActivationCoordinator = CloudActivationCoordinator(prepare: { try await CmuxTuiSurfaceProviderRegistry.shared.prepareForActivation() }, cleanup: { await CmuxTuiSurfaceProviderRegistry.shared.cancelActivationPreparation() }, analytics: .app)
     var cloudWorkspaceCoordinator: CloudWorkspaceCoordinator?
     var cloudWorkspaceOperationController: CloudWorkspaceOperationController?
-    var deviceWorkspaceCreationCoordinator: DeviceWorkspaceCreationCoordinator?
     var newMachineSheetPresenter: (any NewMachineSheetPresenting)?
     /// Strongly-held observers for every active TabManager. Each observer owns
     /// Combine subscriptions that publish workspace.updated to mobile clients.
@@ -7527,25 +7525,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return false
     }
 
-    /// Opens My Devices in the selected main window and scopes its reveal request
-    /// to that window so another mounted Machines panel cannot consume it first.
-    @MainActor
-    func openDevicesSidebarAndReveal(
-        instance: SurfaceDeviceInstanceID,
-        registry: DeviceSurfaceProviderRegistry
-    ) -> RightSidebarRemoteApplyResult? {
-        guard let context = preferredRegisteredMainWindowContext() else { return nil }
-        let target = RightSidebarRemoteTarget(windowId: context.windowId)
-        let result = applyRightSidebarRemoteCommand(.setMode(.machines, focus: true), target: target)
-        switch result {
-        case .ok, .state:
-            registry.reveal(instance: instance, windowID: context.windowId)
-        case .failure:
-            break
-        }
-        return result
-    }
-
     private func rightSidebarRemoteContext(target: RightSidebarRemoteTarget) -> MainWindowContext? {
         if let windowId = target.windowId {
             return mainWindowContexts.values.first(where: { $0.windowId == windowId })
@@ -8196,9 +8175,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let context = preferredTabManager.flatMap { mainWindowContext(for: $0) }
             ?? preferredMainWindowContextForWorkspaceCreation(event: event, debugSource: debugSource)
         let manager = context?.tabManager ?? preferredTabManager
-        if !staysLocal, let manager, let machine = manager.selectedWorkspace?.deviceMachineForNewWorkspace {
-            return deviceWorkspaceCreationCoordinator?.start(on: machine, in: manager) ?? false
-        }
         if !staysLocal, let manager,
            let vmID = manager.selectedWorkspace?.cloudVMID,
            !vmID.isEmpty {
@@ -8265,7 +8241,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     private func isLocalWorkspaceForLocalCreation(_ workspace: Workspace) -> Bool {
         workspace.remoteConfiguration == nil
-            && workspace.deviceMachineForNewWorkspace == nil
     }
 
     /// Empty-area double-click in the sidebar. A configured
@@ -8301,7 +8276,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// remote Mac, whose new workspaces are placed by the remote side.
     private func sidebarEmptyAreaUsesRemoteNewWorkspaceRouting(tabManager: TabManager) -> Bool {
         remoteTmuxController.wouldNewWorkspaceSpawnRemote(in: tabManager)
-            || tabManager.selectedWorkspace?.deviceMachineForNewWorkspace != nil
     }
 
     /// Whether the window owning `tabManager` has a `ui.newWorkspace.action`.
@@ -10308,8 +10282,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         let root = ContentView(
             windowId: windowId,
-            titlebarControlsLayoutModel: titlebarControlsLayoutModel,
-            devicesModel: devicesRegistry.map { DevicesPanelViewModel(registry: $0, windowID: windowId) }
+            titlebarControlsLayoutModel: titlebarControlsLayoutModel
         )
             .environmentObject(tabManager)
             .environmentObject(notificationStore)

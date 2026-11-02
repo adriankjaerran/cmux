@@ -1015,6 +1015,23 @@ Progress (done as separate commits, see the order under 9.12):
     scratch workspace: `yes | head -100000` then `vim` render (read-screen shows numbered lines, `~`, status),
     `surface.wait_text_change` woke ~60 ms after output, `send --paste` multi-line, closed after.
     `surface.catalog`/`current.list` answer. ⬜ Manual: Settings opens (no Mobile/Networking), browser JS dialogs.
+- (B) `Sources/Devices` deleted ("Phase 9.14 (B)", 53 files incl. `Account/`, `Workspace+DeviceLayout`,
+  `Workspace+DeviceMachineContext`, `SurfaceCatalog+DeviceNames`, `AppDelegate+NewDeviceWorkspace`), plus
+  `Sources/Cloud/DeviceLinkDiagnosticsSection.swift`. Differs from the plan:
+  - **Moved, local:** `DeviceTerminalAttachmentStatus` → `Sources/Panels/` (the "disconnected" overlay on restored
+    relay-less SSH recovery placeholders, `restoreDeviceDisplayPanel`).
+  - Removed refs: AppDelegate `devicesRegistry`, `deviceWorkspaceCreationCoordinator`, `openDevicesSidebarAndReveal`,
+    the device branch of new-workspace routing; `ContentView.devicesModel`; `SurfaceCatalog.reconcileDeviceNames`
+    calls (returned early for non-device machines); the device layout snapshot/keys on
+    `workspacePaneGeometryDidChange`; `CloudTerminalPaneReservation.attach(DeviceTerminalInputRouter)`.
+  - Stubs in `Sources/Cloud` (deleted in 9.12): `CloudVMSyncSubscriber` never connects (keeps `VMSyncRecord`);
+    `MachinesPanelView` has no devices model; diagnostics views without the device section; tree "…" menu empty.
+  - **Deferred to 9.12 (F):** the `CmuxSettingsUI` Devices pieces (`.computers` slot, `ComputersSection`,
+    `ComputersSettingsRow`, `DevicesAccessToggleRow`, `ComputerAccessMenuItems`, `DeviceAccessControl`,
+    `ComputersSettings*`, `HostSettingsActions+Computers`): `Sources/Cloud` tree files still use
+    `DeviceAccessControl`/`ComputerAccessMenuItems`. The section is hidden since 9.1.
+  - Checks: build, `--version`, `config doctor` (same as 9.11), `tree --all`, 388 methods (same as (C)); scratch
+    workspace with a right split, `send`, read-screen, `surface.catalog`; closed after. ⬜ ⌘Q/reopen: manual.
 
 **What it removes:** `Sources/Mobile/` (what's left after 9.5/9.6: pairing window, host service, Iroh/Irx runtime,
 browser streaming, ~40 files), `Sources/Devices/` (53), `Sources/Hive/`, `MacPresenceDecisionCache.swift`,

@@ -17,7 +17,6 @@ import SwiftUI
 struct MachinesPanelView: View {
     private static let coderouterLogger = Logger(subsystem: "com.cmuxterm.app", category: "coderouter-accounts")
     @StateObject var viewModel: MachinesPanelViewModel
-    @State private var devicesModel: DevicesPanelViewModel
     @State private var discoveryManaged = ManagedDevicePolicy().isDeviceDiscoveryDisabled
     @State private var incomingAccessManaged = ManagedDevicePolicy().isIncomingDeviceAccessDisabled
     @State private var expansionStore = CloudTreeExpansionStore()
@@ -43,7 +42,6 @@ struct MachinesPanelView: View {
     init(
         chromeBackgroundColor: NSColor,
         machinePinStore: CloudMachinePinStore? = nil,
-        devicesModel: DevicesPanelViewModel? = nil,
         tabManager: TabManager? = nil,
         teamPickerPresentation: CloudTeamPickerPresentation? = nil,
         activationCoordinator: CloudActivationCoordinator,
@@ -73,7 +71,6 @@ struct MachinesPanelView: View {
                 }
             }
         ))
-        _devicesModel = State(initialValue: devicesModel ?? DevicesPanelViewModel())
     }
 
     var accountFlow: HostAccountFlow? {
@@ -90,9 +87,8 @@ struct MachinesPanelView: View {
         )
     }
 
-    private var includesDevices: Bool {
-        return DevicesFeature.isEnabled && (devicesModel.preferences?.discoveryEnabled ?? DevicesFeature.localOptIn(defaults: .standard))
-    }
+    /// My Devices went with Sources/Devices (Phase 9.14 (B)).
+    private var includesDevices: Bool { false }
 
     private var includesCloud: Bool {
         return CloudMachinesFeature.isEnabled
@@ -104,13 +100,12 @@ struct MachinesPanelView: View {
         viewModel.visibleCatalog.applyingDeviceVisibility(
             includesCloud: includesCloud,
             includesDevices: includesDevices,
-            hiddenMacIDs: devicesModel.preferences?.hiddenMacIDs ?? []
+            hiddenMacIDs: []
         )
     }
 
     private func refreshMachines() {
         if includesCloud { viewModel.refresh(tree: true) }
-        if includesDevices { devicesModel.refresh() }
     }
 
     var body: some View {
@@ -119,12 +114,8 @@ struct MachinesPanelView: View {
             activationCoordinator.reconcile()
             syncPolling(for: authState)
         }
-        .onChange(of: devicesModel.preferences?.discoveryEnabled) { _, _ in syncPolling(for: authState) }
         .onChange(of: activationCoordinator.state) { _, _ in syncPolling(for: authState) }
         .onChange(of: activationCoordinator.isPreparing) { _, _ in syncPolling(for: authState) }
-        .onReceive(NotificationCenter.default.publisher(for: DeviceSurfaceProviderRegistry.revealDeviceNotification)) { _ in
-            devicesModel.consumePendingReveal()
-        }
         .onChange(of: authState) { _, state in
             syncPolling(for: state)
             viewModel.machinePinStore?.refreshScope()
@@ -246,7 +237,6 @@ struct MachinesPanelView: View {
                 viewModel.stopPolling()
                 viewModel.resetForAuthTransition()
             }
-            if includesDevices { devicesModel.start() }
             viewModel.readCatalog()
         case .checking, .signedOut:
             viewModel.stopPolling()
@@ -291,7 +281,7 @@ struct MachinesPanelView: View {
             accountFlow: accountFlow,
             presentation: teamPickerPresentation,
             chromeBackgroundColor: chromeBackgroundColor,
-            isRefreshing: viewModel.isLoading || devicesModel.isRefreshing,
+            isRefreshing: viewModel.isLoading,
             onRefresh: refreshMachines,
             onNewMachine: requestNewMachine,
             status: { cloudStatus }
@@ -458,19 +448,6 @@ struct MachinesPanelView: View {
             refreshMachine: { [weak viewModel] in viewModel?.refreshMachine($0) },
             workspaceCreationHost: { tabManager.map { CloudWorkspaceCreationHost(manager: $0) } }
         )
-        nodeActions.needsDevicePairing = { [weak devicesModel] machine in
-            devicesModel?.needsPairing(machine) ?? false
-        }
-        nodeActions.hideDevice = { [weak devicesModel] machine in
-            guard let instance = machine.deviceInstance else { return }
-            Task { await devicesModel?.preferences?.setHidden(instance, hidden: true) }
-        }
-        nodeActions.setDeviceDiscovery = { [weak devicesModel] enabled in
-            Task { await devicesModel?.preferences?.setDiscoveryEnabled(enabled) }
-        }
-        nodeActions.setDeviceIncomingAccess = { [weak devicesModel] enabled in
-            Task { await devicesModel?.preferences?.setIncomingAccessEnabled(enabled) }
-        }
         // The header "+" is Cmd-Shift-Y from this window: same gates, sheet, optimistic create, and no workspace until the sheet completes.
         nodeActions.newMachine = { [weak tabManager] in
             _ = AppDelegate.shared?.performNewCloudMachineAction(
@@ -484,7 +461,6 @@ struct MachinesPanelView: View {
         nodeActions.removeCoderouterAccount = { [self] account in removeCoderouterAccount(account) }
         nodeActions.refreshCoderouter = { [self] in requestCoderouterRefresh() }
         nodeActions.refreshCloudMachines = { [weak viewModel] in viewModel?.refresh(tree: true) }
-        nodeActions.refreshDevices = { [weak devicesModel] in devicesModel?.refresh() }
         return CloudTreeOutlineView(
             machines: includesCloud ? viewModel.sidebarMachines : [], pendingMachineDeletions: MachineDeleteCoordinator.shared.pendingMachineIDs,
             pendingCreates: includesCloud ? viewModel.pendingCreates : [],
@@ -500,15 +476,15 @@ struct MachinesPanelView: View {
             source: treeSource,
             devicesSection: CloudTreeDevicesSection(
                 discoveryEnabled: includesDevices,
-                incomingAccessEnabled: devicesModel.preferences?.incomingAccessEnabled ?? false,
+                incomingAccessEnabled: false,
                 discoveryManaged: discoveryManaged,
-                incomingAccessManaged: incomingAccessManaged, available: DevicesFeature.isAvailable(), isRefreshing: devicesModel.isRefreshing
+                incomingAccessManaged: incomingAccessManaged, available: false, isRefreshing: false
             ),
             coderouter: coderouter,
             showsCloudVPNWarning: tunnelStatus.status?.state == .off,
             canCreateCloudMachine: includesCloud,
             cloudMachinesUsage: includesCloud ? viewModel.visibleUsage : nil, cloudMachinesRefresh: includesCloud ? .init(isRefreshing: viewModel.isRefreshingOnRequest || viewModel.isRenamingMachine) : nil,
-            reveal: devicesModel.revealRequest,
+            reveal: nil,
             creationReveal: SurfaceCatalog.shared.cloudWorkspaceCreationCoordinator.reveals.reveal(for: tabManager)
         )
         .accessibilityIdentifier("CloudMachinesTree")

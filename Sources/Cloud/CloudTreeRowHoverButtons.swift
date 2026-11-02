@@ -225,15 +225,8 @@ private struct CloudTreeDevicesMenuButton: View {
 
     var body: some View {
         Menu {
-            DevicesSidebarControls(
-                discoveryEnabled: section.discoveryEnabled,
-                incomingAccessEnabled: section.incomingAccessEnabled,
-                discoveryManaged: section.discoveryManaged,
-                incomingAccessManaged: section.incomingAccessManaged,
-                unavailable: !section.available,
-                setDiscovery: { nodeActions.setDeviceDiscovery($0) },
-                setIncomingAccess: { nodeActions.setDeviceIncomingAccess($0) }
-            )
+            // The My Devices controls went with Sources/Devices (Phase 9.14 (B)).
+            EmptyView()
         } label: {
             CmuxResolvedIconImage(request: CmuxResolvedIconRequest(
                 source: .systemSymbol(name: "ellipsis", accessibilityDescription: nil),

@@ -18,7 +18,7 @@ extension CloudTreeOutlineView {
     /// nothing to write to and must not offer the verb.
     ///
     /// Another Mac is excluded even when the row does have a tab.
-    /// `DeviceSurfaceProvider.renameRemoteTab` forwards to the host's terminal
+    /// A device provider's `renameRemoteTab` forwards to the host's terminal
     /// rename verb, which resolves the id with `requireTerminal: true`, so a
     /// browser or display rename there fails with "Terminal surface not found"
     /// after the row has already shown the new name optimistically. Renaming

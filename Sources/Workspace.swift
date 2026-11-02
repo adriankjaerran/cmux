@@ -15574,11 +15574,6 @@ extension Workspace: BonsplitDelegate {
         let deviceLayoutExternal = remoteTmuxMirrorMutations.suppressesFocusActivation
         // Before deferral: a graph event queued behind this edit must not re-apply the old tree.
         if !deviceLayoutExternal { cloudLayoutDidChange() }
-        // Capture the user's arrangement before deferred delivery: an incoming
-        // remote snapshot must not replace the intent while this event waits.
-        let deviceLayoutSnapshot = !deviceLayoutExternal
-            && cloudBindingState.projectedResources.values.contains(where: { $0.machine.isDevice })
-            ? deviceWorkspaceLayoutSnapshot() : nil
         geometryNotificationScheduler.schedule(zeroDelayPolicy: .yieldOnce) { [weak self] in
             guard let self else { return }
             self.tmuxLayoutSnapshot = snapshot
@@ -15591,8 +15586,6 @@ extension Workspace: BonsplitDelegate {
                 userInfo: [
                     GhosttyNotificationKey.tabId: self.id,
                     GhosttyNotificationKey.topologyChanged: topologyChanged,
-                    DeviceWorkspaceLayoutHost.externalGeometryKey: deviceLayoutExternal,
-                    DeviceWorkspaceLayoutHost.layoutGeometryKey: deviceLayoutSnapshot as Any,
                 ]
             )
             self.scheduleTerminalGeometryReconcile()

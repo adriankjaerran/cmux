@@ -288,7 +288,7 @@ extension SurfaceCatalog {
         let title = current?.group.title ?? title
         // A Cloud VM's installed graph owns its geometry, even when it has none.
         // Another Mac installs no geometry: the layout its caller fetched from
-        // that Mac stays authoritative, and DeviceWorkspaceLayoutCoordinator
+        // that Mac stays authoritative, and the device layout coordinator
         // reconciles it afterwards.
         let layout = group.placements.first?.resource.machine.isDevice == true
             ? layout
