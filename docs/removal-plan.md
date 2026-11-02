@@ -160,7 +160,7 @@ shortcut names you bind (`reopenPreviousSession`, `openFolder`, `focusSidebar`, 
    (also copies `setup-pam-tid.sh`, the Touch-ID-for-sudo helper). **Keep all of these.**
 4. `build-ghostty-cli-helper.sh`: builds the `ghostty` helper with Zig. **Keep.**
 5. Skips `cmuxd` (no `cmuxd/` folder here) and cmux-tui.
-6. `install-coderouter-client.sh`: downloads CodeRouter. **This goes in Phase 1.**
+6. ~~`install-coderouter-client.sh`: downloads CodeRouter.~~ Call commented out in Phase 1, script deleted in `ccd7f4f`.
 7. Re-links resource bundles, signs the app ad hoc, opens it.
 
 The other ~250 files in `scripts/` are upstream CI, release, iOS and test tools that nothing in your build calls.
@@ -192,14 +192,28 @@ mention it.
 **Plan:**
 1. Skip the call in `reload.sh` (a fork comment like the cmux-tui one, or `CMUX_SKIP_CODEROUTER=1` set by both
    wrapper scripts). Leave the app code alone. `cmux cr` then says it isn't installed.
-2. Later, optional: remove the CLI commands and the guide panel. Keep `coderouterGuide` decodable or just drop the
+2. ✅ Later, optional: remove the CLI commands and the guide panel (`ccd7f4f`). Keep `coderouterGuide` decodable or just drop the
    optional field (rule 2 above).
 
 **Risk:** none for the running setup. An incremental build keeps the old `coderouter` binary in the app; that's
 harmless. A clean build won't have it.
 
-**Done in `edbd4f6`:** step 1 only (the call in `reload.sh` is commented out with a fork note). The app-side
-`cmux coderouter` / `cmux cr` code and the guide panel are still there (step 2, optional, not done).
+**Done in `edbd4f6`:** step 1 only (the call in `reload.sh` is commented out with a fork note).
+
+**Step 2 done in `ccd7f4f`:** `CLI/CMUXCLI+Coderouter*.swift`, `CoderouterCommand` (`coderouter` / `cr`) and its
+dispatch and help lines, the CLI's CodeRouter handoff/exec/capability-probe code and the `SocketClient`
+arm-server identity checks in `CLI/cmux.swift`; the guide pane (`CoderouterGuidePanel`,
+`Workspace+CoderouterGuidePane.swift`, `CoderouterGuidePanelView`, the `coderouterGuide` session field and the
+"open as pane" action); `Resources/coderouter-cli.json`, `scripts/install-coderouter-client.sh` and the
+commented-out call in `reload.sh`. `PanelType.coderouterGuide` stays and restores as nothing (rule 3).
+`cmux coderouter` / `cmux cr` now say "Unknown command".
+Left for Phase 9 (woven into Cloud): the Cloud sidebar's CodeRouter section and its "?" guide popover
+(`Sources/Cloud/Coderouter*.swift`, `CodeRouter*.swift`, `CloudTree*`), `CoderouterAccountStore` in
+`TabManager`, the `coderouter.*` socket methods, `CmuxCloud/Accounts/CoderouterClient.swift`, the
+`CodeRouter*` types in `CmuxControlSocket` (also used by the app's handoff server), `SurfaceKind.coderouterGuide`,
+the `cli.coderouter.*` / `coderouter.guide.*` strings in `Localizable.xcstrings`, and the CodeRouter section of
+`Resources/en.lproj/cloud-agent-skill.md`. Dangling pbxproj refs to the already-deleted
+`CLICoderouter*Tests.swift` test files were left as they were.
 
 - ✅ Build; the log no longer shows a CodeRouter download, and `Resources/bin/coderouter` is gone from the built app.
 - ⬜ Open the test app; a zsh terminal shows the folder and git branch in the sidebar (check by hand).
@@ -319,6 +333,14 @@ the dead `cmux_computer_use_*` lines it fed in the generated shim script (they s
 `Resources/ComputerUseHelper.icon`. Not touched: the Cloud guide text that mentions `cmux vpn` (Phase 9), the
 `computerUse` settings keys in `CmuxSettings`, and the `cmux-cua` MCP injection inside
 `Resources/bin/cmux-claude-wrapper` (it finds no helper and skips; wrappers were out of scope).
+
+**Later, in `ae3f768`:** the `cmux-cua` block in `Resources/bin/cmux-claude-wrapper` is gone (MCP config builder,
+client and skill-link policy loaders, the managed-policy `disableSideloadFlags` probe that only gated it, skill
+reconcile, the `--mcp-config` injection and the `CMUX_CUA_SOCKET_AUTH_TOKEN` unsets). `bash -n` / `zsh -n` pass;
+`claude --version` and a hooked launch through the shim still work, with no `--mcp-config` added.
+Still there: the same kind of block in `Resources/bin/cmux-codex-wrapper` (`cmux_computer_use_*`,
+`mcp_servers.cmux-cua.*`), `scripts/strip-cmux-cua-rpaths.sh` and the `cmux-cua` steps in signing/CI scripts,
+`ContentView+ComputerUseCommandPalette.swift`, and `CMUX_COMPUTER_USE_APP_ENABLED` in `CmuxTerminal`.
 
 - ✅ `cmux vpn` says unknown command; new terminals get the shims (`agy amp claude codex hermes pi`), `claude
   --version` and `pi --version` run through them.
