@@ -1,11 +1,10 @@
 import Foundation
 import AppKit
-import CmuxUpdater
 
 // @unchecked Sendable: all mutable state (`entries`) is confined to the serial `queue`; the
-// other stored properties are immutable. Conforms to CmuxUpdater's `UpdateLogging` seam so the
-// updater package can log through this app-owned file logger.
-final class UpdateLogStore: UpdateLogging, @unchecked Sendable {
+// other stored properties are immutable. Fork: the updater is gone; this file logger stays for
+// the UI-test and titlebar breadcrumbs that still write to it.
+final class UpdateLogStore: @unchecked Sendable {
     private let queue = DispatchQueue(label: "cmux.update.log")
     private var entries: [String] = []
     private let maxEntries = 200
