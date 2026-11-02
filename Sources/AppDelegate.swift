@@ -855,7 +855,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private var shortcutDefaultsObserver: NSObjectProtocol?
     private weak var agentInboxReplyFieldWindow: NSWindow?
     private var menuBarVisibilityObserver: NSObjectProtocol?
-    private var mobileHostSettingsObserver: NSObjectProtocol?
     /// Applies MDM managed-policy transitions (browser/remote-control) while
     /// the app runs. Installed once from `installManagedPolicyEnforcement()`.
     var managedPolicyEnforcementObserver: ManagedPolicyEnforcementObserver?
@@ -2439,15 +2438,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         notificationStore: TerminalNotificationStore,
         sidebarState: SidebarState,
         settingsRuntime: SettingsRuntime,
-        auth: MacAuthComposition,
-        cloudMachinePinStore: CloudMachinePinStore,
-        cloudWorkspaceCoordinator: CloudWorkspaceCoordinator,
-        cloudWorkspaceOperationController: CloudWorkspaceOperationController,
-        newMachineSheetPresenter: any NewMachineSheetPresenting,
         automationEngine: AutomationEngine,
-        browserDataImportCoordinator: BrowserDataImportCoordinator,
-        devicesRegistry: DeviceSurfaceProviderRegistry? = nil,
-        computersService: HiveComputersService? = nil
+        browserDataImportCoordinator: BrowserDataImportCoordinator
     ) {
         captureSessionLaunchStateIfNeeded()
         self.tabManager = tabManager
@@ -2463,115 +2455,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         self.settingsRuntime = settingsRuntime
         self.notificationStore = notificationStore
         self.sidebarState = sidebarState
-        self.auth = auth
-        self.cloudMachinePinStore = cloudMachinePinStore
-        self.cloudWorkspaceCoordinator = cloudWorkspaceCoordinator
-        self.cloudWorkspaceOperationController = cloudWorkspaceOperationController
-        self.deviceWorkspaceCreationCoordinator = makeDeviceWorkspaceCreationCoordinator(
-            operations: cloudWorkspaceOperationController, catalog: .shared
-        )
-        self.newMachineSheetPresenter = newMachineSheetPresenter
+        // Cloud removal (Phase 9.10): no auth graph, Cloud telemetry/operations/tunnel,
+        // VM/CodeRouter clients, workspace or device coordinators, mobile host auth,
+        // phone-reply inbox, connectivity subscribers or paired-Mac backup are wired.
+        // `auth` and the Cloud/Devices properties stay nil for the dead code that still
+        // reads them until those folders are deleted.
         self.browserDataImportCoordinator = browserDataImportCoordinator
-        let cloudUploader = CloudTelemetryUploader(
-            auth: auth.coordinator, baseURL: CloudTelemetryUploader.telemetryBaseURL, client: .current()
-        )
-        cloudUploader.attach(to: auth.coordinator.rateLimitTelemetry)
-        // Cloud removal (Phase 9.2): pending cloud telemetry is not resumed.
-        let cloudOperations = CloudOperationRecorder(uploader: cloudUploader, identity: { [weak coordinator = auth.coordinator] in
-            coordinator?.authenticatedSessionIdentity
-        })
-        self.cloudOperations = cloudOperations
-        let cloudTunnel = makeCloudTunnelCoordinator()
-        cloudTunnelCoordinator = cloudTunnel
-        CmuxTuiSurfaceProviderRegistry.shared.portAccess.coordinator = cloudTunnel
-        let cloudReads = VMClient.bootstrap(
-            auth: auth.coordinator,
-            checkpointRenames: SurfaceCatalog.shared.cloudRenameCoordinator,
-            operations: cloudOperations,
-            telemetry: .live(),
-            isCloudEnabled: { CloudMachinesFeature.offMainIsEnabled() }, isCloudAvailable: { CloudMachinesFeature.offMainIsAvailable() }
-        )
-        TerminalController.shared.cloudTunnel = cloudTunnel
-        // Cloud removal (Phase 9.2): the New Machine cache, Remotes/Teams/AIAccounts/
-        // MachineUsage clients, phone push, device registry, computers, devices
-        // registry, workspace presence and the phone-reply inbox are not started.
-        _ = cloudReads
-        CoderouterClient.bootstrap(auth: auth.coordinator)
-        MobileHostService.shared.configure(auth: auth.coordinator)
         caffeineController.onStateChange = { [weak self] _ in
             self?.menuBarExtraController?.refreshForDebugControls()
         }
-        self.devicesRegistry = devicesRegistry
-        // Relayed phone replies share the direct RPC paste-and-submit path,
-        // including named Return-key submission and partial-success semantics.
-        PhoneReplyInboxCoordinator.shared.injectTerminalInput = { [weak self] params, retargetsToLiveSurfaceOwner in
-            guard let self else { return .permanentlyUndeliverable }
-            let controller = TerminalController.shared
-            // The inbox payload always carries a stable surface id. Resolve it
-            // before entering the generic mobile RPC so a launch-time workspace
-            // claim cannot route the reply to a stale manager.
-            guard let routedParams = self.phoneReplyTerminalInputParams(
-                params,
-                retargetsToLiveSurfaceOwner: retargetsToLiveSurfaceOwner
-            ) else {
-                // A valid surface can be temporarily absent while a window,
-                // Dock, or remote-tmux projection is being rebuilt. The inbox
-                // has a server-side TTL, so keep that bounded retry alive;
-                // malformed payloads are the only immediate permanent case.
-                let hasValidSurfaceID = controller.v2UUID(params, "surface_id") != nil
-                let hasWorkspaceID = controller.v2HasNonNullParam(params, "workspace_id")
-                let hasValidWorkspaceID = controller.v2UUID(params, "workspace_id") != nil
-                if !retargetsToLiveSurfaceOwner, !hasWorkspaceID {
-                    return .permanentlyUndeliverable
-                }
-                guard hasValidSurfaceID,
-                      (!hasWorkspaceID || hasValidWorkspaceID) else {
-                    return .permanentlyUndeliverable
-                }
-                return .retryable
-            }
-            switch await controller.v2MobileTerminalPaste(params: routedParams) {
-            case .ok:
-                // `terminal.paste` applies the text before it attempts the
-                // named key. A false `submitted` flag is therefore a partial
-                // success, not a safe invitation to replay the whole reply:
-                // doing so would duplicate text in the agent prompt. The
-                // accepted paste is the durable delivery boundary; the user
-                // can press Return manually if the key was rejected.
-                return .delivered
-            case .err(let code, _, _):
-                if code == "input_queue_full" || code == "surface_unavailable" {
-                    return .retryable
-                }
-                guard code == "not_found" else {
-                    return .permanentlyUndeliverable
-                }
-                // A surface can be absent while startup/session restoration is
-                // still rebuilding its workspace. Once that pass has finished,
-                // a stable-surface lookup miss is authoritative and the parked
-                // reply must be acknowledged instead of retrying until TTL.
-                let restorationPending = !self.didAttemptStartupSessionRestore
-                    || self.isApplyingSessionRestore
-                return restorationPending ? .retryable : .permanentlyUndeliverable
-            }
-        }
-        connectivityInvalidationSubscriberCoordinator.configure(auth: auth.coordinator)
-        // DEV-only: auto-publish this Mac's attach route to the signed-in user's
-        // pairedMacs backup so a fresh dev iOS build restores it (no manual host
-        // entry). No-op on Release / when the flag is off.
-        MacPairedMacBackupPublisher.shared.configure(auth: auth.coordinator)
-        TerminalController.shared.attachAuth(coordinator: auth.coordinator, accountFlow: auth.accountFlow)
         TerminalController.shared.attachBrowserDataImportCoordinator(browserDataImportCoordinator)
         TerminalController.shared.attachCaffeineController(caffeineController)
         TerminalController.shared.agentChatTranscriptService = agentChatTranscriptService
         TerminalController.shared.attachAutomationEngine(automationEngine)
         automationEngine.start()
-        auth.start()
         ensureMobileWorkspaceListObserver(for: tabManager)
         MobileTerminalRenderObserver.shared.start()
         agentChatTranscriptService.start()
         SidebarAgentUsageCoordinator { [weak self] id in self?.tabManagerFor(tabId: id)?.workspacesById[id]?.sidebarMetadata }.start()
-        installMobileHostSettingsObserver()
         installManagedPolicyEnforcement()
         scheduleGhosttyCrashBreadcrumbIfNeeded(notificationStore: notificationStore)
         startPaneMemoryGuardrailIfNeeded()
@@ -10991,19 +10892,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         MenuBarOnlySettings.normalizeLegacyStoredPreference(defaults: defaults)
         syncActivationPolicy(defaults: defaults)
         syncMenuBarExtraVisibility(defaults: defaults)
-    }
-
-    private func installMobileHostSettingsObserver() {
-        guard mobileHostSettingsObserver == nil else { return }
-        mobileHostSettingsObserver = NotificationCenter.default.addUserDefaultsObserver(object: nil) { [weak self] in
-            Task { @MainActor [weak self] in
-                self?.syncMobileHostService()
-            }
-        }
-    }
-
-    private func syncMobileHostService() {
-        // Cloud removal (Phase 9.2): the mobile host is never synced to settings.
     }
 
     private func syncActivationPolicy(defaults: UserDefaults = .standard) {

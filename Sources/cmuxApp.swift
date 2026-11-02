@@ -17,8 +17,6 @@ struct cmuxApp: App {
     /// App-owned settings graph, injected into each SwiftUI hosting root.
     private let settingsRuntime: SettingsRuntime
 
-    /// App-owned auth graph injected into the delegate and auth consumers.
-    private let authComposition: MacAuthComposition
     /// Composition-root owner for the config-backed automation bridge.
     private let automationEngine: AutomationEngine
     private let browserDataImportCoordinator: BrowserDataImportCoordinator
@@ -92,12 +90,10 @@ struct cmuxApp: App {
             saveSecret: { try socketPasswordStore.savePassword($0) },
             backupTimestamp: secretMigrationTimestamp
         )
-        let authComposition = MacAuthComposition()
         let browserDataImportCoordinator = BrowserDataImportCoordinator()
         let notificationStore = TerminalNotificationStore.shared
         let closedItemHistoryStore = ClosedItemHistoryStore.shared
         let sidebarState = SidebarState()
-        self.authComposition = authComposition
         self.browserDataImportCoordinator = browserDataImportCoordinator
 
         // If invoked with CLI-style arguments (e.g. `cmux hooks setup`), exec the
@@ -139,21 +135,18 @@ struct cmuxApp: App {
         // Reconcile saved language preference before any UI loads
         LanguageSettingsStore(defaults: .standard, domainName: ProcessDefaultsDomain.name).reconcileLanguageOverrideAtLaunch()
         StartupBreadcrumbLog.append("app.init.language.applied")
-        let devices = MacDevicesComposition(defaults: .standard, catalog: settingsCatalog)
-        let devicesRegistry = devices.registry
-        let computersService = devices.computers
+        // The Settings user-defaults store (formerly built inside the Devices composition).
+        let userDefaultsStore = UserDefaultsSettingsStore(defaults: .standard, migrating: settingsCatalog.all)
         let hostSettingsActions = HostSettingsActions(
             configFileURL: configFileURL,
-            browserDataImportCoordinator: browserDataImportCoordinator,
-            computersActions: devices.settingsActions
+            browserDataImportCoordinator: browserDataImportCoordinator
         )
         self.settingsRuntime = SettingsRuntime(
             catalog: settingsCatalog,
-            userDefaultsStore: devices.defaultsStore,
+            userDefaultsStore: userDefaultsStore,
             jsonStore: JSONConfigStore(fileURL: configFileURL),
             secretStore: secretStore,
             errorLog: SettingsErrorLog(),
-            accountFlow: authComposition.accountFlow,
             hostActions: hostSettingsActions,
             shortcutDefaultResolver: Self.makeShortcutDefaultResolver()
         )
@@ -175,7 +168,6 @@ struct cmuxApp: App {
         KeyboardShortcutSettings.settingsFileStore.applyDeferredManagedDefaultSideEffects()
         StartupBreadcrumbLog.append("app.init.keyboardShortcuts.sideEffectsApplied")
         StartupBreadcrumbLog.append("app.init.tabManager.begin")
-        let (cloudMachinePinStore, cloudWorkspaceCoordinator) = Self.makeCloudWorkspaceComposition(auth: authComposition)
         let tabManager = TabManager(
             workspaceCustomizationStore: workspaceCustomizationStore,
             nativeSSHConnectionBroker: TerminalController.shared.nativeSSHConnectionBroker,
@@ -253,25 +245,14 @@ struct cmuxApp: App {
 
         // UI tests need AppDelegate wiring even if SwiftUI appearance callbacks are skipped.
         StartupBreadcrumbLog.append("app.init.delegate.configure.begin")
-        let cloudWorkspaceOperationController = CloudWorkspaceOperationController(
-            isAvailable: { cloudWorkspaceCoordinator.isAvailable }
-        )
         appDelegate.configure(
             tabManager: tabManager,
             notificationStore: notificationStore,
             sidebarState: sidebarState,
             settingsRuntime: settingsRuntime,
-            auth: authComposition,
-            cloudMachinePinStore: cloudMachinePinStore,
-            cloudWorkspaceCoordinator: cloudWorkspaceCoordinator,
-            cloudWorkspaceOperationController: cloudWorkspaceOperationController,
-            newMachineSheetPresenter: NewMachineSheetPresenter.shared,
             automationEngine: automationEngine,
-            browserDataImportCoordinator: browserDataImportCoordinator,
-            devicesRegistry: devicesRegistry,
-            computersService: computersService
+            browserDataImportCoordinator: browserDataImportCoordinator
         )
-        hostSettingsActions.cloudActivationCoordinator = appDelegate.cloudActivationCoordinator
         historyMenuCoordinator.refreshIfNeeded()
         StartupBreadcrumbLog.append("app.init.delegate.configured")
     }
