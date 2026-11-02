@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxCore
 import CmuxPanes
 import CmuxSurfaceCatalogModel

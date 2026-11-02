@@ -1,5 +1,4 @@
 import CmuxSSHClipboardTrust
-import CmuxCloud
 import AppKit
 import Bonsplit
 import CmuxSurfaceCatalogModel
@@ -10,7 +9,7 @@ extension Workspace {
     var configuredSSHClipboardMachine: SurfaceMachineID? {
         guard let configuration = remoteConfiguration,
               configuration.transport == .ssh else { return nil }
-        return .ssh(SSHTuiConnection(configuration: configuration).identityDigest)
+        return .ssh(configuration.sshIdentityDigest)
     }
 
     /// The SSH identity for a plain `ssh-tmux` mirror, when this workspace is
@@ -32,7 +31,7 @@ extension Workspace {
             localSocketPath: nil,
             terminalStartupCommand: nil
         )
-        return .ssh(SSHTuiConnection(configuration: configuration).identityDigest)
+        return .ssh(configuration.sshIdentityDigest)
     }
 
     /// Whether a new pane created by this plain `ssh-tmux` mirror may emit OSC 52.

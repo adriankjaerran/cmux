@@ -373,12 +373,6 @@ extension Workspace {
         // A Cloud manual-mirror panel owns its own native input surface. It is
         // represented by a TerminalPanel, but it is not a remote-tmux container
         // and therefore has no nested control projection to resolve.
-        if focusedPanelId == surfaceID,
-           let panel = panels[surfaceID] as? TerminalPanel,
-           panel.cloudAttachment != nil,
-           !isRemoteTmuxControlContainer(surfaceID) {
-            return true
-        }
         return focusedTerminalInputTarget()?.surfaceID == surfaceID
     }
 

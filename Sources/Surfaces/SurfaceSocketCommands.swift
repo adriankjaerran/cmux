@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxControlSocket
 import CmuxSettings
 import CmuxSurfaceCatalogModel
@@ -160,9 +159,7 @@ extension TerminalController {
             } else {
                 destination = nil
             }
-            return try await CloudRequestBudget.live.withBudget(seconds: 240) {
-                v2Ok(id: id, result: try await Self.surfaceNewDisplay(options, destination: destination))
-            }
+            return v2Ok(id: id, result: try await Self.surfaceNewDisplay(options, destination: destination))
         } catch let timeout as SocketMainActorHopTimeout {
             return await socketMainHopTimeoutResponse(
                 id: request.id, method: request.method, isV2: true, error: timeout

@@ -262,6 +262,7 @@
 		C54860050000000000000001 /* AppDelegate+CmuxNavigationDeepLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = C54860050000000000000002 /* AppDelegate+CmuxNavigationDeepLinks.swift */; };
 		C3677004000000000000001 /* AppDelegate+CmuxSSHURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3677004000000000000002 /* AppDelegate+CmuxSSHURL.swift */; };
 		C914184E1B8005C53F85A652 /* ProcessOutputCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C914084E1B8005C53F85A652 /* ProcessOutputCollector.swift */; };
+		C9141EEC4215AF686C4F0F4C /* WorkspaceRemoteConfiguration+SSHIdentityDigest.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9140EEC4215AF686C4F0F4C /* WorkspaceRemoteConfiguration+SSHIdentityDigest.swift */; };
 		C9141E5A3F6AF4AB9C20BFC5 /* CloudUnavailableMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9140E5A3F6AF4AB9C20BFC5 /* CloudUnavailableMessage.swift */; };
 		C9141C3596B830F4E8C89472 /* SocketErrorTextSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9140C3596B830F4E8C89472 /* SocketErrorTextSanitizer.swift */; };
 		C65930010000000000000003 /* AppDelegate+CrashSessionSnapshotRemoval.swift in Sources */ = {isa = PBXBuildFile; fileRef = C65930010000000000000004 /* AppDelegate+CrashSessionSnapshotRemoval.swift */; };
@@ -4404,6 +4405,7 @@
 		C54860050000000000000002 /* AppDelegate+CmuxNavigationDeepLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+CmuxNavigationDeepLinks.swift"; sourceTree = "<group>"; };
 		C3677004000000000000002 /* AppDelegate+CmuxSSHURL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+CmuxSSHURL.swift"; sourceTree = "<group>"; };
 		C914084E1B8005C53F85A652 /* ProcessOutputCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessOutputCollector.swift"; sourceTree = "<group>"; };
+		C9140EEC4215AF686C4F0F4C /* WorkspaceRemoteConfiguration+SSHIdentityDigest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkspaceRemoteConfiguration+SSHIdentityDigest.swift"; sourceTree = "<group>"; };
 		C9140E5A3F6AF4AB9C20BFC5 /* CloudUnavailableMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CloudUnavailableMessage.swift"; sourceTree = "<group>"; };
 		C9140C3596B830F4E8C89472 /* SocketErrorTextSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SocketErrorTextSanitizer.swift"; sourceTree = "<group>"; };
 		C65930010000000000000004 /* AppDelegate+CrashSessionSnapshotRemoval.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+CrashSessionSnapshotRemoval.swift"; sourceTree = "<group>"; };
@@ -9713,6 +9715,7 @@
 				C54860050000000000000002 /* AppDelegate+CmuxNavigationDeepLinks.swift */,
 				C3677004000000000000002 /* AppDelegate+CmuxSSHURL.swift */,
 				C914084E1B8005C53F85A652 /* ProcessOutputCollector.swift */,
+				C9140EEC4215AF686C4F0F4C /* WorkspaceRemoteConfiguration+SSHIdentityDigest.swift */,
 				C9140E5A3F6AF4AB9C20BFC5 /* CloudUnavailableMessage.swift */,
 				C9140C3596B830F4E8C89472 /* SocketErrorTextSanitizer.swift */,
 				C65930010000000000000004 /* AppDelegate+CrashSessionSnapshotRemoval.swift */,
@@ -13058,6 +13061,7 @@
 				C54860050000000000000001 /* AppDelegate+CmuxNavigationDeepLinks.swift in Sources */,
 				C3677004000000000000001 /* AppDelegate+CmuxSSHURL.swift in Sources */,
 				C914184E1B8005C53F85A652 /* ProcessOutputCollector.swift in Sources */,
+				C9141EEC4215AF686C4F0F4C /* WorkspaceRemoteConfiguration+SSHIdentityDigest.swift in Sources */,
 				C9141E5A3F6AF4AB9C20BFC5 /* CloudUnavailableMessage.swift in Sources */,
 				C9141C3596B830F4E8C89472 /* SocketErrorTextSanitizer.swift in Sources */,
 				C65930010000000000000003 /* AppDelegate+CrashSessionSnapshotRemoval.swift in Sources */,

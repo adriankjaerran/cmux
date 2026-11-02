@@ -1,4 +1,3 @@
-import CmuxCloud
 import Foundation
 import CmuxTerminalCore
 import Combine
@@ -111,9 +110,8 @@ final class TerminalPanel: Panel, ObservableObject {
     /// Set by the owning workspace while `agentWakeFailure` is shown.
     var onRequestAgentWakeRetry: (() -> Void)?
     var onDismissAgentWakeFailure: (() -> Void)?
-    /// A native cloud pane's live attachment state (nil for local terminals).
-    /// Written only by the owning cloud session; the view shows it.
-    var cloudAttachment: CloudTerminalAttachmentStatus?
+    /// The "disconnected" state of a restored relay-less SSH recovery placeholder
+    /// (nil for ordinary terminals).
     var deviceAttachment: DeviceTerminalAttachmentStatus?
 
     var onRequestWorkspacePaneFlash: ((WorkspaceAttentionFlashReason) -> Void)?

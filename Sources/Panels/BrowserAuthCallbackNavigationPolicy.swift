@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import CmuxAuthRuntime
 import CmuxBrowser
@@ -50,7 +49,7 @@ struct BrowserAuthCallbackNavigationPolicy {
     ///   to the app; `nil` (the fork's default, sign-in is gone) trusts none.
     init(
         trustedSourcePageOrigin: URL? = nil,
-        callbackScheme: String = AuthEnvironment.callbackScheme
+        callbackScheme: String = AppURLScheme.callbackScheme
     ) {
         trustedSourceOrigin = trustedSourcePageOrigin.flatMap { BrowserWebAuthnSecurityOrigin(url: $0) }
         ownCallbackScheme = callbackScheme.lowercased()

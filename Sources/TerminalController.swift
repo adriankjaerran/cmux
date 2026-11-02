@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxMobileHost
 import CmuxSettingsUI
 import AppKit
@@ -577,26 +576,6 @@ class TerminalController {
         )
         self.socketPathMarkerStore = socketPathMarkerStore
         self.remoteProxyBroker = remoteProxyBroker
-        // Managed Cloud VM daemon endpoints go stale when the machine's preview rotates
-        // (sandbox recreation, preview re-creation). Before each proxy retry, re-mint the
-        // endpoint through the backend so the broker never redials a dead URL forever.
-        (remoteProxyBroker as? RemoteProxyBroker)?.configurationRefresher = { configuration in
-            guard let vmID = configuration.managedCloudVMID else { return nil }
-            guard let attach = try? await VMClient.shared.openAttach(id: vmID, requireDaemon: true),
-                  case .websocket(let endpoint) = attach,
-                  let daemon = endpoint.daemon else {
-                return nil
-            }
-            return configuration.withDaemonWebSocketEndpoint(
-                WorkspaceRemoteWebSocketDaemonEndpoint(
-                    url: daemon.url,
-                    headers: daemon.headers,
-                    token: daemon.token,
-                    sessionId: daemon.sessionId,
-                    expiresAtUnix: daemon.expiresAtUnix
-                )
-            )
-        }
         self.nativeSSHConnectionBroker = nativeSSHConnectionBroker
         let serverEventTarget = ServerEventTarget()
         let socketServer = SocketControlServer(
@@ -3590,7 +3569,7 @@ class TerminalController {
         // (the Task inherits it), so the server answers before either gives up.
         let task = Task {
             do {
-                result = .success(try await CloudRequestBudget.live.withBudget(seconds: timeoutSeconds) { try await work() })
+                result = .success(try await work())
             } catch {
                 result = .failure(error)
             }
@@ -3615,47 +3594,6 @@ class TerminalController {
         case .failure(let error):
             // A caller's own error codes come first; the timeout above never reaches them.
             if let mapped = mapError(error) { return mapped }
-            if case VMClientError.disabledByManagedPolicy = error {
-                return v2Error(id: id, code: "cloud_disabled", message: String(describing: error))
-            }
-            if case VMClientError.cloudMachinesDisabled = error {
-                return v2Error(id: id, code: "cloud_disabled", message: String(describing: error))
-            }
-            if let deliveryError = error as? CloudFileDelivery.DeliveryError {
-                return v2Error(id: id, code: "vm_file_delivery_failed", message: deliveryError.localizedDescription)
-            }
-            if let combinedError = error as? CloudFileDelivery.OperationAndCleanupError {
-                return v2Error(id: id, code: "vm_file_delivery_failed", message: combinedError.localizedDescription)
-            }
-            if case VMClientError.lifecycleUnsupported = error {
-                return v2Error(id: id, code: "vm_operation_unsupported", message: String(describing: error))
-            }
-            // Network policy refusals name the offending entry; the generic
-            // Cloud VM line would hide which domain or range was wrong.
-            if let editError = error as? CloudNetworkPolicyEditError {
-                return v2Error(id: id, code: "invalid_params", message: editError.errorDescription ?? String(describing: editError))
-            }
-            if let requestError = error as? CloudNetworkPolicyRequestError {
-                let code = requestError == .unsupported ? "vm_operation_unsupported" : "invalid_network_policy"
-                return v2Error(id: id, code: code, message: requestError.errorDescription ?? String(describing: requestError))
-            }
-            if let deliveryError = error as? CloudEnvDelivery.DeliveryError {
-                return v2Error(id: id, code: "vm_env_delivery_failed", message: deliveryError.localizedDescription)
-            }
-            if let combinedError = error as? CloudEnvDelivery.OperationAndCleanupError {
-                return v2Error(id: id, code: "vm_env_delivery_failed", message: combinedError.localizedDescription)
-            }
-            if let linkError = error as? CloudMachineLink.LinkError,
-               linkError.category == .daemonUnavailable {
-                return v2Error(
-                    id: id,
-                    code: "vm_tui_daemon_unavailable",
-                    message: daemonUnavailableMessage ?? String(
-                        localized: "socket.cloudVM.daemonUnavailable",
-                        defaultValue: "The Cloud VM connection is unavailable. Wake the machine or retry the command."
-                    )
-                )
-            }
             if let catalogError = error as? SurfaceCatalogError {
                 switch catalogError {
                 case .nothingToOpen:
@@ -3670,68 +3608,10 @@ class TerminalController {
                     return v2Error(id: id, code: "vm_error", message: catalogError.localizedDescription)
                 }
             }
-            if let vmError = error as? VMClientError,
-               Self.isCloudVMAuthenticationError(vmError) {
-                // Keep the auth boundary explicit for every VM verb. The CLI
-                // can then return a stable non-zero auth-required failure
-                // instead of presenting a generic backend error. A server 401
-                // means the app still holds a session the service rejects, so
-                // `cmux auth login` alone would short-circuit on "already
-                // signed in" — the fix is sign out, then sign in.
-                let message: String
-                if case .httpStatus = vmError {
-                    message = String(
-                        localized: "socket.cloudVM.sessionRejected",
-                        defaultValue: "The cmux Cloud service rejected this session. Run `cmux auth logout`, then `cmux auth login`, and retry."
-                    )
-                } else {
-                    message = String(
-                        localized: "socket.cloudVM.authRequired",
-                        defaultValue: "Cloud VM access requires sign-in. Run `cmux auth login`, then retry."
-                    )
-                }
-                return v2Error(
-                    id: id,
-                    code: "auth_required",
-                    message: message
-                )
-            }
-            if let vmError = error as? VMClientError,
-               let machineID = transportUnsupportedMachineID,
-               Self.isCloudVMTransportUnsupportedError(vmError) {
-                // `vm.cmux_remote_info` is the shared attach path for `vm shell`,
-                // `vm open`, `vm tui`, and the sidebar, so the message names the
-                // machine and the missing transport rather than guessing the
-                // caller, and points at commands that do not need that transport.
-                let alternative = String(
-                    format: String(
-                        localized: "socket.cloudVM.transportUnsupported.useExec",
-                        defaultValue: "Use `cmux vm exec %1$@ -- <command>`; `cmux vm ssh %1$@` works where the provider offers SSH."
-                    ),
-                    machineID,
-                    machineID
-                )
-                let message = String(
-                    format: String(
-                        localized: "socket.cloudVM.transportUnsupported",
-                        defaultValue: "%1$@ offers no `%2$@` transport (its provider has no cmux-tui daemon route), so cmux cannot attach a terminal to it. %3$@"
-                    ),
-                    machineID,
-                    "cmux-remote",
-                    alternative
-                )
-                return v2Error(
-                    id: id,
-                    code: "transport_unsupported",
-                    message: message,
-                    data: Self.cloudVMBackendErrorData(error)
-                )
-            }
             return v2Error(
                 id: id,
                 code: "vm_error",
-                message: Self.cloudVMSafeErrorMessage(error),
-                data: Self.cloudVMBackendErrorData(error)
+                message: Self.cloudVMSafeErrorMessage(error)
             )
         case nil:
             return v2Error(
@@ -3741,29 +3621,6 @@ class TerminalController {
             )
         }
     }
-    /// Backend error metadata passthrough so the CLI can make compatibility
-    /// decisions structurally instead of parsing formatted display text.
-    private nonisolated static func cloudVMBackendErrorData(_ error: Error) -> [String: Any]? {
-        guard case let VMClientError.httpStatus(status, body) = error else {
-            return nil
-        }
-        var payload: [String: Any] = ["http_status": status]
-        let object = body.data(using: .utf8)
-            .flatMap { try? JSONSerialization.jsonObject(with: $0, options: []) as? [String: Any] }
-        if let code = object?["error"] as? String, !code.isEmpty {
-            payload["backend_code"] = code
-        }
-        if let retryable = object?["retryable"] as? Bool {
-            payload["retryable"] = retryable
-        }
-        // The server trace id (support reference) travels with the structured
-        // error so the CLI and scripts can log it without parsing display text.
-        if let traceID = object?["traceId"] as? String, !traceID.isEmpty {
-            payload["trace_id"] = traceID
-        }
-        return payload
-    }
-
     /// Surface only the server's public copy, never a raw response body or
     /// provider diagnostics. Keep the support reference after sanitization.
     private nonisolated static func cloudVMSafeErrorMessage(_ error: Error) -> String {
@@ -3792,61 +3649,7 @@ class TerminalController {
         if let remoteTmuxError = error as? RemoteTmuxError {
             return remoteTmuxError.message
         }
-        guard case let VMClientError.httpStatus(status, body) = error else {
-            guard let vmError = error as? VMClientError else { return fallback }
-            let safe = SocketErrorTextSanitizer.sanitized(String(describing: vmError))
-            return safe.isEmpty || safe == SocketErrorTextSanitizer.hiddenOutputPlaceholder ? fallback : safe
-        }
-        guard let data = body.data(using: .utf8),
-              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return formattedCloudVMHTTPError(status: status, body: "")
-        }
-        // Reuse the formatter's HTTP code and action copy, but pass only public
-        // fields. Provider details and unvalidated support references stay out.
-        var publicObject: [String: Any] = [:]
-        for key in ["error", "message", "reason", "action", "retryAfterSeconds"] {
-            publicObject[key] = object[key]
-        }
-        if let ui = object["ui"] as? [String: Any] {
-            var publicUI: [String: Any] = [:]
-            for key in ["title", "message", "retryAfterSeconds"] {
-                publicUI[key] = ui[key]
-            }
-            publicObject["ui"] = publicUI
-        }
-        let ui = object["ui"] as? [String: Any]
-        if let trace = (object["traceId"] as? String) ?? (ui?["traceId"] as? String),
-           trace.count == 32, trace.allSatisfy(\.isHexDigit) {
-            publicObject["traceId"] = trace
-        }
-        guard let publicData = try? JSONSerialization.data(withJSONObject: publicObject),
-              let publicBody = String(data: publicData, encoding: .utf8) else { return fallback }
-        let safe = SocketErrorTextSanitizer.sanitized(
-            formattedCloudVMHTTPError(status: status, body: publicBody)
-        )
-        return safe.isEmpty || safe == SocketErrorTextSanitizer.hiddenOutputPlaceholder ? fallback : safe
-    }
-
-    private nonisolated static func isCloudVMAuthenticationError(_ error: VMClientError) -> Bool {
-        switch error {
-        case .notSignedIn:
-            return true
-        case .httpStatus(let status, _):
-            return status == 401
-        case .sessionRefreshFailed, .backendUnreachable, .malformedResponse, .lifecycleUnsupported, .disabledByManagedPolicy, .cloudMachinesDisabled:
-            return false
-        }
-    }
-
-    private nonisolated static func isCloudVMTransportUnsupportedError(_ error: VMClientError) -> Bool {
-        guard case let .httpStatus(status, body) = error, status == 501 else {
-            return false
-        }
-        guard let data = body.data(using: .utf8),
-              let object = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
-            return false
-        }
-        return object["error"] as? String == "vm_attach_transport_unsupported"
+        return fallback
     }
 
     nonisolated func v2AsyncResultCall(

@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import Bonsplit
 import CmuxBrowser
@@ -684,7 +683,7 @@ private final class PopupUIDelegate: BrowserPDFPreviewActionUIDelegate {
     // No trusted sign-in origin: every auth-callback navigation is blocked.
     private let authCallbackNavigationPolicy = BrowserAuthCallbackNavigationPolicy(
         trustedSourcePageOrigin: nil,
-        callbackScheme: AuthEnvironment.callbackScheme
+        callbackScheme: AppURLScheme.callbackScheme
     )
     private let subframeDownloadIntents = BrowserSubframeDownloadIntentTracker()
     private let basicAuthPromptCoordinator = BrowserHTTPBasicAuthPromptCoordinator()

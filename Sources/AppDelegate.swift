@@ -1,9 +1,5 @@
 import CmuxSSHClipboardTrust
-import CmuxCloud
-import CmuxCloudBannerCore
 import CmuxProductAnalytics
-import CmuxCloudTui
-import CmuxCloudMachines
 import AppKit
 import CmuxAppKitSupportUI
 import CmuxAuthRuntime
@@ -544,7 +540,6 @@ final class CmuxMainThreadTurnProfiler {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, NSMenuItemValidation, NSMenuDelegate, CmuxConfigStoreReloadEnvironment {
     nonisolated(unsafe) static var shared: AppDelegate?
-    let cloudBannerDismissalStore: CloudBannerDismissalStore
     /// Composition-root owner for the persisted per-SSH-machine clipboard-write policy.
     let sshClipboardWriteTrustStore: SSHClipboardWriteTrustStore
     /// Stateless control-socket syscall layer (CmuxControlSocket); composition-root owned.
@@ -1395,7 +1390,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 #endif
 
     override init() {
-        cloudBannerDismissalStore = CloudBannerDismissalStore(defaults: .standard)
         sshClipboardWriteTrustStore = SSHClipboardWriteTrustStore(defaults: .standard)
         let fileManager = FileManager.default
         if let bundleIdentifier = Bundle.main.bundleIdentifier,

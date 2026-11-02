@@ -920,13 +920,61 @@ Done (see `git log`, "Phase 9.11"). `system.capabilities` lost 149 methods, all 
   `notify`, `new-split right`, `respawn-pane --command`, plus `send --paste` multi-line. ⬜ From a real Pi session: manual.
   (`set-status pi run` answered OK but listed no entry; looks like the reserved agent key, not checked against Personal.)
 
-### ⬜ 9.12 Delete `Sources/Cloud` and the top-level cloud files (M, medium risk)
+### ✅ 9.12 Delete `Sources/Cloud` and the top-level cloud files (M, medium risk)
 
 **Decided order (coordinator, after the revert below):** delete from the leaves inward, one commit per folder, each
 commit builds: (A) `Sources/Hive`, (B) `Sources/Devices`, (C) `Sources/Mobile` (9.14, incl. its `CmuxSettingsUI`
 sections and the terminal-output hooks), (D) `Sources/Auth` (9.13), (E) the cmux-tui/Cloud provider files in
 `Sources/Surfaces`, (F) `Sources/Cloud` plus the top-level cloud files (this step). A file that stays and names a
 deleted type gets the reference stubbed or removed, even in folders a later commit deletes.
+
+**(F) done** in three commits, "Phase 9.12 (F1)", "(F2)", "(F3)". Differs from the plan:
+- (F1) Deleted `Sources/Cloud` (206 files incl. `Sidebar/`, `PortForward/`, `Tunnel/`), all of `Sources/RemoteTui`
+  (the SSH-TUI leftovers), the top-level files listed below plus `AppDelegate+TeamScope`, `ContentView+AuthCommandPalette`
+  (whole file: only Cloud palette commands were left), the Cloud panels (`CloudVMLoadingPanel`(+View),
+  `CloudPaneCreationFailureView`, `MachineCreateLoadingContent`, `BrowserPanel+CloudConnection`), the ~50
+  `Surfaces/Cloud*`/`Workspace+Cloud*`/`SurfaceCatalog+Cloud*` files, and also `SurfaceCatalog+Groups`,
+  `+WorkspaceMembership`, `+WindowWorkspaceHost`, `+WorkspaceDeletion`, `+NameAuthority`, `+PendingRename`,
+  `SurfacePaneFactory+ProjectionLayout`, `SurfaceLayoutTerminalCreating`, `WorkspaceSurfaceResourceDrop`,
+  `SurfaceResourceDragRegistry` and `App/AppDelegate+WorkspacePresence` (all Cloud-only). `Resources/CloudWelcome` gone
+  (no stale bundle in the test app). `CloudFilePreviewCache`/`Lease` kept (SSH previews), not renamed.
+- **Local pieces kept as new files** (same behaviour): `TerminalNotificationStore+SidebarOrdering` (the
+  "move workspace to top on notification" setting lived in `Sources/Cloud/Sidebar`!), `Workspace+DisconnectedTerminalPlaceholder`
+  (relay-less SSH recovery placeholders, `liveWorkspace(id:)`), `Workspace+RestoredSurfaceAdmission`, `Workspace+CloudDragSplitRouting`
+  renamed `Workspace+DragSplitPlaceholderRepair` (local branch only), `SocketErrorTextSanitizer` (from `CloudVMActionLauncher`,
+  still filters socket error text), `ProcessOutputCollector`, `CloudUnavailableMessage`, `TerminalController+SurfaceNewTerminal`
+  (`surface.new_terminal` for `local`), `SurfaceCatalog+RemoteView` (`surface.project --remote-tab-id`), and in (F3)
+  `WorkspaceRemoteConfiguration+SSHIdentityDigest` (same hash as `SSHTuiConnection.identityDigest`; keys SSH clipboard trust).
+- `SurfaceCatalog` lost the sidebar organization store, the Cloud creation/projection/layout-sync/deletion/rename/placement
+  coordinators and every Cloud reconcile call; `CloudSidebarOrganizationStore` was not moved (it only ordered Cloud rows; the
+  ⌘P "Cloud Workspace" switcher rows that read it went too). The `.surfaceResources` drag source (Cloud tree rows only) is gone
+  from `PaneTransferSourceResolver`/`PaneDropContainer`. `WorkspaceCloudBindingState` went; the sidebar/file-explorer observers
+  that replayed its initial revision now fire once. `CloudBrowserAccessState` went from `BrowserPanel` (every call was a no-op
+  without a Cloud model); the cmux.com app-web theme injection went with `AppWebThemeSnapshot`.
+- **Socket methods removed (5, DEBUG only):** `debug.cloudtree.gallery`, `debug.cloudtree.rows`, `debug.cloudtree.spacing`,
+  `debug.native_pricing.show`, `debug.pro_welcome_checklist.show` (388 → 383; `ControlDebugContext` requirements removed).
+- UI removed: the Notifications page's "Forward notifications to my iPhone" row (`PhonePushClient` is gone); the sidebar Help
+  menu Upgrade row (never shown without an offer); Debug menu Cloud tree/spacing/error-style items. Built-in action `.cloudVM`
+  and the tab-bar Cloud VM button now return false / beep (as when Cloud was off).
+- `CmuxFeatureFlags+Cloud.swift` deleted; `FeatureFlags` no longer migrates the `cloud-machines-enabled-release` override.
+- (F2) The `CmuxSettingsUI` Devices pieces deferred from 9.14 (B): `ComputersSection`, `ComputersSettingsRow`,
+  `DevicesAccessToggleRow`, `ComputerAccessMenuItems`, `DeviceAccessControl` (+ test), `ComputersSettingsSnapshot`/`Actions`,
+  the Devices search entries, the `.computers` slot, `SettingsHostActions.computersSettingsActions`,
+  `HostSettingsActions+Computers`. The `.computers` case stays (stored values; `settings open computers` answers OK).
+- (F3) Dropped every `import CmuxCloud*` that compiled without it, and the last uses in `TerminalController` (`VMClient`
+  proxy refresher, `CloudRequestBudget`, `VMClientError`/delivery/policy/link error mapping in `v2VmCall`), `AppDelegate`
+  (`CloudBannerDismissalStore`), `TerminalPanel.cloudAttachment`, `AuthEnvironment` in the browser (callback scheme →
+  `AppURLScheme`, external-navigation origin pinned to `https://cmux.com`). **Left:** `SurfaceCatalog.swift`,
+  `SurfaceCatalog+Snapshot.swift`, `SurfaceAgentNaming.swift` still `import CmuxCloud` for `CloudVMState`,
+  `CloudRenameCoordinator`, `CloudAgentNameContext` and catalog model extensions (`catalogPrecedes`, `isLocalWorkspaceView`).
+  The catalog's (empty) Cloud state is part of `surface.catalog` (`cloud_states`); 9.15 must replace those types or move
+  them into `CmuxSurfaceCatalogModel` before deleting the package.
+- Checks (after each commit): build, `--version`, `config doctor` (same as before), `tree --all`, methods 383 (list above),
+  `surface.catalog` same shape and identical local machine entry, `current.list` same shape, `surface.new_terminal` local
+  (opens a pane) and a cloud id (`cloud_disabled`), stale-bundle check (no `CloudWelcome`/`Cloud*`/`Iroh*` resources);
+  scratch workspace: `send` + `read-screen`, right split, `move-surface` into the other pane, `browser open https://example.com`
+  + `get url` + `close-surface`; scratch workspaces closed. ⬜ Manual: Settings window (no Devices section), ⌘Q/reopen, the
+  Notifications page, browser JS dialogs, SSH file previews, remote tmux, drag-and-drop of tabs.
 
 **(E) done ("Phase 9.12 (E)").** Deleted the cmux-tui provider: all 37 `Sources/Surfaces/CmuxTui*` files except
 `CmuxTuiRemoteRouting.swift` (kept: pure helper the **CLI** target compiles for `cmux agent` help and `--focus` parsing),
@@ -985,8 +1033,9 @@ Panels 9, AppDelegate, TerminalController, Workspace, …) still `import CmuxClo
 
 **Risk:** medium: only compile errors, if 9.7–9.11 were complete. Each error points at a reference that was missed.
 
-- ⬜ Standard checks.
-- ⬜ `grep -rln "import CmuxCloud$" Sources CLI` → only files you plan to delete in 9.13/9.14.
+- ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`). ⬜ ⌘Q/reopen, agents: manual.
+- ✅ `grep -rln "import CmuxCloud" Sources CLI` → only `SurfaceCatalog.swift`, `SurfaceCatalog+Snapshot.swift`,
+  `SurfaceAgentNaming.swift` (see (F3) above).
 
 ### ✅ 9.13 Delete Account, sign-in and team screens (S–M, low risk)
 
@@ -1080,7 +1129,7 @@ Done in three commits, "Phase 9.14 (A)", "(C)", "(B)" (in that order, see under 
     `workspacePaneGeometryDidChange`; `CloudTerminalPaneReservation.attach(DeviceTerminalInputRouter)`.
   - Stubs in `Sources/Cloud` (deleted in 9.12): `CloudVMSyncSubscriber` never connects (keeps `VMSyncRecord`);
     `MachinesPanelView` has no devices model; diagnostics views without the device section; tree "…" menu empty.
-  - **Deferred to 9.12 (F):** the `CmuxSettingsUI` Devices pieces (`.computers` slot, `ComputersSection`,
+  - **Deferred to 9.12 (F)** (done in "Phase 9.12 (F2)"): the `CmuxSettingsUI` Devices pieces (`.computers` slot, `ComputersSection`,
     `ComputersSettingsRow`, `DevicesAccessToggleRow`, `ComputerAccessMenuItems`, `DeviceAccessControl`,
     `ComputersSettings*`, `HostSettingsActions+Computers`): `Sources/Cloud` tree files still use
     `DeviceAccessControl`/`ComputerAccessMenuItems`. The section is hidden since 9.1.

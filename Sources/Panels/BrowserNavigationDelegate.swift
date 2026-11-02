@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import CmuxBrowser
 import CmuxCore
@@ -10,7 +9,7 @@ import WebKit
     enum PolicyCancellationKind { case terminal(restoreAttemptID: UUID?) }
     private let subframeDownloadIntents = BrowserSubframeDownloadIntentTracker()
     private let externalNavigationPolicy = BrowserExternalNavigationPolicy(
-        trustedOrigin: AuthEnvironment.appWebOrigin
+        trustedOrigin: URL(string: "https://cmux.com")!
     )
     private let externalNavigationHandler: BrowserExternalNavigationHandler
     private var shouldPrintAfterCurrentNavigationFinishes = false
@@ -780,7 +779,7 @@ import WebKit
     // auth-callback-shaped navigation is blocked.
     let authCallbackNavigationPolicy = BrowserAuthCallbackNavigationPolicy(
         trustedSourcePageOrigin: nil,
-        callbackScheme: AuthEnvironment.callbackScheme
+        callbackScheme: AppURLScheme.callbackScheme
     )
 
     /// Handles auth-callback-shaped navigation actions. Returns `true` when
