@@ -2448,9 +2448,9 @@ class TabManager: ObservableObject {
         return workspaceGrouping.deleteWorkspaceGroup(confirmed: confirmation)
     }
 
+    /// Fork: Chief is off for good, so no group is protected as the Chief Home group.
     func isChiefHomeGroup(_ groupId: UUID) -> Bool {
-        workspaceGroups.contains { $0.id == groupId && $0.externalID == ChiefHomeNavigation.homeGroupExternalID }
-            || tabs.contains { $0.groupId == groupId && $0.isChiefHome }
+        false
     }
 
     func renameWorkspaceGroup(groupId: UUID, name: String) {
@@ -7312,6 +7312,8 @@ extension TabManager {
             var seen: Set<UUID> = []
             return groupSnapshots.compactMap { groupSnapshot in
                 guard seen.insert(groupSnapshot.id).inserted else { return nil }
+                // Fork: Chief is off for good; drop a leftover Chief Home group.
+                guard groupSnapshot.externalID != "cmux.chief.home" else { return nil }
                 let members = workspaceIdsByGroupId[groupSnapshot.id] ?? []
                 if members.isEmpty {
                     // Only pinned groups are durable without a live member.

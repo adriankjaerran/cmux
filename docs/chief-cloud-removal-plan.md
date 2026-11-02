@@ -84,7 +84,15 @@ Step-specific checks are listed under each step.
 and `Workspace+TerminalRespawn.swift`. `agent message` / `agent.message.*` (not Chief). `cmux claude-teams` /
 `codex-teams` (Claude Agent Teams, local).
 
-### ⬜ 8.1 Chief off for good (S, very low risk)
+### ✅ 8.1 Chief off for good (S, very low risk)
+
+**Done:** commit "Phase 8.1: Chief off for good". As planned. `startChiefIfEnabled()` body is now empty (no
+early `return` before dead code). The Home-group drop on restore matches the literal `"cmux.chief.home"` (not
+`ChiefHomeNavigation.homeGroupExternalID`) so it survives 8.3/8.4. Checked by CLI: build, `--version`,
+`config doctor` clean, `tree --all` matches baseline (14 workspaces, 16 terminals, 1 browser), no `chief`
+in `system.capabilities`, a new terminal running `claude` showed `claude_code=Idle` in `sidebar-state` and
+the status went away after closing it. Not checked (needs clicking): ⌘⇧P, View menu, pinned row, group
+unpin/delete, ⌘Q restore, cmux agent tools, notifications.
 
 **What it removes:** nothing yet. Chief can no longer be switched on, and the Home rules stop applying.
 This is `plan.md` Phase 2 folded in.

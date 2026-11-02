@@ -2415,11 +2415,7 @@ extension Workspace {
                   let notificationsPanel = newNotificationsSurface(inPane: paneId, focus: false) else { return nil }
             applySessionPanelMetadata(snapshot, toPanelId: notificationsPanel.id)
             return notificationsPanel.id
-        case .chief:
-            guard let chiefSnapshot = snapshot.chief,
-                  let chiefPanel = restoreChiefSurface(inPane: paneId, snapshot: chiefSnapshot) else { return nil }
-            applySessionPanelMetadata(snapshot, toPanelId: chiefPanel.id)
-            return chiefPanel.id
+        case .chief: return nil // Fork: Chief is off for good; a saved Chief pane restores as nothing.
         case .extensionBrowser:
             return nil
         case .cloudVMLoading:

@@ -34,12 +34,7 @@ extension AppDelegate {
     /// connects when they are in). No agent process runs until the user
     /// sends a message.
     func startChiefIfEnabled() {
-        guard ChiefSettings.isEnabled else { return }
-        let service = ChiefService.shared
-        service.onFirstRunAction = { [weak self] action in
-            self?.performChiefFirstRunAction(action)
-        }
-        service.start()
+        // Fork: Chief is off for good; never start the service.
     }
 
     /// Clears a legacy Home page selection before creating workspace content.

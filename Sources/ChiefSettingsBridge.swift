@@ -25,8 +25,9 @@ enum ChiefSettings {
     private static let keys = ChiefCatalogSection()
 
     /// `chief.enabled`: whether the Home row and Chief entry points are shown.
+    /// Fork: Chief is off for good. Always `false`, whatever `chief.enabled` says.
     static func isEnabled(in defaults: UserDefaults) -> Bool {
-        keys.enabled.value(in: defaults)
+        false
     }
 
     /// `chief.harness`, falling back to ``ChiefHarnessSetting/defaultHarness`` for an

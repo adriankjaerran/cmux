@@ -6,8 +6,9 @@ import Foundation
 /// Workspace surface creation for Chief panes: a Chief conversation as a tab or a split.
 extension Workspace {
     /// True when this workspace owns its protected canonical Chief Home pane.
+    /// Fork: Chief is off for good, so no workspace is the Chief Home.
     var isChiefHome: Bool {
-        panels.values.contains { ($0 as? ChiefPanel)?.isHome == true }
+        false
     }
 
     /// Duplicates a Chief pane into a destination within this workspace.
