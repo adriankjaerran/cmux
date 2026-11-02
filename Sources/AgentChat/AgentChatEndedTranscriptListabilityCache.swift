@@ -1,4 +1,4 @@
-import CmuxMobileHost
+import CmuxAgentChatHost
 import Foundation
 
 struct AgentChatEndedTranscriptListabilityCache {

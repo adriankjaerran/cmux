@@ -526,7 +526,18 @@ break; nothing runs them.
 - ✅ Workspace link logic: `AppURLScheme` copies `AuthEnvironment.callbackScheme`; `open -a <test app> <scheme>://workspace/<id>`
   selected the workspace. ⬜ The menu item and Safari paste: manual (and see the scheme note above).
 
-### ⬜ 9.5 Move the agent transcript registry out of Mobile (M, medium risk)
+### ✅ 9.5 Move the agent transcript registry out of Mobile (M, medium risk)
+
+Done (see `git log`, "Phase 9.5"). Took the new-package route: `Packages/macOS/CmuxAgentChatHost` (deps
+`CmuxAgentChat`, `CmuxFoundation`; same Swift 6 settings as CmuxMobileHost, no test target) with all 11 files from
+`CmuxMobileHost/AgentChat/` (git mv, unchanged). `Sources/Mobile/AgentChat/` has **14** files, not 13; moved to
+`Sources/AgentChat/` (pbxproj: group moved from `Mobile` to `Sources`, file refs unchanged). `import CmuxMobileHost`
+→ `import CmuxAgentChatHost` in the 11 `Sources/AgentChat` files that had it, `ConversationSidebarSupport.swift`,
+`Search/AgentChatTranscriptService+GlobalSearch.swift`, `Surfaces/CurrentWorkQueryService.swift`; the mobile
+`TerminalController+MobileChat.swift` / `+MobileChatArtifacts.swift` import both until they go. The package is linked
+into `cmux` and `cmuxTests`. Still in `Sources/AgentChat` for 9.14: `AgentChatTranscriptService`'s default
+`MobileHostService.hasEventSubscribers` / `emitEvent` args and `AgentChatProseStreamWakeDriver`'s
+`.mobileHostEventSubscriptionsDidChange` observer (they reference `Sources/Mobile`).
 
 **What it does:** moves code, no behaviour change. The registry that feeds resume, search and current work stops
 living under "Mobile".
@@ -547,9 +558,11 @@ living under "Mobile".
 **Risk:** medium. This is how "resume after restart" for Claude/Codex and the Vault/search lists work. Wrong move
 = sessions don't resume.
 
-- ⬜ Standard checks.
-- ⬜ Start `claude` in a terminal, say something, ⌘Q, reopen: the agent resumes in the same terminal.
-- ⬜ ⌘P / global search finds a recent Claude session by a word from it. Vault lists it.
+- ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`; the clicking ones need a manual look).
+- ✅ Start `claude` in a terminal, say something, ⌘Q, reopen: the agent resumes in the same terminal (scratch
+  workspace; osascript quit, `test-app.sh --no-build`; the terminal ran `claude --resume <same id>` and showed the old turn).
+- ✅ `vault sessions`, `vault search cmux`, `sessions list`: same session ids before and after (30 / 30 / 100).
+  ⬜ ⌘P global search UI: manual.
 
 ### ⬜ 9.6 Keep `terminal.paste` / `terminal.input`, cut them loose from Mobile (M, high risk if skipped)
 

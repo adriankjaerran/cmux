@@ -1,6 +1,6 @@
 import CmuxCloud
 import CmuxAgentChat
-import CmuxMobileHost
+import CmuxAgentChatHost
 import CmuxNotifications
 import CmuxSurfaceCatalogModel
 import Foundation

@@ -1,6 +1,6 @@
 import CMUXAgentLaunch
 import CmuxAgentChat
-import CmuxMobileHost
+import CmuxAgentChatHost
 import Foundation
 
 enum AgentLiveProcessLookupResult: Sendable {

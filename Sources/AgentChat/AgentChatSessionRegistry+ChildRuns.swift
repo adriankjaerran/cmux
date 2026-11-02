@@ -1,5 +1,5 @@
 import CMUXAgentLaunch
-import CmuxMobileHost
+import CmuxAgentChatHost
 import Foundation
 
 /// Child-run (subagent) bookkeeping from the parent session's hook events.

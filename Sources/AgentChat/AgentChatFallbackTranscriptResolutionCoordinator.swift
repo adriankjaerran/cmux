@@ -1,4 +1,4 @@
-import CmuxMobileHost
+import CmuxAgentChatHost
 import Foundation
 
 /// Coalesces explicit transcript fallback lookups and cancels them with the
