@@ -183,16 +183,12 @@ final class CloudVMSyncSubscriber {
         }
         state = .connecting
         pendingSnapshot = []
-        let tokens = HiveAccountTokenSource(auth: auth, identity: scope.identity, teamID: scope.teamID)
-        let teamID = scope.teamID
         let collections = [DevicePresenceFrame.SyncCollection(
             name: DevicePresenceFrame.vmsCollection, cursor: cursor, epoch: epoch
         )]
         let subscriber = makeSubscriber(url, collections) {
-            // The same header rule as VMClient: the resolved team id, omitted
-            // for a personal account; the token source fails closed on a switch.
-            let session = try await tokens.session()
-            return DevicePresenceSubscriber.Credentials(accessToken: session.accessToken, teamID: teamID)
+            // No account tokens: the Hive account token source is gone (Phase 9.14).
+            throw CancellationError()
         }
         return try await subscriber.subscribe()
     }

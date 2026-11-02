@@ -60,7 +60,7 @@ actor DeviceRegistryDirectoryClient {
         let tokens: AuthenticatedSessionSnapshot
         do {
             tokens = try await sessionProvider()
-        } catch HiveAccountTokenSource.Failure.accountChanged {
+        } catch {
             throw ListError.notSignedIn
         }
         guard var comps = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {

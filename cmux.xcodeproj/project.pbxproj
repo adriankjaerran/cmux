@@ -2322,8 +2322,6 @@
 		C4160A020000000000000001 /* HistoryMenuCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4160A020000000000000002 /* HistoryMenuCoordinator.swift */; };
 		A10348030000000000000001 /* HistoryMenuCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10348030000000000000002 /* HistoryMenuCoordinatorTests.swift */; };
 		A10348020000000000000001 /* HistoryMenuState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10348020000000000000002 /* HistoryMenuState.swift */; };
-				800100000000000000000101 /* HiveAccountTokenSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 800100000000000000000102 /* HiveAccountTokenSource.swift */; };
-				800100000000000000000103 /* HiveComputersService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 800100000000000000000104 /* HiveComputersService.swift */; };
 		C1A90000000000000000001F /* HookCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A90000000000000000001E /* HookCommands.swift */; };
 		140240000000000000000002 /* HookPromptLengthUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140240000000000000000001 /* HookPromptLengthUITests.swift */; };
 		AC2BB0797CA8D9098F4D2F5A /* HostAccountFlow+Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE0A832803DD479693FA71A0 /* HostAccountFlow+Analytics.swift */; };
@@ -6787,8 +6785,6 @@
 		C4160A020000000000000002 /* HistoryMenuCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryMenuCoordinator.swift; sourceTree = "<group>"; };
 		A10348030000000000000002 /* HistoryMenuCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryMenuCoordinatorTests.swift; sourceTree = "<group>"; };
 		A10348020000000000000002 /* HistoryMenuState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryMenuState.swift; sourceTree = "<group>"; };
-				800100000000000000000102 /* HiveAccountTokenSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Hive/HiveAccountTokenSource.swift"; sourceTree = "<group>"; };
-				800100000000000000000104 /* HiveComputersService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Hive/HiveComputersService.swift"; sourceTree = "<group>"; };
 		C1A90000000000000000001E /* HookCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HookCommands.swift; sourceTree = "<group>"; };
 		140240000000000000000001 /* HookPromptLengthUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HookPromptLengthUITests.swift; sourceTree = "<group>"; };
 		BE0A832803DD479693FA71A0 /* HostAccountFlow+Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HostAccountFlow+Analytics.swift"; sourceTree = "<group>"; };
@@ -9921,8 +9917,6 @@
 				C4160A020000000000000002 /* HistoryMenuCoordinator.swift */,
 				A10348010000000000000002 /* HistoryMenuActions.swift */,
 				A10348020000000000000002 /* HistoryMenuState.swift */,
-				800100000000000000000104 /* HiveComputersService.swift */,
-				800100000000000000000102 /* HiveAccountTokenSource.swift */,
 				C4160A070000000000000002 /* TitlebarLayoutDebugWindow.swift */,
 				DE000A010000000000000002 /* DevWindowDisplayDefault.swift */,
 				DE000A020000000000000002 /* DevWindowDisplayDebugWindow.swift */,
@@ -15512,8 +15506,6 @@
 				A10348010000000000000001 /* HistoryMenuActions.swift in Sources */,
 				C4160A020000000000000001 /* HistoryMenuCoordinator.swift in Sources */,
 				A10348020000000000000001 /* HistoryMenuState.swift in Sources */,
-				800100000000000000000101 /* HiveAccountTokenSource.swift in Sources */,
-				800100000000000000000103 /* HiveComputersService.swift in Sources */,
 				AC2BB0797CA8D9098F4D2F5A /* HostAccountFlow+Analytics.swift in Sources */,
 				A4FF11E04A292AACEB803A41 /* HostAccountFlow+ReceivedInvitations.swift in Sources */,
 				40A965C25799A1B366F3F672 /* HostAccountFlow+TeamMembers.swift in Sources */,

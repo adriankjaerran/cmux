@@ -60,7 +60,6 @@ final class DeviceDirectory {
 
     private let identity: AuthenticatedSessionIdentity
     private let teamID: String?
-    private let tokens: HiveAccountTokenSource
     private let pairing: any DeviceLinkAuthorizationSource
     private let registryClient: DeviceRegistryDirectoryClient
     private let automaticClient: DeviceIrxClient?
@@ -108,12 +107,8 @@ final class DeviceDirectory {
         self.pairing = pairing
         self.automaticClient = automaticClient
         let accountDirectoryEnabled = AccountMacDirectoryFeature.isEnabled()
-        let tokens = accountDirectoryEnabled
-            ? HiveAccountTokenSource(accountScopedAuth: auth, identity: identity)
-            : HiveAccountTokenSource(auth: auth, identity: identity, teamID: teamID)
-        self.tokens = tokens
         self.registryClient = registryClient ?? DeviceRegistryDirectoryClient(
-            session: { try await tokens.session() },
+            session: { throw CancellationError() },
             // The account directory has no selected-team partition. The
             // registry is enrichment only, so do not pin it to the team that
             // happened to be selected when this account-scoped directory was
@@ -275,15 +270,9 @@ final class DeviceDirectory {
                 }
                 presenceState = .connecting
                 notifyChanged()
-                let tokens = self.tokens
-                let presenceTeamID = AccountMacDirectoryFeature.isEnabled() ? nil : self.teamID
                 let subscriber = makeSubscriber(url) {
-                    let session = try await tokens.session()
-                    // The account stream is deliberately independent of the
-                    // selected team. The rollback path uses the team stream
-                    // and therefore carries its captured team header.
-                    return DevicePresenceSubscriber.Credentials(
-                        accessToken: session.accessToken, teamID: presenceTeamID)
+                    // No account tokens: the Hive account token source is gone (Phase 9.14).
+                    throw CancellationError()
                 }
                 let frames = try await subscriber.subscribe()
                 for try await frame in frames {

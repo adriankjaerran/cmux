@@ -189,9 +189,6 @@ final class DeviceSurfaceProviderRegistry {
         activeAutomaticConnections = automatic
         activeAccountDirectory = accountDirectoryEnabled
         runtime = DeviceLinkRuntime(
-            tokens: accountDirectoryEnabled
-                ? HiveAccountTokenSource(accountScopedAuth: auth, identity: identity)
-                : HiveAccountTokenSource(auth: auth, identity: identity, teamID: teamID),
             automaticClient: automatic ? makeAutomaticClient(identity, teamID) : nil
         )
         let directory = makeDirectory(auth, identity, teamID, authorization, runtime?.automaticClient)

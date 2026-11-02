@@ -20,7 +20,6 @@ struct DevicePairedDevice: Equatable, Sendable {
 /// device's routes; only this source can authorize dialing one, with the
 /// device-bound grant it recorded when the person paired that Mac. Nothing in
 /// the runtime derives an authorization from a discovered route.
-/// `HiveComputersService` is the production source.
 @MainActor
 protocol DeviceLinkAuthorizationSource: AnyObject {
     /// Every paired Mac, for the directory's local-first merge.
@@ -32,25 +31,6 @@ protocol DeviceLinkAuthorizationSource: AnyObject {
     /// every link re-evaluates on it, so a new pairing dials at once and an
     /// unpair drops the live link.
     var authorizationDidChangeNotification: Notification.Name { get }
-}
-
-extension HiveComputersService: DeviceLinkAuthorizationSource {
-    var authorizationDidChangeNotification: Notification.Name { Self.didChangeNotification }
-
-    var pairedDevices: [DevicePairedDevice] {
-        pairedComputers.map { computer in
-            var routes = computer.routes
-            for legacy in computer.legacyTailscaleRoutes where !routes.contains(where: { $0.endpoint == legacy.endpoint }) {
-                routes.append(legacy)
-            }
-            return DevicePairedDevice(
-                instance: SurfaceDeviceInstanceID(deviceID: computer.deviceID, tag: computer.instanceTag),
-                displayName: computer.displayName,
-                routes: routes,
-                lastSeenAt: computer.lastSeenAt
-            )
-        }
-    }
 }
 
 /// The identity check every (re)connect performs before it subscribes: the

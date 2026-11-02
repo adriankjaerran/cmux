@@ -29,7 +29,6 @@ struct DeviceLinkRuntime: MobileSyncRuntime {
     let supportsServerPushEvents: Bool = true
 
     init(
-        tokens: HiveAccountTokenSource,
         automaticClient: DeviceIrxClient? = nil,
         routeSelector: DeviceRouteSelector? = nil,
         rpcRequestTimeoutNanoseconds: UInt64 = 20_000_000_000,
@@ -41,9 +40,10 @@ struct DeviceLinkRuntime: MobileSyncRuntime {
         self.routeSelector = routeSelector
         transportFactory = CmxNetworkByteTransportFactory(supportedKinds: routeSelector.supportedKinds.filter { $0 != .iroh })
         independentEventByteStreamProvider = nil
-        stackAccessTokenProvider = { try await tokens.session().accessToken }
-        stackAccessTokenForceRefresher = { try await tokens.refresh() }
-        stackAccessTokenForStatusProvider = { await tokens.cachedToken() }
+        // No account tokens: the Hive account token source is gone (Phase 9.14).
+        stackAccessTokenProvider = { throw CancellationError() }
+        stackAccessTokenForceRefresher = { throw CancellationError() }
+        stackAccessTokenForStatusProvider = { nil }
         supportedRouteKinds = routeSelector.supportedKinds
         self.rpcRequestTimeoutNanoseconds = rpcRequestTimeoutNanoseconds
         self.pairingRequestTimeoutNanoseconds = pairingRequestTimeoutNanoseconds

@@ -922,6 +922,12 @@ Done (see `git log`, "Phase 9.11"). `system.capabilities` lost 149 methods, all 
 
 ### ⬜ 9.12 Delete `Sources/Cloud` and the top-level cloud files (M, medium risk)
 
+**Decided order (coordinator, after the revert below):** delete from the leaves inward, one commit per folder, each
+commit builds: (A) `Sources/Hive`, (B) `Sources/Devices`, (C) `Sources/Mobile` (9.14, incl. its `CmuxSettingsUI`
+sections and the terminal-output hooks), (D) `Sources/Auth` (9.13), (E) the cmux-tui/Cloud provider files in
+`Sources/Surfaces`, (F) `Sources/Cloud` plus the top-level cloud files (this step). A file that stays and names a
+deleted type gets the reference stubbed or removed, even in folders a later commit deletes.
+
 **Tried after 9.11 and reverted (needs a decision).** Deleting the 243 listed paths (all of `Sources/Cloud`, the
 top-level files below, the four deferred `Panels` files, `Resources/CloudWelcome`; **not** `CloudFilePreviewCache`/
 `Lease`, which serve SSH) is clean in the pbxproj, but the build then needs edits in about 70 files that name types
@@ -969,6 +975,13 @@ the `.account` section case (move the compatibility mapping to `.app`), and `Bro
 - ⬜ Standard checks. Settings opens fine; an old `selectedSectionRaw = "account"` lands on App.
 
 ### ⬜ 9.14 Delete Mobile pairing, Devices and Hive (M, medium risk)
+
+Progress (done as separate commits, see the order under 9.12):
+- (A) `Sources/Hive` deleted ("Phase 9.14 (A)"). `HiveAccountTokenSource` users in `Sources/Devices`
+  (`DeviceDirectory`, `DeviceLinkRuntime`, `DeviceSurfaceProviderRegistry`, `DeviceRegistryDirectoryClient`) and
+  `Sources/Cloud/CloudVMSyncSubscriber` now throw `CancellationError` instead of fetching account tokens (all dead
+  since 9.10); the `HiveComputersService: DeviceLinkAuthorizationSource` conformance went. `CmuxHive` package stays
+  (9.16). Build + `--version`, `config doctor` (same as 9.11), `tree --all`, 396 methods (no change).
 
 **What it removes:** `Sources/Mobile/` (what's left after 9.5/9.6: pairing window, host service, Iroh/Irx runtime,
 browser streaming, ~40 files), `Sources/Devices/` (53), `Sources/Hive/`, `MacPresenceDecisionCache.swift`,
