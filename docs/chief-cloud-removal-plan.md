@@ -922,6 +922,25 @@ Done (see `git log`, "Phase 9.11"). `system.capabilities` lost 149 methods, all 
 
 ### ⬜ 9.12 Delete `Sources/Cloud` and the top-level cloud files (M, medium risk)
 
+**Tried after 9.11 and reverted (needs a decision).** Deleting the 243 listed paths (all of `Sources/Cloud`, the
+top-level files below, the four deferred `Panels` files, `Resources/CloudWelcome`; **not** `CloudFilePreviewCache`/
+`Lease`, which serve SSH) is clean in the pbxproj, but the build then needs edits in about 70 files that name types
+from the deleted files and many more that use their extension members. The blocker is the order: folders that later
+steps delete still depend on `Sources/Cloud` and must compile in 9.12:
+- `Sources/Mobile` (9.14): `PhonePushClient`/`PhonePushAdmission`/`PhoneForwardingMode`, `PresenceHeartbeatClient`,
+  `MacPairedMacBackupPublisher`.
+- `Sources/Devices` (9.14): `CloudVMSyncSubscriber`, `PresenceHeartbeatClient`, `CloudFeatureAvailabilityObserver`,
+  `CloudTreeNodeActions`, `CloudWorkspaceOperationController`, `CloudNotificationSyncHub`/`LocalDelivery`, `CloudTreeRevealRequest`.
+- `Sources/Hive` (9.14): `CloudFeatureAvailabilityObserver`. `Sources/Auth` (9.13): `CloudTeamScopeObserver`,
+  `DeviceRegistryClient`, `ProUpgradePresenter`.
+- `Sources/Surfaces`: the cmux-tui provider (`CmuxTuiSurfaceProvider*`, ~45 files) and `Cloud*`/`Workspace+Cloud*`
+  files use `CloudTuiManualMirror*`, `CloudPortAccess*`, `CloudGuestURLService`, `CloudTreeNodeBuilder`; the local
+  `SurfaceCatalog` (`surface.catalog`, `current.list`) is built with `CloudSidebarOrganizationStore`.
+Options: (a) fold 9.13/9.14 (Auth, Mobile, Devices, Hive) and the Surfaces cmux-tui/Cloud files into this step (L);
+(b) keep the handful of `Sources/Cloud` files those folders need until 9.14; (c) stub the uses inside the folders
+that go later. The import grep below can only pass with (a) plus more: ~130 files outside Cloud/Mobile/Devices/Hive/Auth (Surfaces 70,
+Panels 9, AppDelegate, TerminalController, Workspace, …) still `import CmuxCloud`.
+
 **What it removes:** `Sources/Cloud/` (~230 files, ~37,500 lines) and `AppDelegate+Cloud*.swift`, `cmuxApp+CloudMenu.swift`,
 `Cloud*.swift` at the top of `Sources/`, `CmuxFeatureFlags+Cloud.swift`, `CloudVMActionLauncher.swift`,
 `CloudSizingPhoneRelaying.swift`, `CloudTerminal*.swift`, `PricingPlansScreen.swift`, `ProWelcomeChecklist.swift`,
