@@ -3111,12 +3111,6 @@ class TerminalController {
             InternalFlagsPresenter.present()
             return "OK"
 
-#if DEBUG
-        case "__sidebar_footer_icon_balance":
-            AppDelegate.shared?.debugWindowsCoordinator.showSidebarFooterIconBalanceWindow()
-            return "OK"
-#endif
-
         case "list_windows":
             return listWindows()
 

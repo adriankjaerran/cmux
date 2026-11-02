@@ -87,7 +87,8 @@ extension cmuxApp {
                 }
                 try validate()
                 let host = CloudWorkspaceCreationHost(manager: manager)
-                let focus = request.selectionRevision == manager.cloudWorkspaceSelection.revision
+                // Cloud is off in this fork; the per-window selection fence is gone.
+                let focus = false
                 let provisionalTitle = catalog.cloudWorkspaceCreationCoordinator
                     .provisionalWorkspaceTitle(
                         machine: .cloud(request.machineID), name: nil, catalog: catalog

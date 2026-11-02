@@ -104,12 +104,7 @@ struct CloudTreeRowContentView: View {
                 icon: "folder.fill",
                 tint: CloudTreeIconPalette.workspace,
                 title: workspace.name,
-                titleWeight: workspace.focused ? .medium : .regular,
-                accessories: {
-                    if !presenceHeads.isEmpty {
-                        SidebarWorkspacePresenceHeadsView(participants: presenceHeads)
-                    }
-                }
+                titleWeight: workspace.focused ? .medium : .regular
             )
         case .localWorkspace(let row):
             CloudTreeLeafRow(

@@ -59,8 +59,6 @@ final class CmuxDebugWindowsCoordinator {
 #if DEBUG
     let cloudSidebarDebugSettings = CloudSidebarDebugSettings(defaults: .standard)
     lazy var cloudSidebarDebugLabController = CloudSidebarDebugLabWindowController(settings: cloudSidebarDebugSettings)
-    private lazy var sidebarFooterIconBalanceController =
-        SidebarFooterIconBalanceDebugWindowController(decorator: decorator)
 #endif
     private weak var decorator: (any WindowDecorating)?
 
@@ -84,12 +82,6 @@ final class CmuxDebugWindowsCoordinator {
     func showAboutTitlebarDebugWindow() {
         aboutTitlebarCoordinator.showAboutTitlebarDebugWindow()
     }
-
-#if DEBUG
-    func showSidebarFooterIconBalanceWindow() {
-        sidebarFooterIconBalanceController.show()
-    }
-#endif
 }
 
 /// Short-lived helper that watches for the next workspace to appear in a
@@ -10485,7 +10477,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 ?? WorkspaceCustomizationStore(defaults: .standard),
             nativeSSHConnectionBroker: TerminalController.shared.nativeSSHConnectionBroker,
             fileContentChangeCoordinator: self.tabManager?.fileContentChangeCoordinator,
-            cloudWorkspaceSelection: cloudWorkspaceCoordinator?.makeSelectionState(),
             sshClipboardWriteTrustStore: sshClipboardWriteTrustStore
         )
         tabManager.windowId = windowId

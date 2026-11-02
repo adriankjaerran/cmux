@@ -1944,7 +1944,6 @@ struct ContentView: View {
 
     private func rightSidebarPanel(appearance: WindowAppearanceSnapshot) -> some View {
         return RightSidebarPanelView(
-            devicesModel: devicesModel,
             tabManager: tabManager,
             fileExplorerStore: fileExplorerStore,
             fileExplorerState: fileExplorerState,
@@ -5915,8 +5914,7 @@ struct ContentView: View {
             onDidMutate: {},
             onFailure: { _ in NSSound.beep() },
             refresh: {},
-            workspaceCreationHost: { CloudWorkspaceCreationHost(manager: self.tabManager) },
-            recordCloudWorkspaceSelection: { self.tabManager.recordCloudWorkspaceSelection(machineID: $0) }
+            workspaceCreationHost: { CloudWorkspaceCreationHost(manager: self.tabManager) }
         )
         actions.openWorkspace(target.machine, target.workspace, target.group)
     }
@@ -15718,7 +15716,6 @@ private struct SidebarFooter: View {
 
 struct SidebarFooterButtons: View {
     @Environment(\.cmuxAccentColor) private var cmuxAccent
-    private var accountFlow: HostAccountFlow? { AppDelegate.shared?.auth?.accountFlow }
     @ObservedObject var fileExplorerState: FileExplorerState
     let modifierKeyMonitor: WindowScopedShortcutHintModifierMonitor
     @State private var extensionBrowserAnchorView: NSView?
@@ -15738,52 +15735,22 @@ struct SidebarFooterButtons: View {
         WorkspacePresentationModeSettings.mode(for: workspacePresentationMode)
     }
 
-    /// Account and sign-in state only: the flow refetches on a team change.
-    private var billingPlanRefreshID: String? {
-        guard let flow = accountFlow, let accountID = flow.currentIdentity?.id else { return nil }
-        return "\(accountID):\(flow.isAuthenticated)"
-    }
-
-    private var isProStatusKnownForUpgrade: Bool {
-        guard let flow = accountFlow else { return true }
-        return !flow.isWorkingOnAuth && (flow.currentIdentity == nil || flow.hasLoadedBillingPlan)
-    }
-
     private func shows(_ control: SidebarFooterControl) -> Bool {
         SidebarFooterPresentationPolicy.isVisible(control, presentationMode: presentationMode)
     }
 
     var body: some View {
         HStack(spacing: 4) {
-            if shows(.account) || shows(.mobileConnect) || shows(.help) || shows(.cloud) {
+            if shows(.help) {
                 HStack(spacing: 0) {
-                    if shows(.account), CmuxFeatureFlags.shared.isSidebarAccountButtonEnabled {
-                        SidebarAccountMenuButton()
-                    }
-                    if shows(.mobileConnect), CmuxFeatureFlags.shared.isMobileConnectButtonEnabled {
-                        SidebarMobileConnectButton()
-                    }
-                    if shows(.help) {
-                        SidebarHelpMenuButton()
-                    }
-                    // Right of Help and left of Upgrade, per the footer design.
-                    if shows(.cloud) {
-                        SidebarCloudButton()
-                    }
+                    SidebarHelpMenuButton()
                 }
             }
-            // Command-hold reveal: appears immediately before Upgrade. It stays
+            // Command-hold reveal: appears right after Help. It stays
             // mounted while its popover is open so releasing ⌘ does not dismiss it.
             if shows(.shortcutDiscovery),
                (showModifierHoldHints && modifierKeyMonitor.isModifierPressed) || isShortcutPopoverPresented {
                 ShortcutDiscoveryButton(isPopoverPresented: $isShortcutPopoverPresented)
-            }
-            if shows(.upgrade),
-               SidebarFooterPresentationPolicy.isUpgradeVisible(
-                   isProActive: accountFlow?.planTier?.includesPro == true,
-                   isProStatusKnown: isProStatusKnownForUpgrade
-               ) {
-                SidebarProBadge()
             }
             // The puzzle button opens the extensions browser; it only shows
             // while the experimental Extensions feature is enabled.
@@ -15806,10 +15773,6 @@ struct SidebarFooterButtons: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .task(id: billingPlanRefreshID) {
-            guard let flow = accountFlow, flow.isAuthenticated else { return }
-            await flow.refreshBillingPlan()
-        }
     }
 }
 
@@ -16533,8 +16496,6 @@ struct TabItemView: View, Equatable {
                         .padding(.leading, -SidebarCompactStatusGlyph.leadingPullIn)
                         .padding(.trailing, SidebarCompactStatusGlyph.titleSpacing - titleRowSpacing)
                 }
-
-                SidebarCloudWorkspaceBadgeView(label: settings.showsCloudDeviceIcons && !settings.hidesAllDetails ? workspaceSnapshot.remoteWorkspaceBadgeLabel : nil, pointSize: scaledFontSize(10), tint: activeSecondaryColor(0.7), symbol: workspaceSnapshot.remoteWorkspaceBadgeSymbol)
 
                 if isEditing {
                     SidebarInlineRenameField(

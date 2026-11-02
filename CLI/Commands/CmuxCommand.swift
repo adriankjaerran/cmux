@@ -34,7 +34,6 @@ struct CmuxCommand: AsyncParsableCommand {
             ReloadConfigCommand.self,
             ThemesCommand.self,
             InternalFlagsCommand.self,
-            SidebarFooterIconBalanceCommand.self,
             RemoteDaemonStatusCommand.self,
             ListWindowsCommand.self,
             CurrentWindowCommand.self,

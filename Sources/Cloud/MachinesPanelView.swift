@@ -456,10 +456,7 @@ struct MachinesPanelView: View {
             onHint: { [weak viewModel] hint in viewModel?.noteTreeHint(hint) },
             refresh: { refreshMachines() },
             refreshMachine: { [weak viewModel] in viewModel?.refreshMachine($0) },
-            workspaceCreationHost: { tabManager.map { CloudWorkspaceCreationHost(manager: $0) } },
-            recordCloudWorkspaceSelection: { [weak tabManager] machine in
-                tabManager?.recordCloudWorkspaceSelection(machineID: machine)
-            }
+            workspaceCreationHost: { tabManager.map { CloudWorkspaceCreationHost(manager: $0) } }
         )
         nodeActions.needsDevicePairing = { [weak devicesModel] machine in
             devicesModel?.needsPairing(machine) ?? false

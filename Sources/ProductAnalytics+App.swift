@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxProductAnalytics
 import CmuxSettings
 import Foundation
@@ -22,7 +21,7 @@ extension ProductAnalytics {
                 appBuild: info["CFBundleVersion"] as? String ?? "unknown",
                 channel: BuildFlavor.current.rawValue,
                 osVersion: "\(os.majorVersion).\(os.minorVersion)",
-                cloudEnabled: CloudMachinesFeature.offMainIsEnabled()
+                cloudEnabled: false
             ),
             isPreexistingInstall: isPreexistingInstall(defaults: defaults)
         )
@@ -32,6 +31,7 @@ extension ProductAnalytics {
     /// analytics or campaign markers; its first launch is not reported now.
     static func isPreexistingInstall(defaults: UserDefaults) -> Bool {
         defaults.string(forKey: "posthog.lastActiveDayUTC") != nil
-            || defaults.string(forKey: CloudWelcomeWindowController.seenVersionDefaultsKey) != nil
+            // The old Cloud welcome's "seen" marker counts as an earlier install too.
+            || defaults.string(forKey: "cmux.cloud.welcome.seenVersion") != nil
     }
 }

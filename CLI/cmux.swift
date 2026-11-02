@@ -5482,9 +5482,6 @@ struct CMUXCLI {
         switch command {
         case "automation":
             try runAutomationCommand(commandArgs: commandArgs, client: client, jsonOutput: jsonOutput)
-        case "__sidebar_footer_icon_balance":
-            let response = try sendV1Command("__sidebar_footer_icon_balance", client: client)
-            print(response)
         case "__internal_flags":
             let response = try sendV1Command("__internal_flags", client: client)
             print(response)
@@ -18440,13 +18437,13 @@ struct CMUXCLI {
               show                           Show the right sidebar
               hide                           Hide the right sidebar
               focus                          Focus the current right sidebar mode
-              set <files|find|vault|sessions|feed|dock|cloud|devices|custom> [sidebar-name]
+              set <files|find|vault|sessions|feed|dock|custom> [sidebar-name]
                                              Show, switch mode, and focus. `custom`
                                              renders a JS/Swift sidebar from
                                              ~/.config/cmux/sidebars as a right panel;
                                              the optional name picks which one.
               mode                           Print {"visible":bool,"mode":string}
-              files|find|vault|sessions|feed|dock|cloud|devices|custom
+              files|find|vault|sessions|feed|dock|custom
                                              Alias for show + set + focus
 
             Flags:

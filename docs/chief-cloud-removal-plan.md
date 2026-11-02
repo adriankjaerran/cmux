@@ -611,7 +611,22 @@ the cmux agent, and only for multi-line messages, so it's easy to miss.
   submit_key`, `not_found`, `Conflicting terminal identifiers`, `Missing or invalid workspace_id`; `terminal.input`
   → `queued: false`; `mobile.terminal.paste` still works.) ⬜ Feed reply / notification reply UI: manual.
 
-### ⬜ 9.7 Stub: sidebar, footer, right sidebar, TabManager (M, medium risk)
+### ✅ 9.7 Stub: sidebar, footer, right sidebar, TabManager (M, medium risk)
+
+Done (see `git log`, "Phase 9.7"). As planned, plus: the `.upgrade` footer case and `isUpgradeVisible` went with
+`SidebarProBadge`; `SidebarFooterButtons` lost its account flow / billing-plan refresh. The DEBUG "Footer Icon Balance
+Lab" (cmuxApp.swift, ~770 lines; it balanced the account/mobile/help icons and used `SidebarAccountAvatar` and the
+Pro label) is deleted with its menu items, the `__sidebar_footer_icon_balance` v1 command and hidden CLI command; the
+DEBUG "Pro Badge Style…" window went with `ProBadgeStyle.swift`. `SidebarFooterProfile*DebugSettings` went too; the
+help-icon debug settings stay. Cloud badge: the SwiftUI row no longer renders it; the AppKit row cell still has its
+accessory slot (label is nil without cloud/device workspaces; goes with 9.9). `CloudWorkspaceSelectionState` callers
+outside TabManager were cut too: `performNewCloudWorkspaceOn{Resolved,Current}MachineAction` now just return
+`false`, the Cloud composition's create uses `focus = false`, the Devices create lost its revision fence, and the
+`recordCloudWorkspaceSelection:` arguments in `MachinesPanelView`/`ContentView` went. `CloudTreeRowContentView` no
+longer shows presence heads. `availableModes`/`isAvailable` lost their `machinesEnabled`/`devicesEnabled`
+parameters; `RightSidebarPanelView` lost `devicesModel` and `cloudActivationCoordinator` (`.machines` → `Color.clear`;
+ContentView still holds its `devicesModel` for 9.14). `cmux right-sidebar --help` no longer lists `cloud|devices`.
+`TabManager` `.cloudVMLoading` default title left for 9.8. Footer/compact sidebar not looked at by eye.
 
 **What it removes:** the cloud and account pieces of the sidebar code. The footer, rows and right sidebar no longer
 import `CmuxCloud`, `CmuxCloudMachines`, `CmuxAuthRuntime` or `CmuxWorkspacePresence`.
@@ -635,9 +650,10 @@ unavailable.
 
 **Risk:** medium. The footer layout and the compact sidebar (`Resources/sidebars/compact.js`) must look the same.
 
-- ⬜ Standard checks.
-- ⬜ Footer looks as before (minus the hidden buttons). Compact sidebar rows unchanged. Right sidebar tabs and their
-  shortcuts open the same tabs as before.
+- ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`). ⬜ ⌘Q/reopen, agents: manual.
+- ⬜ Footer looks as before (minus the hidden buttons). Compact sidebar rows unchanged: manual. ✅ `right-sidebar
+  files/find/vault/dock` open those modes (`right-sidebar mode`); `right-sidebar machines`/`cloud` → unknown command,
+  and the app's `right_sidebar set machines`/`cloud` → "Unknown right sidebar mode". ⬜ Tab shortcuts: manual.
 
 ### ⬜ 9.8 Stub: terminal, image paste, file explorer, browser (M, high risk)
 

@@ -125,8 +125,3 @@ struct InternalFlagsCommand: LegacyMetaCommand {
     @Argument(parsing: .allUnrecognized) var arguments: [String] = []
     static let configuration = CommandConfiguration(commandName: "__internal_flags", shouldDisplay: false, helpNames: [])
 }
-
-struct SidebarFooterIconBalanceCommand: LegacyMetaCommand {
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "__sidebar_footer_icon_balance", shouldDisplay: false, helpNames: [])
-}

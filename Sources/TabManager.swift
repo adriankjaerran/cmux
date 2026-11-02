@@ -2,7 +2,6 @@ import CmuxProductAnalytics
 import CmuxSSHClipboardTrust
 import AppKit
 import CmuxAgentChat
-import CmuxCloudMachines
 import CmuxFoundation
 import CmuxTerminalCore
 import SwiftUI
@@ -226,7 +225,6 @@ class TabManager: ObservableObject {
         (windowDockTitleRoutingStores.objectEnumerator()?.allObjects as? [DockSplitStore]) ?? []
     }
     let workspaceSwitchCoordinator = WorkspaceSwitchCoordinator()
-    let cloudWorkspaceSelection: CloudWorkspaceSelectionState
     /// Shared by the inline Cloud sidebar and any Cloud tool pane in this
     /// window so CodeRouter reads and removals never overlap.
     let coderouterAccountStore = CoderouterAccountStore()
@@ -305,7 +303,6 @@ class TabManager: ObservableObject {
     /// Legacy `@Published selectedTabId` willSet; `selectedTabId` still
     /// reads the old value here, exactly like the original property observer.
     func selectedWorkspaceIdWillChange(to newValue: UUID?) {
-        recordCloudWorkspaceSelection()
         if !isRestoringSessionSnapshot {
             let terminalTarget = newValue
                 .flatMap { workspacesById[$0] }
@@ -356,7 +353,6 @@ class TabManager: ObservableObject {
     /// chain, run synchronously after storage changed.
     func selectedWorkspaceIdDidChange(from oldValue: UUID?) {
             guard selectedTabId != oldValue else { return }
-            recordCloudWorkspaceSelection()
             defer {
                 workspaceSwitchCoordinator.selectionDidCommit(
                     from: oldValue,
@@ -616,13 +612,11 @@ class TabManager: ObservableObject {
         closeTabWarningDefaults: UserDefaults = .standard,
         managedDevicePolicy: ManagedDevicePolicy = ManagedDevicePolicy(),
         fileContentChangeCoordinator: FileContentChangeCoordinator? = nil,
-        cloudWorkspaceSelection: CloudWorkspaceSelectionState? = nil,
         sshClipboardWriteTrustStore: SSHClipboardWriteTrustStore? = nil
     ) {
         let tabDragTransferRegistry = tabDragTransferRegistry ?? TabDragTransferRegistry()
         self.managedDevicePolicy = managedDevicePolicy
         self.sshClipboardWriteTrustStore = sshClipboardWriteTrustStore ?? SSHClipboardWriteTrustStore(defaults: .standard)
-        self.cloudWorkspaceSelection = cloudWorkspaceSelection ?? CloudWorkspaceSelectionState(scopeProvider: { nil })
         self.settings = settings
         self.defaultWorkspaceWorkingDirectoryProvider = defaultWorkspaceWorkingDirectoryProvider
         self.ghosttyWorkingDirectoryInheritanceProvider = ghosttyWorkingDirectoryInheritanceProvider
