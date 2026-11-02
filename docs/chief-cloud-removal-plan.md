@@ -348,7 +348,16 @@ SSH-TUI decision: **goes** with Cloud; remote tmux (`RemoteTmux*`) and `CmuxRemo
   `XCRemoteSwiftPackageReference "sentry-cocoa"` (lines ~14415, ~20008). Nothing links it, but it's resolved and
   downloaded on a clean build. Remove it in 9.17 (or right away as its own tiny commit).
 
-### ⬜ 9.1 Hide every entry point (M, low risk)
+### ✅ 9.1 Hide every entry point (M, low risk)
+
+Done (see `git log`, "Phase 9.1"). Differs from the plan: Settings hides the five sections through a new
+`SettingsTaxonomyGroup.hiddenSections` set (sidebar, search hits, mount order; a stored hidden selection falls back
+to App). `CloudMachinesFeature.isAvailable(policy:)` in the `CmuxCloud` package also answers false (DevicesFeature and
+`CloudActivationPolicy` called it directly). Also hidden: the menu-bar status item's Cloud section, Help menu
+"Cloud Diagnostics…", the Pro upgrade item and DEBUG pricing / Cloud lab / Cloud welcome / Pro checklist items
+(`currentUpgradeOffer` → nil), the footer Upgrade (Pro) badge, the "Open Mobile Pairing" palette command and the
+`.mobileConnect` / `.cloudVM` "+" menu rows. `switchRightSidebarToMachines` shortcut kept (the tab is unavailable).
+Settings/menus/footer not looked at by eye (no screenshot possible from the worker).
 
 **What it removes:** what you can see or click: Settings → Account, Mobile, Cloud, Devices, Networking; the Cloud
 menu; sidebar footer account / mobile / cloud buttons and the team popover; "New Cloud Workspace" / "New Cloud
@@ -381,7 +390,7 @@ CLI links.
 - ⬜ Standard checks.
 - ⬜ Settings opens on App. Sidebar list has no Account, Mobile, Cloud, Devices, Networking.
 - ⬜ No Cloud menu. Sidebar footer: only the buttons you had minus account/mobile/cloud. Nothing else moved.
-- ⬜ Right sidebar has no Cloud tab; Files, Find, Vault, Feed, Dock still open (`"$T" right-sidebar files` …).
+- ✅ Right sidebar has no Cloud tab; Files, Find, Vault, Feed, Dock still open (`"$T" right-sidebar files` …).
 - ⬜ Keyboard Shortcuts: ⌘O, ⌥⌘↑/↓ still work.
 
 ### ⬜ 9.2 Nothing cloud starts at launch (S–M, medium risk)

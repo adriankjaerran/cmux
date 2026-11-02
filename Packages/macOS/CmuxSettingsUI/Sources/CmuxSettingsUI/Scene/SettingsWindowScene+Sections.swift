@@ -9,7 +9,9 @@ extension SettingsWindowRoot {
     /// eager while unavailable: it renders nothing, so a placeholder would
     /// only advertise a section the sidebar hides.
     static func mountOrder(cloudAvailable: Bool) -> [SettingsSectionID] {
-        SettingsSectionMountModel.displayOrder.filter { $0 != .cloudMachines || cloudAvailable }
+        SettingsSectionMountModel.displayOrder.filter {
+            !SettingsTaxonomyGroup.hiddenSections.contains($0) && ($0 != .cloudMachines || cloudAvailable)
+        }
     }
 
     func anchorID(for section: SettingsSectionID) -> String {

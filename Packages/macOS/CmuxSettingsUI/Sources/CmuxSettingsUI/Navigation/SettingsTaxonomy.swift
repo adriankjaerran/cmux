@@ -73,7 +73,7 @@ enum SettingsTaxonomyGroup: String, CaseIterable, Identifiable, Sendable {
     var sections: [SettingsSectionID] {
         switch self {
         case .general:
-            return [.account, .app, .themes, .sleepyMode]
+            return [.app, .themes, .sleepyMode]
         case .terminal:
             return [.terminal, .textBox]
         case .workspace:
@@ -85,11 +85,18 @@ enum SettingsTaxonomyGroup: String, CaseIterable, Identifiable, Sendable {
         case .browserAndFiles:
             return [.browser, .browserImport]
         case .remoteAndDevices:
-            return [.mobile, .cloudMachines, .computers, .networking]
+            // Mobile, Cloud, Devices and Networking are hidden in this fork.
+            return []
         case .keyboardAndAdvanced:
             return [.globalHotkey, .keyboardShortcuts, .betaFeatures, .settingsJSON, .reset]
         }
     }
+
+    /// Sections this fork hides (Account, Mobile, Cloud, Devices,
+    /// Networking). The enum cases stay so persisted values still decode.
+    static let hiddenSections: Set<SettingsSectionID> = [
+        .account, .mobile, .cloudMachines, .computers, .networking,
+    ]
 
     /// All existing navigation leaves in the order used by grouped browsing.
     static var sectionsInDisplayOrder: [SettingsSectionID] {

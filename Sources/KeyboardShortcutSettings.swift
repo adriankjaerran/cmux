@@ -82,7 +82,6 @@ enum KeyboardShortcutSettings {
     enum Action: String, CaseIterable, Identifiable {
         // App / window
         case openSettings
-        case openTeamPicker
         case reloadConfiguration
         case showHideAllWindows
         case globalSearch
@@ -97,8 +96,6 @@ enum KeyboardShortcutSettings {
         case newTab
         case newLocalWorkspace
         case newBrowserWorkspace
-        case newCloudWorkspace
-        case newCloudMachine
         case saveLayoutTemplate
         case openFolder
         case reopenPreviousSession
@@ -241,7 +238,6 @@ enum KeyboardShortcutSettings {
         var label: String {
             switch self {
             case .openSettings: return String(localized: "menu.app.settings", defaultValue: "Settings…")
-            case .openTeamPicker: return String(localized: "shortcut.openTeamPicker.label", defaultValue: "Open Team Picker")
             case .reloadConfiguration: return String(localized: "menu.app.reloadConfiguration", defaultValue: "Reload Configuration")
             case .showHideAllWindows: return String(localized: "settings.globalHotkey.shortcut", defaultValue: "Show/Hide All Windows")
             case .globalSearch: return String(localized: "shortcut.globalSearch.label", defaultValue: "Global Search")
@@ -255,8 +251,6 @@ enum KeyboardShortcutSettings {
             case .newTab: return String(localized: "shortcut.newWorkspace.label", defaultValue: "New Workspace")
             case .newLocalWorkspace: return String(localized: "shortcut.newLocalWorkspace.label", defaultValue: "New Local Workspace")
             case .newBrowserWorkspace: return String(localized: "shortcut.newBrowserWorkspace.label", defaultValue: "New Browser Workspace")
-            case .newCloudWorkspace: return String(localized: "shortcut.newCloudWorkspace.label", defaultValue: "New Cloud Workspace")
-            case .newCloudMachine: return String(localized: "shortcut.newCloudMachine.label", defaultValue: "New Cloud Machine")
             case .saveLayoutTemplate: return String(localized: "shortcut.saveLayoutTemplate.label", defaultValue: "Save Layout as Template…")
             case .openFolder: return String(localized: "shortcut.openFolder.label", defaultValue: "Open Folder")
             case .reopenPreviousSession: return String(localized: "shortcut.reopenPreviousSession.label", defaultValue: "Restore Previous App Launch")
@@ -426,8 +420,6 @@ enum KeyboardShortcutSettings {
             switch self {
             case .openSettings:
                 return StoredShortcut(key: ",", command: true, shift: false, option: false, control: false)
-            case .openTeamPicker:
-                return StoredShortcut(key: "t", command: true, shift: true, option: true, control: false)
             case .reloadConfiguration:
                 return StoredShortcut(key: ",", command: true, shift: true, option: false, control: false)
             case .showHideAllWindows:
@@ -465,13 +457,6 @@ enum KeyboardShortcutSettings {
                 // Option+Cmd+N: sits next to New Workspace (Cmd+N) and New Window (Cmd+Shift+N)
                 // without colliding with any cmux default or an AppKit-reserved keystroke.
                 return StoredShortcut(key: "n", command: true, shift: false, option: true, control: false)
-            case .newCloudWorkspace:
-                // Cmd+Y creates a Cloud workspace on the last usable Cloud
-                // context, falling back to the New Cloud Machine flow.
-                return StoredShortcut(key: "y", command: true, shift: false, option: false, control: false)
-            case .newCloudMachine:
-                // Shift+Cmd+Y always opens the New Cloud Machine flow.
-                return StoredShortcut(key: "y", command: true, shift: true, option: false, control: false)
             case .saveLayoutTemplate:
                 return StoredShortcut(key: "s", command: true, shift: false, option: false, control: true)
             case .openFolder:

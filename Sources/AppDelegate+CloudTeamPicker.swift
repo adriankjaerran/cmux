@@ -3,16 +3,6 @@ import AppKit
 import CmuxCloud
 
 extension AppDelegate {
-    @MainActor
-    func handleCloudTeamPickerShortcut(_ event: NSEvent) -> Bool {
-        guard matchConfiguredShortcut(event: event, action: .openTeamPicker) else { return false }
-        _ = openCloudTeamPicker(
-            preferredWindow: event.window ?? shortcutRoutingActiveWindow,
-            debugSource: "shortcut.openTeamPicker"
-        )
-        return true
-    }
-
     /// Reveals the active window's Cloud panel and requests its team menu.
     @MainActor
     @discardableResult

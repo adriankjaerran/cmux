@@ -57,6 +57,14 @@ private struct SettingsSidebarRows: View {
     }
 
     private func isEntryVisible(_ entry: SettingsSearchIndex.Entry) -> Bool {
+        switch entry.kind {
+        case .section:
+            if SettingsTaxonomyGroup.hiddenSections.contains(where: { entry.id == "section:\($0.rawValue)" }) {
+                return false
+            }
+        case .setting(let parent):
+            if SettingsTaxonomyGroup.hiddenSections.contains(parent) { return false }
+        }
         guard !isCloudSectionAvailable else { return true }
         switch entry.kind {
         case .section:

@@ -2578,7 +2578,6 @@ enum CmuxEmbeddedConfigSchema {
           "propertyNames": {
             "enum": [
               "openSettings",
-              "openTeamPicker",
               "reloadConfiguration",
               "showHideAllWindows",
               "globalSearch",
@@ -2590,8 +2589,6 @@ enum CmuxEmbeddedConfigSchema {
               "newTab",
               "newLocalWorkspace",
               "newBrowserWorkspace",
-              "newCloudWorkspace",
-              "newCloudMachine",
               "saveLayoutTemplate",
               "openFolder",
               "reopenPreviousSession",

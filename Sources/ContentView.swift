@@ -7996,18 +7996,7 @@ struct ContentView: View {
                 keywords: ["open", "ghostty", "settings", "config", "configuration", "file", "textedit", "terminal"]
             )
         )
-        contributions.append(
-            CommandPaletteCommandContribution(
-                commandId: "palette.mobileConnect",
-                title: constant(
-                    String(localized: "command.mobileConnect.title", defaultValue: "Open Mobile Pairing")
-                ),
-                subtitle: constant(String(localized: "command.mobileConnect.subtitle", defaultValue: "Mobile")),
-                keywords: Self.commandPaletteMobileConnectKeywords,
-                when: { !$0.bool(CommandPaletteContextKeys.mobileRemoteControlManagedByPolicy) }
-            )
-        )
-        contributions.append(contentsOf: Self.commandPaletteAuthCommandContributions() + Self.commandPaletteProCommandContributions())
+        // Mobile pairing, Account and Pro palette commands are hidden in this fork.
         contributions.append(
             CommandPaletteCommandContribution(
                 commandId: "palette.makeDefaultTerminal",

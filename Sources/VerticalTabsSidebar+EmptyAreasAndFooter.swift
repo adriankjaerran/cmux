@@ -93,7 +93,13 @@ enum SidebarFooterPresentationPolicy {
         _ control: SidebarFooterControl,
         presentationMode: WorkspacePresentationModeSettings.Mode
     ) -> Bool {
-        presentationMode != .minimal || control == .upgrade
+        switch control {
+        case .account, .mobileConnect, .cloud, .upgrade:
+            // Account, Mobile, Cloud and Pro are being removed in this fork.
+            return false
+        case .help, .shortcutDiscovery, .extensions, .update:
+            return presentationMode != .minimal
+        }
     }
 
     static func isUpgradeVisible(

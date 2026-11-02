@@ -108,13 +108,11 @@ extension AppDelegate {
         isAuthenticated: Bool? = nil
     ) -> Bool {
         switch action {
-        case .newCloudWorkspace, .newCloudMachine, .cloudVM:
-            return CloudMachinesFeature.isEnabled
-                && (isAuthenticated ?? (AppDelegate.shared?.auth?.accountFlow.isAuthenticated == true))
+        case .cloudVM, .mobileConnect:
+            // Cloud and Mobile are being removed in this fork.
+            return false
         case .newBrowser, .newAgentChat:
             return BrowserAvailabilitySettings.isEnabled()
-        case .mobileConnect:
-            return !MobileRemoteControlPolicy.isDisabled
         case .newWorkspace, .newTerminal, .splitRight, .splitDown,
              .copyWorkingDirectory, .copyProjectRoot, .copyScreen:
             return true

@@ -9,7 +9,6 @@ import Foundation
 public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCodable {
     // MARK: App
     case openSettings
-    case openTeamPicker
     case reloadConfiguration
     case showHideAllWindows
     case globalSearch
@@ -28,8 +27,6 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case newTab
     case newLocalWorkspace
     case newBrowserWorkspace
-    case newCloudWorkspace
-    case newCloudMachine
     case saveLayoutTemplate
     case openFolder
     case reopenPreviousSession

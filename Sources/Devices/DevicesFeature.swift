@@ -19,10 +19,8 @@ enum DevicesFeature {
         policy: ManagedDevicePolicy? = nil,
         cloudEnabled: Bool? = nil
     ) -> Bool {
-        let policy = policy ?? ManagedDevicePolicy(defaults: defaults)
-        guard isAvailable(defaults: defaults, policy: policy, cloudEnabled: cloudEnabled),
-              !policy.isDeviceDiscoveryDisabled else { return false }
-        return localOptIn(defaults: defaults)
+        // Devices is being removed in this fork: never enabled.
+        false
     }
 
     nonisolated static func localOptIn(defaults: UserDefaults) -> Bool {
@@ -36,9 +34,8 @@ enum DevicesFeature {
         policy: ManagedDevicePolicy? = nil,
         cloudEnabled: Bool? = nil
     ) -> Bool {
-        let policy = policy ?? ManagedDevicePolicy(defaults: defaults)
-        return !policy.isEnforced(.disableCloud)
-            && (cloudEnabled ?? CloudMachinesFeature.isEnabled(defaults: defaults, policy: policy))
+        // Devices is being removed in this fork: never available.
+        false
     }
 
     nonisolated static func isDiscoveryEnabled(defaults: UserDefaults = .standard, cloudEnabled: Bool? = nil) -> Bool {

@@ -23,7 +23,7 @@ extension CmuxSurfaceTabBarBuiltInAction {
         case .copyWorkingDirectory: return .workingDirectory
         case .copyProjectRoot: return .projectRoot
         case .copyScreen: return .visibleScreen
-        case .newWorkspace, .newAgentChat, .cloudVM, .newCloudWorkspace, .newCloudMachine,
+        case .newWorkspace, .newAgentChat, .cloudVM,
              .mobileConnect, .newTerminal, .newBrowser, .splitRight, .splitDown:
             return nil
         }

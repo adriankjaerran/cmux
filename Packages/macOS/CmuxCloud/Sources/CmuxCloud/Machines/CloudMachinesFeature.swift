@@ -13,9 +13,10 @@ public enum CloudMachinesFeature: Sendable {
         return String(localized: "cloud.feature.disabled", defaultValue: "Cloud Machines are temporarily unavailable.")
     }
 
-    /// Whether Cloud can be discovered on this Mac.
+    /// Whether Cloud can be discovered on this Mac. Always false in this fork
+    /// (Cloud is being removed).
     public nonisolated static func isAvailable(policy: ManagedDevicePolicy) -> Bool {
-        !policy.isEnforced(.disableCloud)
+        false
     }
 
     /// Whether Cloud work is enabled after local first-use activation.

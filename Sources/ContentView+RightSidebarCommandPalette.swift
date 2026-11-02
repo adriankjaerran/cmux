@@ -17,16 +17,10 @@ extension ContentView {
         }
 
         switch commandId {
-        case Self.commandPaletteAuthTeamPickerCommandId:
-            return .openTeamPicker
         case "palette.newWorkspace":
             return .newTab
         case "palette.newBrowserWorkspace":
             return .newBrowserWorkspace
-        case ContentView.commandPaletteCloudNewMachineCommandId:
-            return .newCloudMachine
-        case ContentView.commandPaletteCloudNewWorkspaceCommandId:
-            return .newCloudWorkspace
         case "palette.newWindow":
             return .newWindow
         case "palette.openFolder":

@@ -258,7 +258,7 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
         showsNewBadge: Bool,
         footerHasNotNow: Bool
     ) -> NSWindow {
-        let shortcut = KeyboardShortcutSettings.shortcut(for: .newCloudMachine)
+        let shortcut = StoredShortcut.unbound
         let rootView = CloudWelcomeAccountView(
             accountFlow: AppDelegate.shared?.auth?.accountFlow,
             resolveStep: nextStep,
