@@ -16,8 +16,9 @@ internal import Foundation
 /// The aliases mirror `processV2Command` exactly: `mobile.workspace.list` (the
 /// bare `workspace.list` stays on the legacy `v2WorkspaceList`), the
 /// `mobile.terminal.*` verbs each with their bare `terminal.*` alias, plus
-/// `mobile.terminal.paste` / `terminal.paste` and the local debug
-/// `chat.sessions.dump`. The worker-lane `mobile.attach_ticket.create` and the
+/// `mobile.terminal.paste` and the local debug `chat.sessions.dump`. The bare
+/// `terminal.input` / `terminal.paste` are served by the terminal-input domain
+/// (`ControlCommandCoordinator+TerminalInput.swift`). The worker-lane `mobile.attach_ticket.create` and the
 /// mobile-data-plane-only verbs are NOT handled here: they reach the Mac only
 /// through the mobile data-plane RPC (`TerminalController.mobileHostHandleRPC`),
 /// which dispatches its `v2Mobile*` bodies directly — it speaks
@@ -36,7 +37,7 @@ extension ControlCommandCoordinator {
         context: (any ControlMobileHostContext)?
     ) async -> ControlCallResult? {
         switch request.method {
-        case "mobile.terminal.paste", "terminal.paste":
+        case "mobile.terminal.paste":
             return await context?.controlMobileTerminalPaste(params: request.params)
         case "mobile.task.models.list":
             return await context?.controlMobileTaskModelsList(
@@ -65,7 +66,7 @@ extension ControlCommandCoordinator {
             return context?.controlMobileWorkspaceList(params: request.params)
         case "mobile.terminal.create", "terminal.create":
             return context?.controlMobileTerminalCreate(params: request.params)
-        case "mobile.terminal.input", "terminal.input":
+        case "mobile.terminal.input":
             return context?.controlMobileTerminalInput(params: request.params)
         case "mobile.terminal.replay", "terminal.replay":
             return context?.controlMobileTerminalReplay(params: request.params)

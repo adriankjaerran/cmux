@@ -3837,6 +3837,9 @@
 		C51A73000000000000000301 /* TerminalController+ControlSurfacePanelType.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A73000000000000000302 /* TerminalController+ControlSurfacePanelType.swift */; };
 		C0DE00000000000000000C7A /* TerminalController+ControlSystemContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000C79 /* TerminalController+ControlSystemContext.swift */; };
 		C0DE00000000000000000C7C /* TerminalController+ControlSystemContext2.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000C7B /* TerminalController+ControlSystemContext2.swift */; };
+		7E1A1D000000000000000001 /* TerminalController+TerminalPaste.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A1D000000000000000002 /* TerminalController+TerminalPaste.swift */; };
+		7E1A1D000000000000000003 /* TerminalController+TerminalInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A1D000000000000000004 /* TerminalController+TerminalInput.swift */; };
+		7E1A1D000000000000000005 /* TerminalController+TerminalTargetResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A1D000000000000000006 /* TerminalController+TerminalTargetResolution.swift */; };
 		93300003A1B2C3D4E5F60718 /* TerminalController+ControlTerminalBinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93300004A1B2C3D4E5F60718 /* TerminalController+ControlTerminalBinding.swift */; };
 		C0DE00000000000000000C62 /* TerminalController+ControlWorkspaceContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000C61 /* TerminalController+ControlWorkspaceContext.swift */; };
 		C0DE00000000000000000C54 /* TerminalController+ControlWorkspaceGroupContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000C53 /* TerminalController+ControlWorkspaceGroupContext.swift */; };
@@ -8331,6 +8334,9 @@
 		C51A73000000000000000302 /* TerminalController+ControlSurfacePanelType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+ControlSurfacePanelType.swift"; sourceTree = "<group>"; };
 		C0DE00000000000000000C79 /* TerminalController+ControlSystemContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+ControlSystemContext.swift"; sourceTree = "<group>"; };
 		C0DE00000000000000000C7B /* TerminalController+ControlSystemContext2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+ControlSystemContext2.swift"; sourceTree = "<group>"; };
+		7E1A1D000000000000000002 /* TerminalController+TerminalPaste.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+TerminalPaste.swift"; sourceTree = "<group>"; };
+		7E1A1D000000000000000004 /* TerminalController+TerminalInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+TerminalInput.swift"; sourceTree = "<group>"; };
+		7E1A1D000000000000000006 /* TerminalController+TerminalTargetResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+TerminalTargetResolution.swift"; sourceTree = "<group>"; };
 		93300004A1B2C3D4E5F60718 /* TerminalController+ControlTerminalBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+ControlTerminalBinding.swift"; sourceTree = "<group>"; };
 		C0DE00000000000000000C61 /* TerminalController+ControlWorkspaceContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+ControlWorkspaceContext.swift"; sourceTree = "<group>"; };
 		C0DE00000000000000000C53 /* TerminalController+ControlWorkspaceGroupContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+ControlWorkspaceGroupContext.swift"; sourceTree = "<group>"; };
@@ -9967,9 +9973,20 @@
 			);
 			sourceTree = "<group>";
 		};
+		7E1A1D000000000000000010 /* TerminalInput */ = {
+			isa = PBXGroup;
+			children = (
+				7E1A1D000000000000000002 /* TerminalController+TerminalPaste.swift */,
+				7E1A1D000000000000000004 /* TerminalController+TerminalInput.swift */,
+				7E1A1D000000000000000006 /* TerminalController+TerminalTargetResolution.swift */,
+			);
+			path = TerminalInput;
+			sourceTree = "<group>";
+		};
 		A5001041 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				7E1A1D000000000000000010 /* TerminalInput */,
 				ACA7C4A70000000000000100 /* AgentChat */,
 				A11D00000000000000000002 /* MacDevicesComposition.swift */,
 				BD3A5543C7D058686ECC1ABF /* MobileHostIrxRuntime+DeviceAccess.swift */,
@@ -16647,6 +16664,9 @@
 				C0DE00000000000000000C7A /* TerminalController+ControlSystemContext.swift in Sources */,
 				C0DE00000000000000000C7C /* TerminalController+ControlSystemContext2.swift in Sources */,
 				93300003A1B2C3D4E5F60718 /* TerminalController+ControlTerminalBinding.swift in Sources */,
+				7E1A1D000000000000000001 /* TerminalController+TerminalPaste.swift in Sources */,
+				7E1A1D000000000000000003 /* TerminalController+TerminalInput.swift in Sources */,
+				7E1A1D000000000000000005 /* TerminalController+TerminalTargetResolution.swift in Sources */,
 				C0DE00000000000000000C62 /* TerminalController+ControlWorkspaceContext.swift in Sources */,
 				C0DE00000000000000000C54 /* TerminalController+ControlWorkspaceGroupContext.swift in Sources */,
 				A13056000000000000000102 /* TerminalController+ControlWorkspaceReads.swift in Sources */,

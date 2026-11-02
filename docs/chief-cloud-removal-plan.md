@@ -564,7 +564,23 @@ living under "Mobile".
 - ✅ `vault sessions`, `vault search cmux`, `sessions list`: same session ids before and after (30 / 30 / 100).
   ⬜ ⌘P global search UI: manual.
 
-### ⬜ 9.6 Keep `terminal.paste` / `terminal.input`, cut them loose from Mobile (M, high risk if skipped)
+### ✅ 9.6 Keep `terminal.paste` / `terminal.input`, cut them loose from Mobile (M, high risk if skipped)
+
+Done (see `git log`, "Phase 9.6"). New `Sources/TerminalInput/` (3 files): `+TerminalPaste.swift` (`v2TerminalPaste`),
+`+TerminalInput.swift` (`v2TerminalInput`), `+TerminalTargetResolution.swift` (moved from TC /
+`+ControlTerminalBinding`: `MobileTerminalAliasUUID`, `mobileTerminalAliasUUID`, `mobileTerminalAliasValidationError`,
+`mobileWorkspaceIDValidationError`, `mobileResolveWorkspaceAndSurface`, `mobileTerminalPanels`,
+`mobileCanonicalTerminalTarget`; names kept, the phone files still call them). The new bodies are the mobile ones
+minus input delivery/ack (`MobileHostTerminalInputApplier`), `applyMobileViewportReport`, `MobileTerminalByteTee`
+(`terminal_seq`) and the `HostLatencyTrace` stamps; errors are the plain `.err` the no-ack branch returned. Took
+the "cleaner" coordinator option: new `CmuxControlSocket/Coordinator/TerminalInput/` (`ControlTerminalInputContext`
+in `ControlCommandContext`, `handleTerminalInput` before `handleMobileHost`, `handleTerminalInputAsync`); TC routes
+`terminal.paste` there; the MobileHost coordinator keeps only `mobile.terminal.paste` / `mobile.terminal.input`
+(still on `v2MobileTerminal*`), so 9.11 can delete `Coordinator/MobileHost/` whole. `mobileTerminalPasteInFlightSurfaceIDs`
+→ internal `terminalPasteInFlightSurfaceIDs` (shared). Feed "send text" (`AppDelegate`) and notification reply
+(`AppDelegate+NotificationDeliverySeams`) now call `v2TerminalPaste`; the phone-reply inbox and `+MobileChat` still
+use `v2MobileTerminalPaste`. `mobileDetachedGateError` untouched (only on the phone `mobileHostHandleRPC` path).
+Package test stubs got a `ControlTerminalInputContext` extension (not run). Wire names unchanged.
 
 **What it does:** the paste path the cmux agent uses stops depending on `Sources/Mobile` and `CmuxMobileHost`.
 
@@ -585,10 +601,15 @@ living under "Mobile".
 multi-line text, and `cmux paste` uses `terminal.paste` too. Deleting `Sources/Mobile` without this step breaks
 the cmux agent, and only for multi-line messages, so it's easy to miss.
 
-- ⬜ Standard checks, especially multi-line `cmux_send` from the cmux agent.
-- ⬜ `printf 'one\ntwo\n' | "$T" paste --surface <id>` (or `send --paste`) lands as one paste; with `--submit` it
+- ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`, `terminal.input`/`terminal.paste` still in
+  `system.capabilities`). ⬜ Multi-line `cmux_send` from the cmux agent itself: manual (it is `send --paste`, checked below).
+- ✅ `printf 'one\ntwo\n' | "$T" paste --surface <id>` (or `send --paste`) lands as one paste; with `--submit` it
   runs. Through the NIGHTLY CLI too: `"/Applications/cmux NIGHTLY.app/Contents/Resources/bin/cmux" send --paste …`
-  from a test-app terminal.
+  from a test-app terminal. (Scratch workspace: `cat` got both lines; a zsh prompt got `echo p1\necho p2` as one
+  bracketed paste, ran both on Return; `paste --submit` ran; same with the NIGHTLY CLI via `CMUX_SOCKET_PATH`.
+  `rpc terminal.paste` payload `delivery`/`submitted`, `submit_key: none` → `submitted: false`, `Unsupported
+  submit_key`, `not_found`, `Conflicting terminal identifiers`, `Missing or invalid workspace_id`; `terminal.input`
+  → `queued: false`; `mobile.terminal.paste` still works.) ⬜ Feed reply / notification reply UI: manual.
 
 ### ⬜ 9.7 Stub: sidebar, footer, right sidebar, TabManager (M, medium risk)
 

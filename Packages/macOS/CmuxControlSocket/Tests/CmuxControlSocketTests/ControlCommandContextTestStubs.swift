@@ -641,3 +641,12 @@ extension ControlMobileHostContext {
     func controlMobileTaskAttachmentUpload(params: [String: JSONValue]) -> ControlCallResult { mobileHostStubResult }
     func controlMobileChatSessionsDump() -> ControlCallResult { mobileHostStubResult }
 }
+
+extension ControlTerminalInputContext {
+    func controlTerminalInput(params: [String: JSONValue]) -> ControlCallResult {
+        .err(code: "unavailable", message: "", data: nil)
+    }
+    func controlTerminalPaste(params: [String: JSONValue]) -> ControlCallResult {
+        .err(code: "unavailable", message: "", data: nil)
+    }
+}

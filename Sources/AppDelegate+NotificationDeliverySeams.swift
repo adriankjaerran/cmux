@@ -158,7 +158,7 @@ extension AppDelegate {
         // remain separate. `surface.send_text` plus a trailing carriage return
         // writes a raw byte, which full-screen agent editors render as a
         // newline instead of treating it as Return.
-        switch await TerminalController.shared.v2MobileTerminalPaste(params: [
+        switch await TerminalController.shared.v2TerminalPaste(params: [
             "workspace_id": target.tabId.uuidString,
             "surface_id": surfaceId.uuidString,
             "text": text,

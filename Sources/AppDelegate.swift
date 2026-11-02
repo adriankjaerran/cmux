@@ -11266,7 +11266,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // Share the phone composer's literal paste and provider-aware submit
         // key. Appending CR to paste text inserts a newline in agent editors.
         Task { @MainActor in
-            _ = await TerminalController.shared.v2MobileTerminalPaste(params: [
+            _ = await TerminalController.shared.v2TerminalPaste(params: [
                 "workspace_id": workspaceId,
                 "surface_id": surfaceId,
                 "text": text,
