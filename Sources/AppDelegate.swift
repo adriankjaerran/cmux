@@ -1798,12 +1798,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             StartupBreadcrumbLog.append("appDelegate.didFinish.posthog.complete")
         }
         startProductAnalytics()
-        // `DisableTelemetry` (MDM) also stops the remote feature-flag fetch: it
-        // carries the same anonymous install id, and flags then use their
-        // built-in defaults.
-        if !isRunningUnderXCTest, !ManagedDevicePolicy().isEnforced(.disableTelemetry) {
-            CmuxFeatureFlags.shared.start()
-        }
+        // Fork: no remote feature-flag fetch. Upstream POSTed an anonymous
+        // install id to https://cmux.com/api/client-config at launch and every
+        // 30 minutes (`CmuxFeatureFlags.shared.start()`). Flags now resolve from
+        // local overrides, the last cached remote value, and built-in defaults.
 
         let forceDuplicateLaunchObserver = env["CMUX_UI_TEST_ENABLE_DUPLICATE_LAUNCH_OBSERVER"] == "1"
 
