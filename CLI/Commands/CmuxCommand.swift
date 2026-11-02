@@ -207,7 +207,6 @@ struct CmuxCommand: AsyncParsableCommand {
             VMSSHAttachTopLevelCommand.self,
             AutomationCommand.self,
             GlaedaCommand.self,
-            VPNCommand.self,
             BillingCommand.self,
             SudoCommand.self,
             VaultCommand.self,

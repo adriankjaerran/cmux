@@ -360,42 +360,6 @@ public protocol SettingsHostActions: AnyObject, CloudMachinesSettingsActions {
     /// language selection.
     func applyLanguageOverride(_ language: AppLanguage)
 
-    /// Gives the host a chance to refresh computer-use permission state.
-    func refreshComputerUsePermissions() async
-
-    /// Whether the Computer Use helper currently has Accessibility permission.
-    func computerUseAccessibilityGranted() -> Bool
-
-    /// Whether the Computer Use helper currently has Screen Recording permission.
-    func computerUseScreenRecordingGranted() -> Bool
-
-    /// Whether the displayed Computer Use permission values are authoritative.
-    func computerUsePermissionStatusIsKnown() -> Bool
-
-    /// The remaining setup step, including capture confirmation beyond the TCC grants.
-    func computerUseSetupStatus() -> ComputerUseSetupStatus
-
-    /// One runtime-owned enablement, permission, and setup snapshot.
-    func computerUseSetupSnapshot() -> ComputerUseSettingsSnapshot
-
-    /// Emits coalesced invalidations of the host's cached permission and setup snapshot.
-    func computerUseSetupUpdates() -> AsyncStream<Void>
-
-    /// Opens the explicit setup flow, including when both TCC grants already exist.
-    func finishComputerUseSetup()
-
-    /// Starts the helper-owned Accessibility permission flow.
-    func requestComputerUseAccessibility()
-
-    /// Starts the helper-owned Screen Recording permission flow.
-    func requestComputerUseScreenRecording()
-
-    /// Opens the Accessibility pane in System Settings.
-    func openComputerUseAccessibilitySettings()
-
-    /// Opens the Screen Recording pane in System Settings.
-    func openComputerUseScreenRecordingSettings()
-
 }
 
 /// Host-provided summary of the existing config-backed automation rules.

@@ -1470,9 +1470,6 @@
 		8CC4B7E07376E56BD8A1369D /* CMUXCLI+VMSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = F295692D7312639D54A35831 /* CMUXCLI+VMSnapshots.swift */; };
 		CC0033E15A1B2C3D4E5F0020 /* CMUXCLI+VMTui.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0033E15A1B2C3D4E5F0021 /* CMUXCLI+VMTui.swift */; };
 		CC0033E15A1B2C3D4E5F0032 /* CMUXCLI+VMTuiWorkspaceNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0033E15A1B2C3D4E5F0033 /* CMUXCLI+VMTuiWorkspaceNaming.swift */; };
-		C8923639133F158AF1B6A0FB /* CMUXCLI+VPN.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA475616EA96D1D0624FC0A1 /* CMUXCLI+VPN.swift */; };
-		FF1B913DC56F41178FA0895A /* CMUXCLI+VPN.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0226FF4BE571A2BA5B5AB16 /* CMUXCLI+VPN.swift */; };
-		7A0CE1000000000000000102 /* CMUXCLI+VPNAppManaged.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0CE1000000000000000101 /* CMUXCLI+VPNAppManaged.swift */; };
 		F0316A711615C3D2D3008A82 /* CMUXCLI+WindowDispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A64B5058972147F941BD6FA5 /* CMUXCLI+WindowDispatch.swift */; };
 		06CC2F6C1340C7424D1C7E0A /* CMUXCLI+WorkspaceTodo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5D35CC62B0F252F9EC2AD1 /* CMUXCLI+WorkspaceTodo.swift */; };
 		173751C62F967C585036C9C0 /* CMUXCLICodexUnavailableAdmissionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0677DB157F30F725FECA0EC /* CMUXCLICodexUnavailableAdmissionTests.swift */; };
@@ -6192,9 +6189,6 @@
 		F295692D7312639D54A35831 /* CMUXCLI+VMSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+VMSnapshots.swift"; sourceTree = "<group>"; };
 		CC0033E15A1B2C3D4E5F0021 /* CMUXCLI+VMTui.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+VMTui.swift"; sourceTree = "<group>"; };
 		CC0033E15A1B2C3D4E5F0033 /* CMUXCLI+VMTuiWorkspaceNaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+VMTuiWorkspaceNaming.swift"; sourceTree = "<group>"; };
-		EA475616EA96D1D0624FC0A1 /* CMUXCLI+VPN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+VPN.swift"; sourceTree = "<group>"; };
-		F0226FF4BE571A2BA5B5AB16 /* CMUXCLI+VPN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+VPN.swift"; sourceTree = "<group>"; };
-		7A0CE1000000000000000101 /* CMUXCLI+VPNAppManaged.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+VPNAppManaged.swift"; sourceTree = "<group>"; };
 		A64B5058972147F941BD6FA5 /* CMUXCLI+WindowDispatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+WindowDispatch.swift"; sourceTree = "<group>"; };
 		7E5D35CC62B0F252F9EC2AD1 /* CMUXCLI+WorkspaceTodo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+WorkspaceTodo.swift"; sourceTree = "<group>"; };
 		F0677DB157F30F725FECA0EC /* CMUXCLICodexUnavailableAdmissionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLICodexUnavailableAdmissionTests.swift"; sourceTree = "<group>"; };
@@ -12557,9 +12551,7 @@
 				D7BEF29029A61AF2B389D31B /* CMUXCLI+VMLayoutEnv.swift */,
 				46B86A2F39B40CAA99280C6B /* CMUXCLI+VMNetwork.swift */,
 				6B588C0B56CED7C6B38466D4 /* CMUXCLI+VMAgentUpdates.swift */,
-				CC0033E15A1B2C3D4E5F0031 /* CMUXCLI+VMHelp.swift */,				EA475616EA96D1D0624FC0A1 /* CMUXCLI+VPN.swift */,
-				7A0CE1000000000000000101 /* CMUXCLI+VPNAppManaged.swift */,
-				C10D0A100000000000000002 /* CMUXCLI+CloudDomains.swift */,
+				CC0033E15A1B2C3D4E5F0031 /* CMUXCLI+VMHelp.swift */,				C10D0A100000000000000002 /* CMUXCLI+CloudDomains.swift */,
 				21D721AF457D40CD877B8D02 /* CMUXCLI+VMSCP.swift */,
 				CC0033E15A1B2C3D4E5F0102 /* CMUXCLI+VMTransfer.swift */,
 				B9000053A1B2C3D4E5F60719 /* CMUXCLI+InstallPreview.swift */,
@@ -12701,7 +12693,6 @@
 				D3C184780000000000000005 /* AgentInboxPollIteration.swift */,
 				5B85EF1F8C40AF5C89F442A8 /* CMUXCLI+AgentMessageSettings.swift */,
 				6EA23FD5F4147585610132E4 /* CMUXCLI+BrowserRepl.swift */,
-				F0226FF4BE571A2BA5B5AB16 /* CMUXCLI+VPN.swift */,
 				C41EFD80D4F19E751D482A5F /* CMUXCLI+Chief.swift */,
 				0A373D54DD824A79BFEB0840 /* CMUXCLI+ChiefDispatch.swift */,
 				2C636D86CB494560BBF6953B /* ChiefDispatchPlan.swift */,
@@ -17757,9 +17748,6 @@
 				CC0033E15A1B2C3D4E5F0101 /* CMUXCLI+VMTransfer.swift in Sources */,
 				CC0033E15A1B2C3D4E5F0020 /* CMUXCLI+VMTui.swift in Sources */,
 				CC0033E15A1B2C3D4E5F0032 /* CMUXCLI+VMTuiWorkspaceNaming.swift in Sources */,
-				C8923639133F158AF1B6A0FB /* CMUXCLI+VPN.swift in Sources */,
-				FF1B913DC56F41178FA0895A /* CMUXCLI+VPN.swift in Sources */,
-				7A0CE1000000000000000102 /* CMUXCLI+VPNAppManaged.swift in Sources */,
 				F0316A711615C3D2D3008A82 /* CMUXCLI+WindowDispatch.swift in Sources */,
 				06CC2F6C1340C7424D1C7E0A /* CMUXCLI+WorkspaceTodo.swift in Sources */,
 				C1A900000000000000000004 /* CmuxCommand.swift in Sources */,

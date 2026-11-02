@@ -24,7 +24,6 @@ extension TerminalSurface {
         rootDirectory: URL,
         enabledCommands: Set<TerminalSurfaceAgentCommand> = Set(TerminalSurfaceAgentCommand.allCases),
         hermesProfileAliasDirectoryURL: URL? = nil,
-        computerUseSettingFileURL: URL? = nil,
         fileManager: FileManager = .default
     ) -> TerminalSurfaceAgentCommandShimSet? {
         guard let wrapperDirectoryURL = wrapperDirectoryURL?.standardizedFileURL else { return nil }
@@ -40,7 +39,6 @@ extension TerminalSurface {
             rootDirectory: rootDirectory,
             enabledCommands: enabledCommands,
             hermesProfileAliases: aliases,
-            computerUseSettingFileURL: computerUseSettingFileURL,
             fileManager: fileManager
         )
     }
@@ -65,7 +63,6 @@ extension TerminalSurface {
         rootDirectory: URL,
         enabledCommands: Set<TerminalSurfaceAgentCommand> = Set(TerminalSurfaceAgentCommand.allCases),
         hermesProfileAliasCatalog: HermesProfileAliasCatalog,
-        computerUseSettingFileURL: URL? = nil,
         fileManager: FileManager = .default
     ) async -> TerminalSurfaceAgentCommandShimSet? {
         guard let wrapperDirectoryURL = wrapperDirectoryURL?.standardizedFileURL else { return nil }
@@ -78,7 +75,6 @@ extension TerminalSurface {
             rootDirectory: rootDirectory,
             enabledCommands: enabledCommands,
             hermesProfileAliases: aliases,
-            computerUseSettingFileURL: computerUseSettingFileURL,
             fileManager: fileManager
         )
     }
@@ -93,7 +89,6 @@ extension TerminalSurface {
         rootDirectory: URL,
         enabledCommands: Set<TerminalSurfaceAgentCommand>,
         hermesProfileAliases: [HermesProfileAliasResolver.Alias],
-        computerUseSettingFileURL: URL? = nil,
         fileManager: FileManager
     ) -> TerminalSurfaceAgentCommandShimSet? {
         var availableDefinitions: [(
@@ -135,9 +130,6 @@ extension TerminalSurface {
             return nil
         }
 
-        let computerUseSettingURL = computerUseSettingFileURL ?? computerUseLiveSettingFileURL(
-            homeDirectory: fileManager.homeDirectoryForCurrentUser
-        )
         var shims: [TerminalSurfaceAgentCommandShim] = []
         if let hermesDefinition = availableDefinitions.first(where: {
             $0.definition.commandName == "hermes"
@@ -153,7 +145,6 @@ extension TerminalSurface {
                     wrapperURL: hermesDefinition.wrapperURL,
                     stagingDirectory: stagingDirectory,
                     publishedDirectory: shimDirectory,
-                    computerUseSettingFileURL: computerUseSettingURL,
                     fileManager: fileManager
                 ) else { continue }
                 shims.append(shim)
@@ -165,7 +156,6 @@ extension TerminalSurface {
                 wrapperURL: wrapperURL,
                 stagingDirectory: stagingDirectory,
                 publishedDirectory: shimDirectory,
-                computerUseSettingFileURL: computerUseSettingURL,
                 fileManager: fileManager
             ) else { continue }
             shims.append(shim)
@@ -200,7 +190,6 @@ extension TerminalSurface {
         wrapperURL: URL,
         stagingDirectory: URL,
         publishedDirectory: URL,
-        computerUseSettingFileURL: URL,
         fileManager: FileManager
     ) -> TerminalSurfaceAgentCommandShim? {
         let commandName = commandName ?? definition.commandName
@@ -257,16 +246,6 @@ extension TerminalSurface {
         #!/bin/bash
         cmux_wrapper=\(shellSingleQuoted(wrapperURL.path))
         cmux_shim_root=\(shellSingleQuoted(publishedDirectory.path))
-        cmux_computer_use_setting=\(shellSingleQuoted(computerUseSettingFileURL.path))
-        cmux_computer_use_enabled="${CMUX_COMPUTER_USE_APP_ENABLED:-1}"
-        if [[ -r "$cmux_computer_use_setting" ]]; then
-            IFS= read -r cmux_computer_use_enabled < "$cmux_computer_use_setting" || true
-        fi
-        # A functional `$cmux-cua` request is the explicit opt-in. Keep the
-        # live setting available to the app for first-use reconciliation, but
-        # do not turn an ordinary settings-off value into the hard kill switch.
-        # Only CMUX_COMPUTER_USE_MCP_DISABLED=1 (or managed policy in cmux)
-        # blocks attachment.
         if [[ ! -x "$cmux_wrapper" && -n "${CMUX_BUNDLED_CLI_PATH:-}" ]]; then
             cmux_candidate="$(dirname "$CMUX_BUNDLED_CLI_PATH")/\(definition.wrapperName)"
             if [[ -x "$cmux_candidate" ]]; then

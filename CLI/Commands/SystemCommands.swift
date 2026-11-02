@@ -810,41 +810,6 @@ struct AutomationReloadCommand: SharedLegacyFacadeCommand {
     static let configuration = CommandConfiguration(commandName: "reload", helpNames: [])
 }
 
-struct VPNCommand: SharedLegacyFacadeCommand {
-    // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
-    static let configuration = CommandConfiguration(
-        commandName: "vpn",
-        subcommands: [
-            VPNUpCommand.self,
-            VPNDownCommand.self,
-            VPNStatusCommand.self,
-            VPNRevokeCommand.self,
-        ],
-        defaultSubcommand: VPNStatusCommand.self,
-        helpNames: []
-    )
-}
-
-struct VPNUpCommand: SharedLegacyFacadeCommand {
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "up", helpNames: [], aliases: ["on"])
-}
-
-struct VPNDownCommand: SharedLegacyFacadeCommand {
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "down", helpNames: [], aliases: ["off"])
-}
-
-struct VPNStatusCommand: SharedLegacyFacadeCommand {
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "status", helpNames: [])
-}
-
-struct VPNRevokeCommand: SharedLegacyFacadeCommand {
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "revoke", helpNames: [])
-}
-
 struct BillingCommand: SharedLegacyFacadeCommand {
     // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
     // No `defaultSubcommand`: a bare `cmux billing` throws its usage.

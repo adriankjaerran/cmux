@@ -6904,9 +6904,6 @@ struct CMUXCLI {
             commandArgs: commandArgs
         )
         try validateWorkspaceLoadingCommandBeforeSocket(command: command, commandArgs: commandArgs)
-        if command == "vpn" {
-            _ = try Self.validatedVPNSubcommand(commandArgs)
-        }
         if ["notify", "list-notifications", "dismiss-notification", "mark-notification-read", "open-notification", "clear-notifications"].contains(command) {
             try validateNotificationCommandArguments(command: command, args: commandArgs)
         }
@@ -7055,9 +7052,6 @@ struct CMUXCLI {
             print(jsonString(formatIDs(response, mode: idFormat)))
         case "agent-hibernation":
             try runAgentHibernation(commandArgs: commandArgs, client: client, jsonOutput: jsonOutput)
-
-        case "vpn":
-            try runVPNCommand(commandArgs: commandArgs, client: client, jsonOutput: jsonOutput)
 
         case "billing":
             let (planOption, rest) = parseOption(Array(commandArgs.dropFirst()), name: "--plan")
@@ -21229,34 +21223,6 @@ struct CMUXCLI {
             """
         case "automation":
             return CMUXCLI.automationUsage()
-        case "vpn":
-            return """
-            Usage: cmux vpn <up|down|status|revoke>
-
-            The WireGuard tunnel between this Mac and your private Cloud VM
-            network. cmux's own terminals, Ports, and Desktop panes use a
-            user-space WireGuard tunnel that starts automatically and needs no
-            system approval. `cmux vpn up` adds a system-wide route through the
-            signed Network Extension so other apps on this Mac (your browser,
-            ssh, `.internal` hostnames) can reach VM addresses too.
-
-            Only `cmux vpn up` ever asks macOS to load the extension. The first
-            time, macOS asks you to allow it in System Settings › General ›
-            Login Items & Extensions; the Machines panel shows that wait with a
-            button to the right pane. cmux does not run sudo.
-
-            up      Start the system-wide tunnel now and keep it up until
-                    `cmux vpn down`.
-            down    Take the tunnel down. Enrollment is kept.
-            status  Show tunnel state, config path, and backend.
-            revoke  Stop both tunnel roles and remove this Mac's Cloud access.
-
-            `on` and `off` are aliases for `up` and `down`.
-
-            Each role has its own key, generated on this Mac. The private keys
-            never leave this Mac. Signed builds fail closed if the Network
-            Extension is absent. There is no privileged fallback.
-            """
         case "billing":
             return "Usage: cmux billing checkout --plan <go|pro|max> [--no-open]\n\nCreate checkout for the signed-in cmux account. Max is $200/month or $1,920/year ($160/month equivalent). Payment requires browser confirmation. --no-open or --json returns the URL without opening a browser."
         case "auth":
