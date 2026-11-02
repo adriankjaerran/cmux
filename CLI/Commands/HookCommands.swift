@@ -81,7 +81,7 @@ struct OMCCommand: AgentLauncherCommand {
     static let configuration = CommandConfiguration(commandName: "omc", helpNames: [])
 }
 
-/// Short form of `cmux vm agent`; not part of the documented usage() surface.
+/// `cmux agent` (message, inbox, messages, hibernate, wake); not part of the documented usage() surface.
 struct VMAgentShortFormCommand: AgentLauncherCommand {
     @Argument(parsing: .captureForPassthrough) var arguments: [String] = []
     static let configuration = CommandConfiguration(commandName: "agent", shouldDisplay: false, helpNames: [])

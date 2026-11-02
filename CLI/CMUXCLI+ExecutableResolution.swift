@@ -214,9 +214,6 @@ extension CMUXCLI {
         switch command {
         case "agent":
             return CmuxTuiRemoteRouting.vmAgentRequestsHelp(commandArgs)
-        case "vm", "cloud":
-            return !CmuxTuiRemoteRouting.isAgentSubcommand(commandArgs.first)
-                || CmuxTuiRemoteRouting.vmAgentRequestsHelp(Array(commandArgs.dropFirst()))
         case "claude-teams", "codex-teams":
             return false
         case "omo", "omx", "omc":

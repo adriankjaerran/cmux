@@ -425,7 +425,28 @@ launch, put the call back and stub it inside instead.
 - ✅ `lsof -i -p <pid>`: nothing listening, nothing connected. `nettop -p <pid>` for a minute: no traffic. (Done: lsof empty, nettop 60 s empty.)
 - ✅ Vault (right sidebar) and global search still list Claude/Pi sessions (that's the transcript service). (Done via `cmux vault sessions` / `vault search`; global search UI needs a manual look.)
 
-### ⬜ 9.3 Cloud CLI commands go; unlink `CmuxCloudResizeCore` from the CLI (M, low risk)
+### ✅ 9.3 Cloud CLI commands go; unlink `CmuxCloudResizeCore` from the CLI (M, low risk)
+
+Done (see `git log`, "Phase 9.3"). 23 files deleted (11 `CMUXCLI+VM*.swift`, not 13, plus `CMUXCLI+SSHTui.swift`), ~9,700
+lines, plus ~3,600 dead lines in `CLI/cmux.swift`. Differs from the plan:
+- `RemoteDaemonStatusCommand` lived in `Commands/VMCommands.swift`; moved to `Commands/SystemCommands.swift`
+  (`remote-daemon-status` still works).
+- `cmux agent` no longer falls back to `cmux vm agent`; unknown verbs print the local usage. `cmux agent --help` is
+  new local text.
+- `cmux surface ls|open|new-terminal|new-display` (the surface catalog, implemented in `CMUXCLI+VMTui.swift`) went
+  too: it was the cloud machine catalog. `surface resume` and the sizing verbs stay. The app-side `surface.project` /
+  `surface.catalog` methods are untouched.
+- `cmux cloud guide` and the "Use Cloud" section of `cmux guide` / `--skill` went.
+- Dead VM-only helpers in `cmux.swift` went too (`vmIDForSplitAttach` branch of `runSSHWithOptions`, the
+  `vm-pty-connect` websocket bridge, VM create idempotency store, freestyle attach retries, ...).
+  `commandDefersSocketConnectionUntilRequest` now returns `false` (only `vm dev|layout|env` used it).
+  `VMDaemonWebSocketEndpoint` stays (SSH options still carry it).
+- Changed English strings got new keys (`cli.surface.usage.local`, `cli.guide.overview.share.local`,
+  `cli.rightSidebar.error.setRequiresMode.local`) because `Localizable.xcstrings` has `en` values for the old keys.
+  Old keys are still in the xcstrings (orphans; clean up later).
+- `refresh-docs.sh` writes into `~/Code/cmux-config/docs/cli`, so it ran from a copy in `/tmp` instead: no `NOTE:` lines;
+  the only changes are the removed Cloud lines.
+
 
 **What it removes:** `cmux vm` / `cloud`, `vm-pty-attach`, `vm-tui-connect`, `vm-ssh-attach`, `auth` / `login` /
 `logout`, `team`, `billing`, `remotes` / `remote`, `ai-accounts`, `mobile`, `iroh-diag`, and the right-sidebar CLI
@@ -454,10 +475,10 @@ everything in removal-plan.md's command table.
 **Risk:** low. `cmux.swift` is 40,000+ lines and the CodeRouter worker just edited it. Build the CLI and check help.
 
 - ⬜ Standard checks.
-- ⬜ `"$T" vm list`, `"$T" auth status`, `"$T" remotes list`, `"$T" mobile` → unknown command.
-- ⬜ `"$T" --help`, `"$T" help remote`, `"$T" docs settings` still print. `~/Code/cmux-config/scripts/refresh-docs.sh`
+- ✅ `"$T" vm list`, `"$T" auth status`, `"$T" remotes list`, `"$T" mobile` → unknown command. (Also `cloud`, `login`, `billing`, `iroh-diag`, `ai-accounts`, `vm-pty-attach`, `right-sidebar set cloud`.)
+- ✅ `"$T" --help`, `"$T" help remote`, `"$T" docs settings` still print (also `ssh --help`, `agent --help`, `surface --help`, `remote-daemon-status --help`). `~/Code/cmux-config/scripts/refresh-docs.sh`
   with `CMUX="$T"` runs without `NOTE: … failed` lines (compare with the baseline).
-- ⬜ `"$T" send --paste -- $'a\nb'` into a scratch terminal works.
+- ✅ `"$T" send --paste -- $'a\nb'` into a scratch terminal works.
 
 ### ⬜ 9.4 Move the local types out of `CmuxCloud` (M, low–medium risk)
 
