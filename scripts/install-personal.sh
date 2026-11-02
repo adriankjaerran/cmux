@@ -47,6 +47,19 @@ if pgrep -f "/Contents/MacOS/cmux DEV" >/dev/null 2>&1 \
   done
 fi
 
+# Back up the saved layout (workspaces, groups, splits) before replacing the
+# app. It lives outside the app bundle and normally survives an update; this
+# is a safety net. Restore: quit cmux Personal, copy the files back.
+SUPPORT="$HOME/Library/Application Support/cmux"
+BACKUP_DIR="$SUPPORT/personal-backups/$(date +%Y%m%d-%H%M%S)"
+if compgen -G "$SUPPORT/session-${BUNDLE_ID}*" >/dev/null; then
+  mkdir -p "$BACKUP_DIR"
+  cp -R "$SUPPORT"/session-"${BUNDLE_ID}"* "$BACKUP_DIR"/
+  echo "==> Backed up saved layout to $BACKUP_DIR"
+  # Keep the 10 newest backups.
+  ls -1dt "$SUPPORT/personal-backups"/*/ 2>/dev/null | tail -n +11 | xargs -I{} rm -rf "{}"
+fi
+
 echo "==> Installing to $DEST_APP"
 mkdir -p "$DEST_DIR"
 rsync -a --delete "$BUILT_APP/" "$DEST_APP/"
