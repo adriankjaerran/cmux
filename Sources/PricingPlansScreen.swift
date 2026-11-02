@@ -343,11 +343,8 @@ private final class NativePricingPlanStore: ObservableObject {
     }
 
     private static func loadPlanState() async -> NativePricingPlanLoadState {
-        let tokens = try? await AppDelegate.shared?.auth?.coordinator.currentTokens()
-        let billingTokens = tokens.map {
-            NativeBillingTokens(accessToken: $0.accessToken, refreshToken: $0.refreshToken)
-        }
-        return await loadPlanStateOffMain(billingTokens: billingTokens)
+        // Sign-in is gone (Phase 9.13): the plan request runs without tokens.
+        return await loadPlanStateOffMain(billingTokens: nil)
     }
 
     /// Performs the billing request and response decoding away from the main actor.

@@ -15,7 +15,7 @@ extension WorkspaceCloudVMBinding {
         if let previous, previous.vmID == vmID, let team = previous.teamID {
             return team
         }
-        return AppDelegate.shared?.auth?.coordinator.authenticatedTeamScope?.teamID
+        return nil
     }
 
     /// This binding with a team, adopting ``owningTeamID(forVMID:previous:)``

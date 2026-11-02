@@ -92,10 +92,11 @@ enum SettingsTaxonomyGroup: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Sections this fork hides (Account, Mobile, Cloud, Devices,
-    /// Networking). The enum cases stay so persisted values still decode.
+    /// Sections this fork hides (Mobile, Cloud, Devices, Networking). The
+    /// enum cases stay so persisted values still decode. Account is gone;
+    /// its raw value decodes as App.
     static let hiddenSections: Set<SettingsSectionID> = [
-        .account, .mobile, .cloudMachines, .computers, .networking,
+        .mobile, .cloudMachines, .computers, .networking,
     ]
 
     /// All existing navigation leaves in the order used by grouped browsing.

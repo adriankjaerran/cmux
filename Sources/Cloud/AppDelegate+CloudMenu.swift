@@ -10,21 +10,9 @@ extension AppDelegate {
     @MainActor
     func cloudMenuContext(model: CloudMenuModel? = nil) -> CloudMenuContext {
         let model = model ?? .shared
-        guard CloudMachinesFeature.isEnabled, let flow = auth?.accountFlow else {
-            return CloudMenuContext(account: .unavailable)
-        }
-        guard flow.isAuthenticated else {
-            return CloudMenuContext(account: .signedOut(isSigningIn: flow.isWorkingOnAuth))
-        }
-        let identity = flow.currentIdentity
-        let account = CloudMenuAccount(
-            email: identity.flatMap { $0.email.isEmpty ? nil : $0.email },
-            displayName: identity.flatMap { $0.displayName.isEmpty ? nil : $0.displayName },
-            teams: flow.availableTeams,
-            selectedTeamID: flow.selectedTeamID,
-            isSelectingTeam: flow.isSelectingTeam
-        )
-        return CloudMenuContext(account: .signedIn(account), machines: model.machines, loadState: model.loadState)
+        _ = model
+        // Sign-in went with Sources/Auth (Phase 9.13), so there is never an account.
+        return CloudMenuContext(account: .unavailable)
     }
 
     /// The Cloud verbs. `fromStatusItem` brings cmux forward first, because a
@@ -65,20 +53,9 @@ extension AppDelegate {
             }
         )
         return CloudMenuActions(
-            signIn: { [weak self] in
-                if fromStatusItem { NSApp.activate() }
-                self?.auth?.accountFlow.startSignIn()
-            },
-            signOut: { [weak self] in
-                guard let flow = self?.auth?.accountFlow else { return }
-                Task { @MainActor in await flow.signOut() }
-            },
-            selectTeam: { [weak self] teamID in
-                guard let flow = self?.auth?.accountFlow, teamID != flow.selectedTeamID, !flow.isSelectingTeam else { return }
-                Task { @MainActor in
-                    do { try await flow.selectTeam(id: teamID) } catch { NSSound.beep() }
-                }
-            },
+            signIn: {},
+            signOut: {},
+            selectTeam: { _ in },
             newWorkspace: { [weak self] in
                 let preferred = window()
                 if self?.performNewCloudWorkspaceOnResolvedMachineAction(preferredWindow: preferred, debugSource: source) != true {
@@ -100,7 +77,7 @@ extension AppDelegate {
                 if fromStatusItem { NSApp.activate() }
                 self?.showCloudDiagnostics()
             },
-            upgrade: { [weak self] in self?.auth?.accountFlow.openProUpgrade() },
+            upgrade: {},
             retry: { [weak model] in model?.refresh() },
             machine: machine
         )

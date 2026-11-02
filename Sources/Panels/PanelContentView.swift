@@ -205,13 +205,8 @@ struct PanelContentView: View {
             // Mobile pairing went with Sources/Mobile (Phase 9.14); the case stays for old sessions.
             EmptyView()
         case .accountSignIn:
-            if let accountSignInPanel = panel as? AccountSignInPanel {
-                AccountSignInPanelView(
-                    panel: accountSignInPanel,
-                    appearance: appearance,
-                    onRequestPanelFocus: onRequestPanelFocus
-                )
-            }
+            // Sign-in went with Sources/Auth (Phase 9.13); the case stays for old sessions.
+            EmptyView()
         case .cloudVPNSetup:
             if let cloudVPNSetupPanel = panel as? CloudVPNSetupPanel {
                 CloudVPNSetupPanelView(

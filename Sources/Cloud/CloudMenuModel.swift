@@ -50,7 +50,7 @@ final class CloudMenuModel {
         listMachines: (@MainActor () async throws -> VMListPage)? = nil,
         retryClock: any Clock<Duration> = ContinuousClock(),
         isAvailable: @escaping @MainActor () -> Bool = {
-            CloudMachinesFeature.isEnabled && AppDelegate.shared?.auth?.accountFlow.isAuthenticated == true
+            CloudMachinesFeature.isEnabled && false
         },
         pinStore: @escaping @MainActor () -> CloudMachinePinStore? = { AppDelegate.shared?.cloudMachinePinStore },
         scope: (@MainActor () -> String?)? = nil,

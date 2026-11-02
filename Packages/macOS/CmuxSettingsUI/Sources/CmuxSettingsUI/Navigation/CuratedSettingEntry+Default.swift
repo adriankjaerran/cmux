@@ -18,8 +18,7 @@ extension Array where Element == CuratedSettingEntry {
     /// ``SettingsSearchIndex/init(catalog:curatedEntries:)``.
     public static func cmuxDefault(catalog: SettingCatalog) -> [CuratedSettingEntry] {
         appendingDevicesEntries(to: insertingBrowserMemorySaverEntries(between: [
-            // Account / integrations
-            .init(section: .account, id: "account", title: String(localized: "settings.section.account", defaultValue: "Account"), synonyms: "Account auth authentication login logout signin sign-in signout sign-out email user profile stack team"),
+            // Integrations
             .init(section: .automation, id: "claude-code", title: String(localized: "settings.automation.claudeCode", defaultValue: "Claude Code Integration"), synonyms: "Claude Code Integration automation.claudeCodeIntegration claude code hooks agent integration status notifications"),
             .init(section: .automation, id: "pi", title: String(localized: "settings.automation.pi", defaultValue: "Pi Integration", bundle: .module), paths: ["automation.piIntegration"], synonyms: "Pi Integration automation.piIntegration pi agent hooks notifications status"),
             .init(section: .automation, id: "claude-path", title: String(localized: "settings.automation.claudeCode.customPath", defaultValue: "Claude Binary Path"), synonyms: "Claude Binary Path automation.claudeBinaryPath claude binary executable path cli command custom"),

@@ -1,7 +1,6 @@
 import SwiftUI
 
 enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
-    case account
     case app
     case themes
     case terminal
@@ -27,12 +26,22 @@ enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
 
     var id: Self { self }
 
+    /// `account` (the Account section, removed with sign-in in Phase 9.13)
+    /// still decodes, from `cmux settings open account` and stored targets,
+    /// and lands on App.
+    init?(rawValue: String) {
+        if rawValue == "account" {
+            self = .app
+            return
+        }
+        guard let match = Self.allCases.first(where: { $0.rawValue == rawValue }) else { return nil }
+        self = match
+    }
+
     var title: String {
         switch self {
         case .computers:
             return String(localized: "settings.section.devices", defaultValue: "Devices")
-        case .account:
-            return String(localized: "settings.section.account", defaultValue: "Account")
         case .app:
             return String(localized: "settings.section.app", defaultValue: "App")
         case .themes:
@@ -78,8 +87,6 @@ enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
         switch self {
         case .computers:
             return "desktopcomputer"
-        case .account:
-            return "person.crop.circle"
         case .app:
             return "gearshape"
         case .themes:
@@ -125,8 +132,6 @@ enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
         switch self {
         case .computers:
             return String(localized: "settings.devices.keywords", defaultValue: "devices my devices computers macs mac discovery discover discoverable incoming access tailscale pairing remote workspaces")
-        case .account:
-            return "\(title) sign in team sync"
         case .app:
             return "\(title) language workspace notifications menu bar telemetry default terminal"
         case .themes:

@@ -76,7 +76,7 @@ extension AppDelegate {
             isAvailable: CloudMachinesFeature.isAvailable,
             isEnabled: CloudMachinesFeature.isEnabled,
             canRunCloudOperations: cloudWorkspaceOperationController?.isCurrentlyAvailable,
-            isAuthInProgress: auth?.accountFlow.isWorkingOnAuth == true
+            isAuthInProgress: false
         )
     }
 

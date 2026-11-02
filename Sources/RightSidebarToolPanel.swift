@@ -272,18 +272,8 @@ struct RightSidebarToolPanelView: View {
                 RightSidebarToolFocusAnchor(onViewChange: panel.attachSessionIndexFocusAnchor)
                     .frame(width: 0, height: 0)
             )
-        case .machines:
-            if isVisibleInUI, RightSidebarMode.machines.isAvailable() {
-                MachinesPanelView(
-                    chromeBackgroundColor: resolvedChromeBackgroundColor,
-                    machinePinStore: AppDelegate.shared?.cloudMachinePinStore,
-                    tabManager: tabManager,
-                    activationCoordinator: AppDelegate.shared?.cloudActivationCoordinator
-                        ?? CloudActivationCoordinator.unconfigured(),
-                    coderouterStore: panel.coderouterStore
-                )
-            }
-        case .feed, .dock, .customSidebar:
+        case .machines, .feed, .dock, .customSidebar:
+            // The Cloud machines panel went with sign-in (Phase 9.13); the mode stays for stored values.
             EmptyView()
         }
     }

@@ -16,10 +16,15 @@ struct CloudMenuContext {
     var loadState: CloudMenuModel.LoadState = .idle
 }
 
+struct CloudMenuTeam {
+    var id: String
+    var displayName: String
+}
+
 struct CloudMenuAccount {
     var email: String?
     var displayName: String?
-    var teams: [AccountTeamSummary] = []
+    var teams: [CloudMenuTeam] = []
     var selectedTeamID: String?
     var isSelectingTeam = false
 

@@ -183,7 +183,7 @@ final class CmuxTuiSurfaceProviderRegistry {
         guard !isRetired, generation == refreshGeneration, scope == creationScope,
               providers[receipt.id] == nil else { return nil }
         let provider = CmuxTuiSurfaceProvider(
-            summary: .cloud(receipt), fileAccessTeamScope: AppDelegate.shared?.auth?.coordinator.authenticatedTeamScope,
+            summary: .cloud(receipt), fileAccessTeamScope: nil,
             ownerTeamID: ownerTeamID, links: links, catalog: catalog,
             sshClipboardWriteTrustStore: sshClipboardWriteTrustStore,
             portForwards: portForwards, portAccessStore: portAccess
@@ -816,7 +816,7 @@ final class CmuxTuiSurfaceProviderRegistry {
                 await links.setOwnerTeam(pageTeamID, for: summary.id)
                 guard generation == refreshGeneration else { return nil }
                 let provider = CmuxTuiSurfaceProvider(
-                    summary: .cloud(summary), fileAccessTeamScope: AppDelegate.shared?.auth?.coordinator.authenticatedTeamScope,
+                    summary: .cloud(summary), fileAccessTeamScope: nil,
                     ownerTeamID: pageTeamID, links: links, catalog: catalog,
                     sshClipboardWriteTrustStore: sshClipboardWriteTrustStore,
                     portForwards: portForwards, portAccessStore: portAccess
@@ -903,7 +903,7 @@ final class CmuxTuiSurfaceProviderRegistry {
             if summary.addressIPv4 == nil { summary.addressIPv4 = address }
             let provider = CmuxTuiSurfaceProvider(
                 summary: .cloud(summary),
-                fileAccessTeamScope: AppDelegate.shared?.auth?.coordinator.authenticatedTeamScope,
+                fileAccessTeamScope: nil,
                 ownerTeamID: ownerTeamID, links: links, catalog: catalog,
                 sshClipboardWriteTrustStore: sshClipboardWriteTrustStore,
                 portForwards: portForwards, portAccessStore: portAccess

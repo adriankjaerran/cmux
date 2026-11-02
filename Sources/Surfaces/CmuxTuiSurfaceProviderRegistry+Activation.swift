@@ -21,7 +21,7 @@ extension CmuxTuiSurfaceProviderRegistry {
         // list and any activation-only enrollment against this value, so a
         // sign-out or team switch during setup cannot commit another account's
         // readiness as this activation.
-        guard let expectedTeamScope = AppDelegate.shared?.auth?.coordinator.authenticatedTeamScope else {
+        guard let expectedTeamScope = (nil as AuthenticatedTeamScope?) else {
             throw VMClientError.notSignedIn
         }
         _ = try await client.listPage(
@@ -32,7 +32,7 @@ extension CmuxTuiSurfaceProviderRegistry {
         guard !isRetired, self.accessEpoch == accessEpoch, hasCloudSession() else {
             throw VMClientError.notSignedIn
         }
-        if AppDelegate.shared?.auth?.coordinator.authenticatedTeamScope != expectedTeamScope {
+        if (nil as AuthenticatedTeamScope?) != expectedTeamScope {
             throw VMClientError.notSignedIn
         }
         await prepareActivationHub(
@@ -43,7 +43,7 @@ extension CmuxTuiSurfaceProviderRegistry {
         guard !isRetired, self.accessEpoch == accessEpoch, hasCloudSession() else {
             throw VMClientError.notSignedIn
         }
-        if AppDelegate.shared?.auth?.coordinator.authenticatedTeamScope != expectedTeamScope {
+        if (nil as AuthenticatedTeamScope?) != expectedTeamScope {
             throw VMClientError.notSignedIn
         }
     }

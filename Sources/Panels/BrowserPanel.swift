@@ -2146,8 +2146,6 @@ final class BrowserPanel: Panel, ObservableObject {
     /// Set when sign-out emptied an app-session store, so the next trusted app
     /// page exchanges the native session again instead of loading signed out.
     private var appSessionStoreNeedsBootstrap = false
-    /// Replaces the signed-in exchange in tests; production uses the app's auth graph.
-    var appSessionRequestProvider: (@MainActor (URL) async -> BrowserAppSessionRequestOutcome)?
     var browserAutomationUserScripts: [WKUserScript] = []
     var browserAutomationInitScriptCount = 0
     var browserAutomationStyleScriptCount = 0
@@ -4041,13 +4039,6 @@ final class BrowserPanel: Panel, ObservableObject {
             return browserFallbackInteractiveModalHostWindow()
         }
 
-        // A tab duplicated from an app-session panel shares its store; Dock
-        // panels never pass through a workspace's registration, so register
-        // here so sign-out resets every panel showing those cookies.
-        if preservesExplicitEphemeralWebsiteDataStore {
-            AppDelegate.shared?.auth?.browserAppSession.register(self)
-        }
-
         if let initialRequest {
             hiddenWebViewDiscardManager.updateRestoredSessionRenderIntent(nil)
             currentURL = initialRequest.url
@@ -5910,12 +5901,9 @@ final class BrowserPanel: Panel, ObservableObject {
         return startedNavigation
     }
 
-    /// Trusted cmux app pages (`/app-pricing`, `/app-pro-welcome`) read the
-    /// plan from Stack cookies, which only a store prepared by
-    /// ``BrowserAppSessionController`` holds. Every direct entrypoint (Upgrade,
-    /// Pro welcome, restore, typed URL) lands here, so the exchange runs before
-    /// WebKit loads the document and a signed-in app never shows the page
-    /// signed out. Without a signed-in app the page loads unchanged.
+    /// Trusted cmux app pages used to exchange the signed-in native session
+    /// here before loading. Sign-in is gone in this fork, so no navigation
+    /// is ever held back.
     private func beginAppSessionBootstrapIfNeeded(
         request: URLRequest,
         originalURL: URL,
@@ -5923,47 +5911,7 @@ final class BrowserPanel: Panel, ObservableObject {
         preserveRestoredSessionHistory: Bool,
         onNavigationStarted: ((WKNavigation?) -> Void)?
     ) -> Bool {
-        // A tab a browser REPL session drives never receives the signed-in
-        // app session: the session could read the user's account pages.
-        guard !isClosingWebViewLifecycle,
-              BrowserReplTabAttachments.shared.attachment(for: id)?.isAttached != true,
-              cloudBrowserMachineID == nil,
-              cloudAccess.model == nil,
-              !usesRemoteWorkspaceProxy,
-              !preservesExplicitEphemeralWebsiteDataStore || appSessionStoreNeedsBootstrap,
-              (request.httpMethod ?? "GET").uppercased() == "GET",
-              Self.isNativeAppSessionSurface(originalURL),
-              let requestSession = appSessionRequestProvider ?? Self.signedInAppSessionRequest() else {
-            return false
-        }
-
-        hiddenWebViewDiscardManager.updateRestoredSessionRenderIntent(nil)
-        currentURL = originalURL
-        navigationDelegate?.recordAttemptedRequest(request, displayURL: originalURL)
-        refreshBackgroundAppearance()
-        shouldRenderWebView = true
-        appSessionBootstrapNavigationStarted = onNavigationStarted
-        appSessionBootstrapTask = Task { @MainActor [weak self] in
-            let outcome = await requestSession(originalURL)
-            guard let self, !Task.isCancelled else { return }
-            self.appSessionBootstrapTask = nil
-            self.appSessionBootstrapNavigationStarted = nil
-            if case let .navigation(navigation) = outcome {
-                self.adoptAppSessionStore(
-                    navigation.websiteDataStore,
-                    preservingRestoredSessionHistory: preserveRestoredSessionHistory
-                )
-            }
-            self.performNavigation(
-                request: request,
-                originalURL: originalURL,
-                recordTypedNavigation: recordTypedNavigation,
-                preserveRestoredSessionHistory: preserveRestoredSessionHistory,
-                onNavigationStarted: onNavigationStarted,
-                skipsAppSessionBootstrap: true
-            )
-        }
-        return true
+        false
     }
 
     private func cancelAppSessionBootstrap() {
@@ -5975,30 +5923,6 @@ final class BrowserPanel: Panel, ObservableObject {
         navigationStarted?(nil)
     }
 
-    /// Moves the panel into the controller-owned store that received the
-    /// session cookies. The store is registered so sign-out clears it.
-    private func adoptAppSessionStore(
-        _ store: WKWebsiteDataStore,
-        preservingRestoredSessionHistory: Bool
-    ) {
-        guard store !== WKWebsiteDataStore.default(), store.identifier == nil else { return }
-        let restoredHistory = restoredSessionHistory
-        closeAllPopupControllers()
-        websiteDataStore = store
-        preservesExplicitEphemeralWebsiteDataStore = true
-        appSessionStoreNeedsBootstrap = false
-        historyStore = BrowserHistoryStore(fileURL: nil)
-        resetForWorkspaceContextChange(
-            reason: "appSessionBootstrap",
-            forceWebViewReplacement: true
-        )
-        if preservingRestoredSessionHistory {
-            restoredSessionHistory = restoredHistory
-            refreshNavigationAvailability()
-        }
-        AppDelegate.shared?.auth?.browserAppSession.register(self)
-    }
-
     /// No trusted app-session origin in this fork (sign-in is gone).
     static func isNativeAppSessionSurface(_ url: URL?) -> Bool {
         false
@@ -6007,29 +5931,7 @@ final class BrowserPanel: Panel, ObservableObject {
     /// A page prewarmed in the profile store has no session cookies, so a
     /// signed-in app must load trusted app pages through the exchange instead.
     static func requiresAppSessionBootstrap(_ url: URL?) -> Bool {
-        isNativeAppSessionSurface(url) && signedInAppSessionRequest() != nil
-    }
-
-    private static func signedInAppSessionRequest() -> (@MainActor (URL) async -> BrowserAppSessionRequestOutcome)? {
-        guard let auth = AppDelegate.shared?.auth,
-              auth.coordinator.isAuthenticated else {
-            return nil
-        }
-        let appSession = auth.browserAppSession
-        return { url in
-            var outcome = await appSession.request(destinationURL: url)
-            if outcome.shouldRetry {
-                outcome = await appSession.request(destinationURL: url)
-            }
-            if case let .navigation(navigation) = outcome,
-               !appSession.isCurrent(
-                   generation: navigation.generation,
-                   authSessionGeneration: navigation.authSessionGeneration
-               ) {
-                return .cancelled
-            }
-            return outcome
-        }
+        false
     }
 
     private func remoteProxyPreparedRequest(from request: URLRequest, logScope: String) -> URLRequest {

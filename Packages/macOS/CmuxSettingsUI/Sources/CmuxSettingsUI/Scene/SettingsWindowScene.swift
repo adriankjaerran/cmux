@@ -122,7 +122,6 @@ public struct SettingsWindowRoot: View {
     var secretStore: SecretFileStore { runtime.secretStore }
     var catalog: SettingCatalog { runtime.catalog }
     var hostActions: SettingsHostActions { runtime.hostActions }
-    var accountFlow: AccountFlow? { runtime.accountFlow }
     /// Whether the Cloud section (and its sidebar row) is offered at all. The
     /// host owns the managed-policy decision; first-use activation belongs to
     /// the Cloud tab itself.

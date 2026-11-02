@@ -55,14 +55,11 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
     init(
         defaults: UserDefaults = .standard,
         nextStep: @escaping @MainActor () -> CloudWelcomeNextStep = {
-            let account = AppDelegate.shared?.auth?.accountFlow
-            return CloudWelcomeNextStep.resolve(
-                isAuthenticated: account?.isAuthenticated == true,
-                isPlanKnown: account?.hasLoadedBillingPlan == true,
-                isPro: account?.isProActive == true,
-                hasCloudTeamAccess: CloudWelcomeNextStep.hasSharedTeamAccess(
-                    availableTeamCount: account?.availableTeams.count ?? 0
-                )
+            CloudWelcomeNextStep.resolve(
+                isAuthenticated: false,
+                isPlanKnown: false,
+                isPro: false,
+                hasCloudTeamAccess: false
             )
         },
         performNextStep: @escaping @MainActor (CloudWelcomeNextStep, (@MainActor () -> Void)?) -> Void = CloudWelcomeWindowController.perform,
@@ -260,7 +257,6 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
     ) -> NSWindow {
         let shortcut = StoredShortcut.unbound
         let rootView = CloudWelcomeAccountView(
-            accountFlow: AppDelegate.shared?.auth?.accountFlow,
             resolveStep: nextStep,
             onStepDisplayed: { [weak self] step in self?.analyticsSession?.stepDisplayed(step) },
             sliderShowsFeatureList: sliderShowsFeatureList,
@@ -369,19 +365,8 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
         switch step {
         case .signIn:
             _ = app?.focusRightSidebarInActiveMainWindow(mode: .machines)
-            app?.auth?.accountFlow.startSignIn()
         case .upgrade:
-            guard let account = app?.auth?.accountFlow else {
-                ProUpgradePresenter.present(source: .cloudWelcome)
-                return
-            }
-            Task { @MainActor in
-                await Self.upgrade(
-                    isAuthenticated: account.isAuthenticated,
-                    signIn: { await account.signIn(timeout: Self.signInTimeout) },
-                    presentPricing: { ProUpgradePresenter.present(source: .cloudWelcome) }
-                )
-            }
+            ProUpgradePresenter.present(source: .cloudWelcome)
         case .enable:
             _ = app?.focusRightSidebarInActiveMainWindow(mode: .machines)
             guard let activation = app?.cloudActivationCoordinator else { return }
@@ -448,7 +433,6 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
 /// Feeds the account's sign-in and plan into ``CloudWelcomeView`` and asks for
 /// the plan once on show, so the view itself stays free of app objects.
 private struct CloudWelcomeAccountView: View {
-    let accountFlow: HostAccountFlow?
     /// The controller's resolver, the one owner of the offered step; reading
     /// the account inside it during `body` keeps the view observing it.
     let resolveStep: @MainActor () -> CloudWelcomeNextStep
@@ -470,9 +454,7 @@ private struct CloudWelcomeAccountView: View {
             nextStep: step,
             onNotNow: onNotNow,
             onNext: onNext,
-            hasCloudTeamAccess: CloudWelcomeNextStep.hasSharedTeamAccess(
-                availableTeamCount: accountFlow?.availableTeams.count ?? 0
-            ),
+            hasCloudTeamAccess: false,
             sliderShowsFeatureList: sliderShowsFeatureList,
             sliderListUsesDots: sliderListUsesDots,
             posterHeadline: posterHeadline,
@@ -483,11 +465,5 @@ private struct CloudWelcomeAccountView: View {
             footerHasNotNow: footerHasNotNow
         )
         .onChange(of: step) { _, displayed in onStepDisplayed(displayed) }
-        .task {
-            // The plan decides between Upgrade and Enable; ask once on show.
-            if accountFlow?.isAuthenticated == true {
-                await accountFlow?.refreshBillingPlan()
-            }
-        }
     }
 }

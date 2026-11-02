@@ -963,7 +963,33 @@ Panels 9, AppDelegate, TerminalController, Workspace, …) still `import CmuxClo
 - ⬜ Standard checks.
 - ⬜ `grep -rln "import CmuxCloud$" Sources CLI` → only files you plan to delete in 9.13/9.14.
 
-### ⬜ 9.13 Delete Account, sign-in and team screens (S–M, low risk)
+### ✅ 9.13 Delete Account, sign-in and team screens (S–M, low risk)
+
+Done in "Phase 9.13 (D)" (order (D) under 9.12). Deleted `Sources/Auth/` (34 files, incl. `BrowserAppSession/` and
+the sign-in panel files), `AccountAnalyticsState.swift`, `HostAccountFlow+Analytics.swift`,
+`AppDelegate+AccountSignInWorkspace.swift`, `AppDelegate+CloudTeamPicker.swift`; in `CmuxSettingsUI`
+`Sections/AccountSection.swift`, the whole `Account/` folder (cards, `AccountFlow`, `AccountTeamSummary`, …),
+`SettingsRuntime.accountFlow`, and the two tests on those types. `AppDelegate.auth` is gone (it was never set since 9.10).
+Differs from the plan:
+- **`.account` case removed from both `SettingsSectionID` (package) and `SettingsNavigationTarget` (app)**; each has a
+  hand-written `init?(rawValue:)` that maps `"account"` to `.app`, so stored `selectedSectionRaw`, navigation
+  notifications and `cmux settings open account` land on App (`OK target=app`). Account search entries/aliases went.
+- Also deleted from `Sources/Cloud` (they named `HostAccountFlow`/`AccountSignInModel`/`AccountTeamSummary`):
+  `MachinesPanelView` (+`Activation`, +`TeamScope`), `MachinesCloudStatus`, `CloudTeamPicker{Header,Menu,MenuAnchor,Row}`,
+  `CloudCreateTeamSheet`(+`Presenter`), `CloudTeamInvitePopover`. The right sidebar `.machines` case renders nothing
+  (mode stays for stored values). `CloudTeamPickerPresentation` kept as three flags (`FileExplorerState` holds it).
+- Stubs: auth palette commands (sign in/out, team picker/members) removed from `ContentView+AuthCommandPalette.swift`
+  (Cloud palette part stays for (F)); `.accountSignIn` panels render nothing; every `auth?.accountFlow…` read is
+  `false`/`nil` (Cloud VM launcher, menus, welcome card, settings Cloud actions, pricing plan load without tokens);
+  team scope lookups in the cmux-tui registry are `nil`; Cloud menu `CloudMenuAccount.teams` uses a local `CloudMenuTeam`.
+- Browser: the app-session bootstrap (`beginAppSessionBootstrapIfNeeded`) always returns `false`
+  (`isNativeAppSessionSurface` was already `false`), `signedInAppSessionRequest`/`adoptAppSessionStore`/
+  `appSessionRequestProvider` went; the app-link handoff wiring in `Workspace`/`DockSplitStore` went (the
+  `openAppLinkInBrowserSplit` closure was never invoked). Left for later: the now-unused `appSessionBootstrapTask`
+  bookkeeping in `BrowserPanel`, `openAppLinkInBrowserSplit` properties on the panel/delegates, `CmuxBrowser`'s
+  `AppSession/` package files, `AccountCatalogSection` keys in `CmuxSettings` (9.15).
+- Checks: build, `--version`, `config doctor` (same as before), `tree --all`, 388 methods (no change),
+  `surface.catalog`/`current.list` same keys. ⬜ Manual: Settings window opens on App (no Account row).
 
 **What it removes:** `Sources/Auth/` (34 files), sign-in panel files,
 `AppDelegate+AccountSignInWorkspace.swift` (if not gone), and in `CmuxSettingsUI`: `Sections/AccountSection.swift`,
@@ -972,7 +998,9 @@ the `.account` section case (move the compatibility mapping to `.app`), and `Bro
 
 **Build edits:** pbxproj file removals.
 
-- ⬜ Standard checks. Settings opens fine; an old `selectedSectionRaw = "account"` lands on App.
+- ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`). ⬜ ⌘Q/reopen, Settings window: manual.
+- ✅ `"account"` decodes as App (`cmux settings open account` → `OK target=app`); `selectedSectionRaw = "account"` goes
+  through the same `init?(rawValue:)`.
 
 ### ✅ 9.14 Delete Mobile pairing, Devices and Hive (M, medium risk)
 

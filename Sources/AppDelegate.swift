@@ -823,8 +823,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     // left unwired (wiring it would double-record). The recorder-FREE members of the open/click
     // cluster did move into the package this wave: the reveal-in-Finder side effect now lives in `NotificationClickPerformer` (behind `FinderRevealing`), and the entire focused-mark state
     // machine lives in `FocusedNotificationMarker` (behind `FocusedNotificationResolving`).
-    /// The auth graph, injected once via `configure(...)` at app startup.
-    private(set) var auth: MacAuthComposition?
     /// Explicit Cloud machine pins and stable fleet order, built by the composition root.
     private(set) var cloudMachinePinStore: CloudMachinePinStore?
     /// "Introducing cmux cloud", shown once from the first main window.
@@ -8680,14 +8678,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return false
         }
         let authState = CloudVMPanelAuthState.resolve(
-            isAuthenticated: auth?.accountFlow.isAuthenticated == true,
-            isWorkingOnAuth: auth?.accountFlow.isWorkingOnAuth == true
+            isAuthenticated: false,
+            isWorkingOnAuth: false
         )
         guard authState.allowsAuthenticatedOperation else {
-            _ = performAccountSignInWorkspaceAction(
-                preferredWindow: preferredWindow,
-                debugSource: "\(debugSource).auth"
-            )
             return false
         }
         let context = preferredTabManager.flatMap { mainWindowContext(for: $0) }
@@ -8869,14 +8863,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     ) -> Bool {
         guard CloudMachinesFeature.isEnabled else { return false }
         let authState = CloudVMPanelAuthState.resolve(
-            isAuthenticated: auth?.accountFlow.isAuthenticated == true,
-            isWorkingOnAuth: auth?.accountFlow.isWorkingOnAuth == true
+            isAuthenticated: false,
+            isWorkingOnAuth: false
         )
         guard authState.allowsAuthenticatedOperation else {
-            _ = performAccountSignInWorkspaceAction(
-                preferredWindow: preferredWindow,
-                debugSource: "\(debugSource).auth"
-            )
             return false
         }
         let context = contextForCloudVMCommand(
@@ -8932,14 +8922,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     ) -> Bool {
         guard CloudMachinesFeature.isEnabled else { return false }
         let authState = CloudVMPanelAuthState.resolve(
-            isAuthenticated: auth?.accountFlow.isAuthenticated == true,
-            isWorkingOnAuth: auth?.accountFlow.isWorkingOnAuth == true
+            isAuthenticated: false,
+            isWorkingOnAuth: false
         )
         guard authState.allowsAuthenticatedOperation else {
-            _ = performAccountSignInWorkspaceAction(
-                preferredWindow: preferredWindow,
-                debugSource: "\(debugSource).auth"
-            )
             return false
         }
         let context = contextForCloudVMCommand(

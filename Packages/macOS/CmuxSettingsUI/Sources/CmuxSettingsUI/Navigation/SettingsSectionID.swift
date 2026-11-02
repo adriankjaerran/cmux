@@ -12,7 +12,6 @@ import Foundation
 /// the `SettingsSectionID` extension below, and add a view file in
 /// `Sections/`.
 public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Hashable {
-    case account
     case app
     /// App appearance, accent color, terminal themes, and browser theme.
     case themes
@@ -45,6 +44,20 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
 
     public var id: Self { self }
 
+    /// Decodes a persisted or requested raw value. `account` (the Account
+    /// section, removed with sign-in) still decodes and lands on App.
+    public init?(rawValue: String) {
+        if rawValue == Self.removedAccountRawValue {
+            self = .app
+            return
+        }
+        guard let match = Self.allCases.first(where: { $0.rawValue == rawValue }) else { return nil }
+        self = match
+    }
+
+    /// The raw value of the removed Account section.
+    static let removedAccountRawValue = "account"
+
     /// Maps the catalog-owned destination into this package's navigation id.
     ///
     /// Keep this switch exhaustive as UserFacingSettingSection grows so
@@ -59,7 +72,6 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
     /// User-facing section title shown in the sidebar.
     public var title: String {
         switch self {
-        case .account: return String(localized: "settings.section.account", defaultValue: "Account")
         case .computers: return String(localized: "settings.section.devices", defaultValue: "Devices")
         case .app: return String(localized: "settings.section.app", defaultValue: "App")
         case .themes: return String(localized: "settings.section.themes", defaultValue: "Themes")
@@ -86,7 +98,6 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
     /// SF Symbol shown alongside the title in the sidebar.
     public var symbolName: String {
         switch self {
-        case .account: return "person.crop.circle"
         case .computers: return "desktopcomputer"
         case .app: return "gearshape"
         case .themes: return "paintbrush"
@@ -115,7 +126,6 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
     /// by capability rather than only by title.
     public var searchKeywords: String {
         switch self {
-        case .account: return "sign in team sync user profile"
         case .computers:
             return String(
                 localized: "settings.devices.keywords",

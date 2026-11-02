@@ -76,7 +76,7 @@ extension AppDelegate {
         cmuxConfigStore: CmuxConfigStore,
         isAuthenticated: Bool? = nil
     ) -> NSMenu? {
-        let isAuthenticated = isAuthenticated ?? (AppDelegate.shared?.auth?.accountFlow.isAuthenticated == true)
+        let isAuthenticated = isAuthenticated ?? false
         let model = NewWorkspaceMenuModel.build(
             newWorkspaceContextMenuItems: cmuxConfigStore.newWorkspaceContextMenuItems.filter { item in
                 guard case .action(let menuAction) = item,

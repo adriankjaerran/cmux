@@ -274,19 +274,14 @@ final class CloudVMActionLauncher {
         onOutput: (@MainActor (String) -> Void)? = nil,
         onCompletion: ((Completion) -> Void)? = nil
     ) -> Bool {
-        let accountFlow = AppDelegate.shared?.auth?.accountFlow
         let authState = CloudVMPanelAuthState.resolve(
-            isAuthenticated: accountFlow?.isAuthenticated == true,
-            isWorkingOnAuth: accountFlow?.isWorkingOnAuth == true
+            isAuthenticated: false,
+            isWorkingOnAuth: false
         )
         if !authState.allowsAuthenticatedOperation, !allowDuringAuthTransition {
             // Keep every native launcher entrypoint aligned with the Machines
             // panel: a signed-out action opens the shared sign-in screen and
             // never starts a child CLI that could create or attach a VM.
-            _ = AppDelegate.shared?.performAccountSignInWorkspaceAction(
-                preferredWindow: preferredWindow,
-                debugSource: "cloudVM.auth"
-            )
             return false
         }
         let failure = failurePresentation ?? FailurePresentation.forCommand(arguments)

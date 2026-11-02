@@ -7410,10 +7410,6 @@ struct ContentView: View {
         snapshot.setBool(CommandPaletteContextKeys.browserManagedByPolicy, BrowserAvailabilitySettings.isManagedByPolicy)
         snapshot.setBool(CommandPaletteContextKeys.mobileRemoteControlManagedByPolicy, ManagedDevicePolicy().isEnforced(.disableRemoteControl) || ManagedDevicePolicy().isIncomingDeviceAccessDisabled)
         snapshot.setBool(CommandPaletteContextKeys.computerUseUXEnabled, featureFlags.isComputerUseUXEnabled)
-        if let auth = AppDelegate.shared?.auth {
-            snapshot.setBool(CommandPaletteContextKeys.authSignedIn, auth.accountFlow.isAuthenticated)
-            snapshot.setBool(CommandPaletteContextKeys.authWorking, auth.accountFlow.isWorkingOnAuth)
-        }
         snapshot.setString(
             CommandPaletteContextKeys.accountUpgradeOffer,
             Self.commandPaletteUpgradeOfferValue(ProUpgradePresenter.currentUpgradeOffer)
@@ -9255,7 +9251,6 @@ struct ContentView: View {
                 debugSource: "palette.mobileConnect"
             )
         }
-        registerAuthCommandHandlers(&registry)
         registerProCommandHandlers(&registry)
         registry.register(commandId: "palette.makeDefaultTerminal") {
             DefaultTerminalUserAction.setAsDefault(debugSource: "palette.makeDefaultTerminal")
