@@ -315,7 +315,7 @@ This is the hard part. These live in cloud/mobile packages or folders but serve 
 | **Quit path** | `AppDelegate.swift` ~2088 and ~2150 wait for `CloudNotificationSyncHub.shared.persistenceStore` to drain; 2424 `MobileHostService.shared.stop()` | Remove carefully in 9.10; ⌘Q must still save the layout |
 | **Settings window default** | `CmuxSettingsUI/Scene/SettingsWindowScene.swift` 136 and 353: `?? .account` | Change to `?? .app` **before** Account is hidden (9.1), or Settings opens on a missing section |
 
-### Open decision: `cmux ssh` and SSH-TUI (`Sources/RemoteTui/`)
+### Decided: `cmux ssh` and SSH-TUI (`Sources/RemoteTui/`)
 
 `cmux ssh <host>` normally goes through `runSSHTui` (`CLI/cmux.swift` ~14107) unless the daemon bootstrap is
 skipped. That path needs the `cmux-tui` client, which `reload.sh` doesn't bundle in this fork, and it lives on
@@ -323,7 +323,7 @@ skipped. That path needs the `cmux-tui` client, which `reload.sh` doesn't bundle
 So `cmux ssh` may already not work here. removal-plan.md says "keep remote SSH", but that table was about
 `RemoteTmux*`, `CmuxRemoteSession`, `CmuxRemoteWorkspace`, `CmuxRemoteDaemon`.
 
-- ⬜ **Decide before 9.9:** run `"$T" ssh <one of your hosts>` in the test app today.
+- ✅ **Decided (9.0): SSH-TUI goes.** **Decide before 9.9:** run `"$T" ssh <one of your hosts>` in the test app today.
   - If it fails already: SSH-TUI goes with Cloud (`Sources/RemoteTui/`, `CLI/CMUXCLI+SSHTui.swift`, the
     `runSSHTui` call; `cmux ssh` then uses the plain path). Remote tmux and `CmuxRemote*` stay.
   - If it works and you want it: keep `Sources/RemoteTui/`, `CmuxCloudTui` and the `SSHTui*` / `CloudMachineLink`
@@ -332,15 +332,19 @@ So `cmux ssh` may already not work here. removal-plan.md says "keep remote SSH",
 
 ---
 
-### ⬜ 9.0 Baseline and decisions (S, no code)
+### ✅ 9.0 Baseline and decisions (S, no code)
+
+Done: baseline in `/tmp/cmux-baseline/` (taken after 8.2, see its NOTE; `lsof -i` showed no network sockets).
+SSH-TUI decision: **goes** with Cloud; remote tmux (`RemoteTmux*`) and `CmuxRemote*` stay. The unused
+`sentry-cocoa` package reference was removed right away in its own commit (pbxproj + `Package.resolved`).
 
 **What it does:** records how the test app answers today, so later steps can be compared.
 
-- ⬜ Build the test app after the CodeRouter commit. Save to `/tmp/cmux-baseline/`: `"$T" rpc system.capabilities`,
+- ✅ Build the test app after the CodeRouter commit. Save to `/tmp/cmux-baseline/`: `"$T" rpc system.capabilities`,
   `"$T" --json tree --all`, `"$T" identify`, `"$T" --help`, `"$T" config doctor`.
-- ⬜ `lsof -i -p <test app pid>` right after launch: expect nothing.
-- ⬜ Decide the SSH-TUI question above.
-- ⬜ Note the one leftover found while checking: the pbxproj still has an unused
+- ✅ `lsof -i -p <test app pid>` right after launch: expect nothing.
+- ✅ Decide the SSH-TUI question above: SSH-TUI goes; remote tmux and `CmuxRemote*` stay.
+- ✅ Note the one leftover found while checking: the pbxproj still has an unused
   `XCRemoteSwiftPackageReference "sentry-cocoa"` (lines ~14415, ~20008). Nothing links it, but it's resolved and
   downloaded on a clean build. Remove it in 9.17 (or right away as its own tiny commit).
 

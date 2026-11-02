@@ -14222,7 +14222,6 @@
 				A1329A000000000000000100 /* XCLocalSwiftPackageReference "CmuxTerminalSizing" */,
 				A1329B000000000000000100 /* XCLocalSwiftPackageReference "CmuxTerminalSharing" */,
 				C1A900000000000000000006 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
-				A5001252 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 				A5001292 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 				A5001260 /* XCLocalSwiftPackageReference "bonsplit" */,
 				40B63BB4A170F0BD2D1DEFD1 /* XCLocalSwiftPackageReference "CMUXAuthCore" */,
@@ -19751,14 +19750,6 @@
 			requirement = {
 				kind = exactVersion;
 				version = 1.8.2;
-			};
-		};
-		A5001252 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 9.3.0;
 			};
 		};
 		A5001292 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
