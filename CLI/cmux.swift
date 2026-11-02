@@ -12240,8 +12240,9 @@ struct CMUXCLI {
         let (colorOpt, rem3) = parseOption(rem2, name: "--color")
         let (descriptionOpt, rem4) = parseOption(rem3, name: "--description")
         let (windowOpt, rem5) = parseOption(rem4, name: "--window")
+        let (agentCommandOpt, rem6) = parseOption(rem5, name: "--command")
 
-        var positional = rem5.filter { $0 != "--force" }
+        var positional = rem6.filter { $0 != "--force" }
         let actionRaw: String
         if let actionOpt {
             actionRaw = actionOpt
@@ -12304,6 +12305,12 @@ struct CMUXCLI {
         }
         if let description, !description.isEmpty {
             params["description"] = description
+        }
+        if action == "set_agent_home" {
+            guard let agentCommandOpt, !agentCommandOpt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw CLIError(message: "workspace-action set-agent-home requires --command <command>")
+            }
+            params["command"] = agentCommandOpt
         }
         params["force"] = commandArgs.contains("--force")
 
@@ -22078,6 +22085,9 @@ struct CMUXCLI {
               close-others | close-above | close-below
               mark-read | mark-unread
               set-color | clear-color
+              set-agent-home | clear-agent-home   Always-on agent workspace: can't be closed,
+                                                  stays on top, restarts --command when its
+                                                  last terminal closes
 
             Flags:
               --action <name>              Action name (required if not positional)
@@ -22086,6 +22096,7 @@ struct CMUXCLI {
               --title <text>               Title for rename
               --color <name|#hex>          Color for set-color (name or #RRGGBB hex)
               --description <text>         Description for set-description
+              --command <command>          Agent command for set-agent-home
               --force                      Close even when a live process would be killed
 
             Named colors:

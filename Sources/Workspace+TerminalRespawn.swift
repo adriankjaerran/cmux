@@ -182,3 +182,26 @@ extension Workspace {
         return replacementPanel
     }
 }
+
+// MARK: - Agent workspace (fork addition)
+
+extension Workspace {
+    /// Recent agent restarts per workspace, so a broken agent can't respawn in a tight loop.
+    @MainActor private static var agentHomeRestartTimes: [UUID: [Date]] = [:]
+
+    /// Command for a new terminal in the agent workspace, or nil for a plain shell.
+    /// Falls back to a plain shell after 3 restarts within 20 seconds.
+    @MainActor
+    func agentHomeReplacementCommand(now: Date = Date()) -> String? {
+        guard let command = agentHomeCommand?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !command.isEmpty else { return nil }
+        var recent = (Self.agentHomeRestartTimes[id] ?? []).filter { now.timeIntervalSince($0) < 20 }
+        guard recent.count < 3 else {
+            Self.agentHomeRestartTimes[id] = recent
+            return nil
+        }
+        recent.append(now)
+        Self.agentHomeRestartTimes[id] = recent
+        return command
+    }
+}

@@ -1896,6 +1896,8 @@ struct SessionWorkspaceSnapshot: Codable, Sendable {
     var taskStatusHidden: Bool? = nil
     var checklist: [SessionChecklistItemSnapshot]? = nil
     var dock: SessionSplitContainerSnapshot? = nil // Missing legacy fields continue to seed from dock.json.
+    /// Command of the always-on agent workspace (fork addition); absent for every other workspace.
+    var agentHomeCommand: String? = nil
 }
 extension SessionWorkspaceSnapshot: WorkspaceSessionRemoteRestoreSnapshot {}
 

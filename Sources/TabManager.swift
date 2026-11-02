@@ -262,6 +262,8 @@ class TabManager: ObservableObject {
     /// Set by `restoreSessionSnapshot` to suppress side-effects (like auto-
     /// expanding a group on focus) that would mutate restored state mid-restore.
     private var isRestoringSessionSnapshot: Bool = false
+    /// One pending "move the agent workspace back to the top" pass (see TabManager+NonInteractiveClose).
+    var agentHomeKeepOnTopScheduled = false
     @Published private(set) var pendingBackgroundWorkspaceLoadIds: Set<UUID> = []
     @Published private(set) var mountedBackgroundWorkspaceLoadIds: Set<UUID> = []
     @Published private(set) var debugPinnedWorkspaceLoadIds: Set<UUID> = []
@@ -281,6 +283,7 @@ class TabManager: ObservableObject {
     func workspaceTabsWillChange(to newValue: [Workspace]) {
         objectWillChange.send()
         tabsPublisher.send(newValue)
+        scheduleAgentHomeKeepOnTopIfNeeded(newValue)
         if newValue.count != tabs.count, ProductAnalytics.app.isEnabled {
             // A window that already had a workspace gaining one, outside
             // restore, is a created workspace (whatever entrypoint created it).
@@ -2304,12 +2307,17 @@ class TabManager: ObservableObject {
     }
 
     func setPinned(_ tab: Workspace, pinned: Bool) {
+        // The agent workspace always stays pinned (clear it with clear-agent-home first).
+        if !pinned, tab.isAgentHome { return }
         workspaceReordering.setPinned(tab, pinned: pinned)
     }
 
     @discardableResult
     func setPinned(workspaceIds: [UUID], pinned: Bool) -> [UUID] {
-        workspaceReordering.setPinned(workspaceIds: workspaceIds, pinned: pinned)
+        let ids = pinned ? workspaceIds : workspaceIds.filter { id in
+            tabs.first(where: { $0.id == id })?.isAgentHome != true
+        }
+        return workspaceReordering.setPinned(workspaceIds: ids, pinned: pinned)
     }
 
     // MARK: - Workspace Groups (WorkspaceGroupCoordinator, CmuxWorkspaces)
@@ -2653,7 +2661,7 @@ class TabManager: ObservableObject {
     }
 
     func closeWorkspace(_ workspace: Workspace, recordHistory: Bool = true) {
-        guard !workspace.isChiefHome, tabs.count > 1 else { return }
+        guard !workspace.isProtectedHome, tabs.count > 1 else { return }
         guard tabs.contains(where: { $0.id == workspace.id }) else { return }
         if workspace.groupId.flatMap({ id in workspaceGroups.first { $0.id == id }?.externalID })
             == ChiefHomeNavigation.homeGroupExternalID {
@@ -2827,7 +2835,7 @@ class TabManager: ObservableObject {
     @discardableResult
     func detachWorkspace(tabId: UUID) -> Workspace? {
         guard let index = tabs.firstIndex(where: { $0.id == tabId }),
-              !tabs[index].isChiefHome else { return nil }
+              !tabs[index].isProtectedHome else { return nil }
         panelTitleUpdateCoalescer.flushNow()
         sidebarGitMetadataService.clearWorkspaceGitProbes(workspaceId: tabId)
         sidebarMultiSelection.removeFromSelection(tabId)
@@ -2961,12 +2969,12 @@ class TabManager: ObservableObject {
     }
 
     func canCloseWorkspace(_ workspace: Workspace, allowPinned: Bool = false) -> Bool {
-        !workspace.isChiefHome && (allowPinned || !workspace.isPinned)
+        !workspace.isProtectedHome && (allowPinned || !workspace.isPinned)
     }
 
     @discardableResult
     func closeWorkspaceWithConfirmation(_ workspace: Workspace) -> Bool {
-        guard !workspace.isChiefHome else { return false }
+        guard !workspace.isProtectedHome else { return false }
         if workspace.isPinned {
             let pinnedConfirmation = confirmPinnedWorkspaceClose(source: .workspace)
             guard pinnedConfirmation != .cancelled else { return false }
@@ -2981,7 +2989,7 @@ class TabManager: ObservableObject {
 
     @discardableResult
     func closeWorkspaceFromCloseTabGesture(_ workspace: Workspace) -> Bool {
-        guard !workspace.isChiefHome else { return false }
+        guard !workspace.isProtectedHome else { return false }
         if workspace.isPinned {
             let pinnedConfirmation = confirmPinnedWorkspaceClose(source: .tabClose)
             guard pinnedConfirmation != .cancelled else { return false }
@@ -2996,7 +3004,7 @@ class TabManager: ObservableObject {
 
     @discardableResult
     func closeWorkspaceFromTabCloseButton(_ workspace: Workspace) -> Bool {
-        guard !workspace.isChiefHome else { return false }
+        guard !workspace.isProtectedHome else { return false }
         if workspace.isPinned {
             let pinnedConfirmation = confirmPinnedWorkspaceClose(source: .tabCloseButton)
             guard pinnedConfirmation != .cancelled else { return false }
@@ -3359,7 +3367,7 @@ class TabManager: ObservableObject {
         source: CloseConfirmationSource = .workspace,
         closeAlreadyConfirmed: Bool = false
     ) -> Bool {
-        guard !workspace.isChiefHome else { return false }
+        guard !workspace.isProtectedHome else { return false }
         // Closing a group's anchor is non-destructive to the group: its next
         // member is promoted to anchor in closeWorkspace, so the members stay
         // grouped instead of scattering to root. No special anchor prompt is
@@ -3763,6 +3771,12 @@ class TabManager: ObservableObject {
         if handlesRemoteExitThroughWorkspace {
             guard !tab.transitionRemoteTerminalToDisconnectedPlaceholder(surfaceId: surfaceId) else { return }
             closeRuntimeSurface(tabId: tabId, surfaceId: surfaceId)
+            return
+        }
+
+        // The agent workspace never closes: restart its agent in the same pane instead.
+        if tab.isAgentHome, tab.panels.count <= 1, tab.terminalPanel(for: surfaceId) != nil {
+            _ = tab.respawnTerminalSurface(panelId: surfaceId, command: tab.agentHomeReplacementCommand())
             return
         }
 

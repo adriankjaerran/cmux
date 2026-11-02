@@ -5465,7 +5465,8 @@ class TerminalController {
             "move_up", "move_down", "move_top",
             "close_others", "close_above", "close_below",
             "mark_read", "mark_unread",
-            "set_color", "clear_color", "mobile_connect"
+            "set_color", "clear_color", "mobile_connect",
+            "set_agent_home", "clear_agent_home"
         ]
 
         var result: V2CallResult = .err(code: "invalid_params", message: "Unknown workspace action", data: [
@@ -5600,6 +5601,19 @@ class TerminalController {
             case "move_top":
                 tabManager.moveTabToTop(workspace.id)
                 finish(["index": v2OrNull(tabManager.tabs.firstIndex(where: { $0.id == workspace.id }))])
+
+            case "set_agent_home":
+                guard let command = v2RawString(params, "command"),
+                      !command.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    result = .err(code: "invalid_params", message: "set_agent_home requires command", data: nil)
+                    return
+                }
+                tabManager.setAgentHome(workspace, command: command)
+                finish(["agent_home": true, "command": command])
+
+            case "clear_agent_home":
+                tabManager.setAgentHome(workspace, command: nil)
+                finish(["agent_home": false])
 
             case "close_others":
                 let candidates = tabManager.tabs.filter { $0.id != workspace.id && !$0.isPinned }

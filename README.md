@@ -67,6 +67,7 @@ To restore a backup: quit cmux Personal, copy the files from a `personal-backups
 | ⌘P rows show the red unread number and a short activity note (`waiting`, `running 3m`, `done 4m`) instead of "Workspace" | `ContentView.swift`, `CommandPaletteWorkspaceActivity.swift`, `GhosttyTerminalView.swift` |
 | The compact one-line sidebar is built in and is the default | `Resources/sidebars/compact.js`, `CmuxExtensionSidebarSelection.swift`, `CmuxMain.swift` |
 | Groups are folders: the header only opens/closes; its former session is the first row inside and can be moved or removed like any other | `Resources/sidebars/compact.js`, `WorkspaceGroupCoordinator.swift` |
+| The cmux agent workspace can't be closed or unpinned and stays on top; closing or killing its terminal starts a fresh agent (`cmux workspace-action --action set-agent-home --command <cmd>`, saved with the layout) | `TabManager+NonInteractiveClose.swift`, `Workspace+TerminalRespawn.swift`, `TabManager.swift` |
 | Builds without upstream's git history, team login or cmux-tui client | `scripts/reload.sh`, `scripts/install-personal.sh` |
 
 ## Docs
@@ -79,6 +80,7 @@ To restore a backup: quit cmux Personal, copy the files from a `personal-backups
 | [docs/next-steps.md](docs/next-steps.md) | Open work, collected from earlier sessions, in priority order |
 | [docs/suggestions.md](docs/suggestions.md) | Suggested next steps |
 | [docs/plan.md](docs/plan.md) | What is ready to build, what needs a decision, and in what order |
+| [docs/removal-plan.md](docs/removal-plan.md) | What's left to remove from upstream, phase by phase, and what must keep working |
 
 ## Licence
 

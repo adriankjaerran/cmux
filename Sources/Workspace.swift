@@ -216,6 +216,7 @@ extension Workspace {
             environment: workspaceEnvironment.isEmpty ? nil : workspaceEnvironment
         )
         snapshot.captureTodoState(from: self)
+        snapshot.agentHomeCommand = agentHomeCommand
         snapshot.dock = _dockSplit?.sessionSnapshot(
             includeScrollback: includeScrollback,
             restorableAgentIndex: restorableAgentIndex,
@@ -377,6 +378,7 @@ extension Workspace {
         setCustomDescription(snapshot.customDescription)
         setCustomColor(snapshot.customColor)
         isPinned = snapshot.isPinned
+        agentHomeCommand = snapshot.agentHomeCommand
         isMuted = snapshot.isMuted ?? false
         groupId = snapshot.groupId
         restoreTodoState(from: snapshot)
@@ -2893,6 +2895,12 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
     }
 
     @Published var isPinned: Bool = false
+    /// Set on the always-on agent workspace (the pinned "cmux" agent). It can't be closed,
+    /// stays at the top, and closing its last terminal starts a new one running this command.
+    @Published var agentHomeCommand: String? = nil
+    var isAgentHome: Bool { agentHomeCommand != nil }
+    /// Workspaces the user can never close: Chief Home and the agent workspace.
+    var isProtectedHome: Bool { isChiefHome || isAgentHome }
     /// Suppresses notification history/recording, unread badges, sound,
     /// desktop banners, pane flashes, phone forwarding, command hooks, and
     /// reorder effects for this workspace. Persisted in the session manifest
@@ -12495,10 +12503,12 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
             )
         }
         // A failed wrapper must leave a dead noninteractive surface, never a local login shell.
+        // The agent workspace restarts its agent instead of opening a plain shell.
+        let agentCommand = pendingRemoteDisconnect == nil ? agentHomeReplacementCommand() : nil
         let replacementInitialCommand = pendingRemoteDisconnect != nil && placeholderCommand == nil
             ? "/usr/bin/false"
-            : placeholderCommand
-        if replacementInitialCommand != nil {
+            : (placeholderCommand ?? agentCommand)
+        if replacementInitialCommand != nil, agentCommand == nil {
             var config = replacementConfig ?? CmuxSurfaceConfigTemplate()
             config.waitAfterCommand = true
             replacementConfig = config
@@ -14010,6 +14020,8 @@ extension Workspace: BonsplitDelegate {
               manager.tabs.contains(where: { $0.id == id }) else {
             return nil
         }
+        // The agent workspace never closes: its last terminal is replaced by a fresh agent.
+        if isAgentHome { return false }
         return manager.closeWorkspaceOnLastSurfacePreferenceEnabled()
     }
 
