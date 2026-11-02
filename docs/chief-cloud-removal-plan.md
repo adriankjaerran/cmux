@@ -393,7 +393,14 @@ CLI links.
 - ✅ Right sidebar has no Cloud tab; Files, Find, Vault, Feed, Dock still open (`"$T" right-sidebar files` …).
 - ⬜ Keyboard Shortcuts: ⌘O, ⌥⌘↑/↓ still work.
 
-### ⬜ 9.2 Nothing cloud starts at launch (S–M, medium risk)
+### ✅ 9.2 Nothing cloud starts at launch (S–M, medium risk)
+
+Done (see `git log`, "Phase 9.2"). All listed calls removed at the call site; no hang or crash at launch, so nothing
+needed stubbing inside. `syncToSettings()` at ~11056 is inside `syncMobileHostService()` (the user-defaults
+observer), which is now a no-op. Kept: `MobileHostService.shared.configure(auth:)` (configure only, not in the list),
+`CoderouterClient.bootstrap` (the CodeRouter commit kept it), the `PhoneReplyInboxCoordinator.injectTerminalInput`
+hook, and the `syncToSettings()` calls in `AppDelegate+ManagedPolicy.swift` (fire only on an MDM policy change;
+they go in 9.10). The test app already had no sockets before this step (checked after 9.1 too).
 
 **What it removes:** background work: mobile host listener, Iroh networking monitor, phone-reply sweeps, cloud
 telemetry resume, device registry, workspace presence. Objects are still created, they just don't start.
@@ -415,8 +422,8 @@ telemetry resume, device registry, workspace presence. Objects are still created
 launch, put the call back and stub it inside instead.
 
 - ⬜ Standard checks.
-- ⬜ `lsof -i -p <pid>`: nothing listening, nothing connected. `nettop -p <pid>` for a minute: no traffic.
-- ⬜ Vault (right sidebar) and global search still list Claude/Pi sessions (that's the transcript service).
+- ✅ `lsof -i -p <pid>`: nothing listening, nothing connected. `nettop -p <pid>` for a minute: no traffic. (Done: lsof empty, nettop 60 s empty.)
+- ✅ Vault (right sidebar) and global search still list Claude/Pi sessions (that's the transcript service). (Done via `cmux vault sessions` / `vault search`; global search UI needs a manual look.)
 
 ### ⬜ 9.3 Cloud CLI commands go; unlink `CmuxCloudResizeCore` from the CLI (M, low risk)
 

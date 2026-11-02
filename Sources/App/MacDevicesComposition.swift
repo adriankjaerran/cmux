@@ -33,7 +33,7 @@ struct MacDevicesComposition {
             }
         )
         let preferences = DevicesPreferencesModel(store: store, access: access)
-        preferences.start()
+        // Cloud removal (Phase 9.2): device preferences are not started.
         let registry = DeviceSurfaceProviderRegistry(
             preferences: preferences,
             // Link events share the transport journal, so one JSONL file holds

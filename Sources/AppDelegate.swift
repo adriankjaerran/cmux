@@ -2029,11 +2029,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             refreshProductAnalyticsActivityContext()
             PostHogAnalytics.shared.trackActive(reason: "didBecomeActive")
         }
-        // A Mac that slept through the reply nudge picks parked replies up here.
-        PhoneReplyInboxCoordinator.shared.sweepSoon(reason: "app-activation")
-        // Reconcile pairing on wake so an opted-in Mac resumes and an opted-out
-        // Mac tears down any work that was in flight before sleep.
-        MobileHostService.shared.syncToSettings()
+        // Cloud removal (Phase 9.2): no phone-reply sweep and no mobile host sync on activation.
 
         guard let notificationStore else { return }
         notificationStore.handleApplicationDidBecomeActive()
@@ -2494,7 +2490,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             auth: auth.coordinator, baseURL: CloudTelemetryUploader.telemetryBaseURL, client: .current()
         )
         cloudUploader.attach(to: auth.coordinator.rateLimitTelemetry)
-        Task { await cloudUploader.resumePending() }
+        // Cloud removal (Phase 9.2): pending cloud telemetry is not resumed.
         let cloudOperations = CloudOperationRecorder(uploader: cloudUploader, identity: { [weak coordinator = auth.coordinator] in
             coordinator?.authenticatedSessionIdentity
         })
@@ -2510,32 +2506,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             isCloudEnabled: { CloudMachinesFeature.offMainIsEnabled() }, isCloudAvailable: { CloudMachinesFeature.offMainIsAvailable() }
         )
         TerminalController.shared.cloudTunnel = cloudTunnel
-        // Warms the New Machine sheet's plan and network catalog per signed-in
-        // account so Cmd+Shift+Y never waits on the network.
-        NewMachineSheetDataCache.bootstrap(auth: auth.coordinator)
-        RemotesClient.bootstrap(auth: auth.coordinator)
-        TeamsClient.bootstrap(auth: auth.coordinator)
-        AIAccountsClient.bootstrap(auth: auth.coordinator)
+        // Cloud removal (Phase 9.2): the New Machine cache, Remotes/Teams/AIAccounts/
+        // MachineUsage clients, phone push, device registry, computers, devices
+        // registry, workspace presence and the phone-reply inbox are not started.
+        _ = cloudReads
         CoderouterClient.bootstrap(auth: auth.coordinator)
-        MachineUsageClient.bootstrap(auth: auth.coordinator, operations: cloudOperations, readRequests: cloudReads)
-        PhonePushClient.shared.configure(auth: auth.coordinator)
         MobileHostService.shared.configure(auth: auth.coordinator)
-        caffeineController.onStateChange = { [weak self] enabled in
+        caffeineController.onStateChange = { [weak self] _ in
             self?.menuBarExtraController?.refreshForDebugControls()
-            MobileHostService.emitEvent(
-                topic: "caffeine.status.changed",
-                payload: ["enabled": enabled]
-            )
         }
-        DeviceRegistryClient.shared.configure(auth: auth.coordinator)
         self.devicesRegistry = devicesRegistry
-        if let devicesRegistry, let computersService {
-            computersService.configure(auth: auth.coordinator)
-            devicesRegistry.configure(auth: auth.coordinator, catalog: .shared, authorization: computersService)
-        }
-        configureWorkspacePresence(auth: auth.coordinator)
-        PhoneReplyInboxClient.shared.configure(auth: auth.coordinator)
-        PhoneReplyInboxCoordinator.shared.configure(client: PhoneReplyInboxClient.shared)
         // Relayed phone replies share the direct RPC paste-and-submit path,
         // including named Return-key submission and partial-success semantics.
         PhoneReplyInboxCoordinator.shared.injectTerminalInput = { [weak self] params, retargetsToLiveSurfaceOwner in
@@ -8334,7 +8314,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 tabManager: manager,
                 source: "bootstrapInitialMainWindow.\(debugSource)"
             )
-            MobileHostService.shared.start()
+            // Cloud removal (Phase 9.2): the mobile host listener is not started.
         }
         guard !didBootstrapInitialMainWindow else { return windowId }
 
@@ -11044,7 +11024,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     private func syncMobileHostService() {
-        MobileHostService.shared.syncToSettings()
+        // Cloud removal (Phase 9.2): the mobile host is never synced to settings.
     }
 
     private func syncActivationPolicy(defaults: UserDefaults = .standard) {
