@@ -183,7 +183,31 @@ An old NIGHTLY CLI calling `chief.*` now gets "unknown method"; you don't call i
 - ✅ `"$T" config get chief.enabled` → `false`.
 - ⬜ Settings → Automation has no Chief card. Settings → Keyboard Shortcuts has no "Open Chief".
 
-### ⬜ 8.3 Chief panes out of workspaces, Dock, sidebar and drag-and-drop (M, medium risk)
+### ✅ 8.3 Chief panes out of workspaces, Dock, sidebar and drag-and-drop (M, medium risk)
+
+**Done:** commit "Phase 8.3: ...". Differs from the plan:
+- **`Sources/Chief/` (all 34 files) was deleted here, not in 8.4.** Its files use `ChiefPanel`,
+  `ChiefHomeNavigation`, `leaveChiefHome` and `openChiefInRightDock`, so it can't build once the 7 outside files
+  go. 8.4 is now only the packages (plus leftovers). The pbxproj entries of the missing test files
+  `ChiefHomeNavigationFocusTests.swift`, `ChiefListAndSettingsCopyTests.swift`, `ChiefPanelSessionTests.swift` went too.
+- `Sources/ChiefSettingsBridge.swift` stays (imports only `CmuxSettings`; `Sources/Mobile/` still reads
+  `ChiefSettings.isEnabled` until Phase 9). Its `openChiefHome` extension went (nothing called it).
+- `SidebarSelection.home` (the Chief Home sidebar selection) was removed, with its uses in `ContentView.swift`,
+  `AppDelegate.swift`, `SessionPersistence.swift` and `RecoverableMainWindowRoute.swift`. The `chiefEnabled`
+  `@AppStorage` in `ContentView` went too.
+- `--type chief` is gone from `new-pane` / `new-surface` (parser, help) and from `canvas new-pane` (CLI and
+  `canvas.new_pane`; `CanvasNewPaneType.chief` removed). `new-pane --type chief` now falls back to a terminal,
+  like any unknown type (upstream behaviour). `canvas new-pane --type chief` is a usage error. Dock socket
+  placement accepts terminal and browser only. `chief.open` left the focus-intent list in `TerminalController.swift`.
+- Dock: the empty pane's "New Chief" button went. `DockSplitStore.newSurface/newSplit/makePanel` lost the
+  `conversationID` parameter.
+- English strings in `Localizable.xcstrings` for the changed messages were updated; other languages are left.
+- `WindowChromeMetrics` "home row" metrics and their comments are untouched (layout values, still used).
+- The only `agentHome` hit in `git diff -U0` is `isProtectedHome` becoming `isAgentHome`, as this step asks.
+Checked against the test app: build, `--version`, `config doctor` clean, `tree --all` has the same 12 workspaces as
+Personal's session file, `system.capabilities` has the same 545 methods as the baseline, `config get chief.enabled`
+→ `false`, the saved test session has no `"chief"` key, `canvas new-pane --type chief` → usage error.
+
 
 **What it removes:** the Chief panel itself and all code that knows about it outside `Sources/Chief/`. After this
 step no file outside `Sources/Chief/` imports `CmuxChief`, `CmuxHomeCore`, `CmuxHomeRender`, `MessagesLab*` or
@@ -216,7 +240,7 @@ step no file outside `Sources/Chief/` imports `CmuxChief`, `CmuxHomeCore`, `Cmux
 lines that name Chief. Run `git diff -U0 | grep -i agentHome` before committing: it must be empty.
 
 - ⬜ Standard checks.
-- ⬜ `grep -rlE "import (CmuxChief|CmuxHomeCore|CmuxHomeRender|MessagesLab|CmuxAgentQuestion)$" Sources CLI | grep -v Sources/Chief/` is empty.
+- ✅ `grep -rlE "import (CmuxChief|CmuxHomeCore|CmuxHomeRender|MessagesLab|CmuxAgentQuestion)$" Sources CLI | grep -v Sources/Chief/` is empty.
 - ⬜ Drag a tab between panes and between workspaces still works. Close a workspace, reopen it with ⇧⌘T.
 - ⬜ The pinned cmux row: can't close, can't unpin, stays on top, respawns.
 

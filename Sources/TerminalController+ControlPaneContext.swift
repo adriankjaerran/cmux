@@ -343,14 +343,6 @@ extension TerminalController: ControlPaneContext {
             )?.id
         } else if panelType == .simulator {
             newPanelId = nil // Simulator pane removed from this fork.
-        } else if panelType == .chief {
-            newPanelId = ws.newChiefSplit(
-                from: sourcePanelId,
-                orientation: orientation,
-                insertFirst: insertFirst,
-                focus: focus,
-                initialDividerPosition: initialDividerPosition.map { CGFloat($0) }
-            )?.id
         } else {
             switch ws.newTerminalSplitOutcome(
                 from: sourcePanelId,

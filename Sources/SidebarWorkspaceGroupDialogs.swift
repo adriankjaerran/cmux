@@ -64,8 +64,7 @@ func confirmDeleteWorkspaceGroup(groupName: String, memberCount: Int) -> Bool {
 @MainActor
 @discardableResult
 func confirmAndDeleteWorkspaceGroup(groupId: UUID, tabManager: TabManager) -> Bool {
-    guard !tabManager.isChiefHomeGroup(groupId),
-          let confirmation = tabManager.workspaceGrouping.deletionConfirmation(groupId: groupId) else {
+    guard let confirmation = tabManager.workspaceGrouping.deletionConfirmation(groupId: groupId) else {
         return false
     }
     let isPinned = tabManager.workspaceGroups.first(where: { $0.id == groupId })?.isPinned ?? false

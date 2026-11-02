@@ -83,27 +83,3 @@ enum ChiefSettings {
         return trimmed
     }
 }
-
-extension AppDelegate {
-    /// The one Open Chief path shared by the keyboard shortcut, the View menu
-    /// item and the command palette.
-    ///
-    /// Posts ``Notification/Name/cmuxOpenChiefHome`` (or, with `toggle`,
-    /// ``Notification/Name/cmuxToggleChiefHome``) with `preferredWindow`
-    /// (a main window) as the object, or no object to target the active main
-    /// window, and `["source": source]` as user info. The shortcut and the
-    /// View menu item (which shows the same keys) toggle, so the keys that
-    /// opened Home return to the workspace; the palette's "Open Chief" opens.
-    /// Returns `false` without posting when `chief.enabled` is off, so a
-    /// disabled shortcut falls through to the focused surface.
-    @discardableResult
-    func openChiefHome(preferredWindow: NSWindow? = nil, toggle: Bool = false, source: String) -> Bool {
-        guard ChiefSettings.isEnabled else { return false }
-        NotificationCenter.default.post(
-            name: toggle ? .cmuxToggleChiefHome : .cmuxOpenChiefHome,
-            object: preferredWindow,
-            userInfo: ["source": source]
-        )
-        return true
-    }
-}

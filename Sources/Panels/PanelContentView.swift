@@ -225,17 +225,8 @@ struct PanelContentView: View {
                 )
             }
         case .chief:
-            if let chiefPanel = panel as? ChiefPanel {
-                ChiefPanelView(
-                    panel: chiefPanel,
-                    tabManager: customSidebarTabManager,
-                    isFocused: isFocused,
-                    isVisibleInUI: isVisibleInUI
-                )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .simultaneousGesture(TapGesture().onEnded { onRequestPanelFocus() })
-            }
-
+            // Fork: Chief was removed; no Chief panel exists.
+            EmptyView()
         }
     }
 

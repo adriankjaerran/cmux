@@ -2409,8 +2409,6 @@ class TabManager: ObservableObject {
         placement: WorkspaceGroupNewPlacement? = nil,
         referenceWorkspaceId: UUID? = nil
     ) {
-        if let workspace = tabs.first(where: { $0.id == workspaceId }),
-           workspace.isChiefHome, let currentGroup = workspace.groupId, currentGroup != groupId { return }
         workspaceGrouping.addWorkspaceToGroup(
             workspaceId: workspaceId,
             groupId: groupId,
@@ -2420,7 +2418,6 @@ class TabManager: ObservableObject {
     }
 
     func removeWorkspaceFromGroup(workspaceId: UUID) {
-        guard tabs.first(where: { $0.id == workspaceId })?.isChiefHome != true else { return }
         workspaceGrouping.removeWorkspaceFromGroup(workspaceId: workspaceId)
     }
 
@@ -2429,7 +2426,6 @@ class TabManager: ObservableObject {
         groupId: UUID,
         removeGeneratedAnchor: Bool = false
     ) -> WorkspaceGroupUngroupResult {
-        guard workspaceGroupAnchor(for: groupId)?.isChiefHome != true else { return .emptyPinnedCannotUngroup }
         return workspaceGrouping.ungroupWorkspaceGroup(
             groupId: groupId,
             removeGeneratedAnchor: removeGeneratedAnchor
@@ -2438,19 +2434,12 @@ class TabManager: ObservableObject {
 
     @discardableResult
     func deleteWorkspaceGroup(groupId: UUID, recordHistory: Bool = true) -> Int {
-        guard !isChiefHomeGroup(groupId) else { return 0 }
         return workspaceGrouping.deleteWorkspaceGroup(groupId: groupId, recordHistory: recordHistory)
     }
 
     @discardableResult
     func deleteWorkspaceGroup(confirmed confirmation: WorkspaceGroupDeletionConfirmation) -> Int {
-        guard !isChiefHomeGroup(confirmation.groupId) else { return 0 }
         return workspaceGrouping.deleteWorkspaceGroup(confirmed: confirmation)
-    }
-
-    /// Fork: Chief is off for good, so no group is protected as the Chief Home group.
-    func isChiefHomeGroup(_ groupId: UUID) -> Bool {
-        false
     }
 
     func renameWorkspaceGroup(groupId: UUID, name: String) {
@@ -2466,12 +2455,10 @@ class TabManager: ObservableObject {
     }
 
     func toggleWorkspaceGroupPinned(groupId: UUID) {
-        guard workspaceGroupAnchor(for: groupId)?.isChiefHome != true else { return }
         workspaceGrouping.toggleWorkspaceGroupPinned(groupId: groupId)
     }
 
     func setWorkspaceGroupPinned(groupId: UUID, isPinned: Bool) {
-        guard isPinned || workspaceGroupAnchor(for: groupId)?.isChiefHome != true else { return }
         workspaceGrouping.setWorkspaceGroupPinned(groupId: groupId, isPinned: isPinned)
     }
 
@@ -2485,7 +2472,6 @@ class TabManager: ObservableObject {
     }
 
     func setWorkspaceGroupAnchor(groupId: UUID, workspaceId: UUID) {
-        guard workspaceGroupAnchor(for: groupId)?.isChiefHome != true else { return }
         workspaceGrouping.setWorkspaceGroupAnchor(groupId: groupId, workspaceId: workspaceId)
     }
 
@@ -2663,14 +2649,6 @@ class TabManager: ObservableObject {
     func closeWorkspace(_ workspace: Workspace, recordHistory: Bool = true) {
         guard !workspace.isProtectedHome, tabs.count > 1 else { return }
         guard tabs.contains(where: { $0.id == workspace.id }) else { return }
-        if workspace.groupId.flatMap({ id in workspaceGroups.first { $0.id == id }?.externalID })
-            == ChiefHomeNavigation.homeGroupExternalID {
-            var hidden = Set(UserDefaults.standard.stringArray(forKey: ChiefHomeNavigation.hiddenConversationsKey) ?? [])
-            for panel in workspace.panels.values.compactMap({ $0 as? ChiefPanel }) {
-                if let id = panel.conversationID { hidden.insert(id.rawValue) }
-            }
-            UserDefaults.standard.set(hidden.sorted(), forKey: ChiefHomeNavigation.hiddenConversationsKey)
-        }
         // Teardown SIGHUPs child processes and publishes a closed event. Only this
         // manager may close its own live workspaces; stale or foreign objects must
         // never tear down terminals or publish a second close.
@@ -4272,9 +4250,7 @@ class TabManager: ObservableObject {
     ) {
         guard selectedTabId != tabId else {
             // Selecting the workspace that is already selected (its sidebar row, ⌘1…9, the
-            // palette, `cmux select-workspace`) still means "show this workspace": leave Chief
-            // Home, which a selection change does through ContentView's selectedTabId observer.
-            AppDelegate.shared?.leaveChiefHome(in: self)
+            // palette, `cmux select-workspace`) still means "show this workspace".
             notificationDismissal.setPendingSelectionContext(nil)
             if let notificationDismissalContext {
                 notificationDismissal.dismissFocusedPanelNotificationIfActive(
@@ -4750,14 +4726,12 @@ class TabManager: ObservableObject {
 
     /// Create a new terminal surface in the focused pane of the selected workspace
     func newSurface() {
-        AppDelegate.shared?.leaveChiefHome(in: self)
         // Cmd+T should always focus the newly created surface.
         selectedWorkspace?.clearSplitZoom()
         selectedWorkspace?.newTerminalSurfaceInFocusedPane(focus: true)
     }
 
     func newSurface(initialInput: String) {
-        AppDelegate.shared?.leaveChiefHome(in: self)
         selectedWorkspace?.clearSplitZoom()
         selectedWorkspace?.newTerminalSurfaceInFocusedPane(focus: true, initialInput: initialInput)
     }

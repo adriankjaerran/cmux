@@ -37,7 +37,7 @@ extension ContentView {
         case .cloudVPNSetup:
             return String(localized: "cloud.vpn.setup.title", defaultValue: "Cloud VPN")
         case .chief:
-            return ChiefStrings.chiefName
+            return "Chief"
         }
     }
     func commandPaletteSurfaceKeywords(for panelType: PanelType) -> [String] {

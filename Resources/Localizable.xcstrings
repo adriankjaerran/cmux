@@ -71849,7 +71849,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "type must be terminal, browser, simulator, or chief"
+            "value": "type must be terminal, browser, or simulator"
           }
         },
         "ja": {
@@ -71908,55 +71908,55 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Usage: cmux canvas new-pane [--type terminal|browser|simulator|chief]"
+            "value": "Usage: cmux canvas new-pane [--type terminal|browser|simulator]"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用方法: cmux canvas new-pane [--type terminal|browser|simulator|chief]"
+            "value": "使用方法: cmux canvas new-pane [--type terminal|browser|simulator]"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "用法：cmux canvas new-pane [--type terminal|browser|simulator|chief]"
+            "value": "用法：cmux canvas new-pane [--type terminal|browser|simulator]"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verwendung: cmux canvas new-pane [--type terminal|browser|simulator|chief]"
+            "value": "Verwendung: cmux canvas new-pane [--type terminal|browser|simulator]"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Utilisation : cmux canvas new-pane [--type terminal|browser|simulator|chief]"
+            "value": "Utilisation : cmux canvas new-pane [--type terminal|browser|simulator]"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "الاستخدام: cmux canvas new-pane [--type terminal|browser|simulator|chief]"
+            "value": "الاستخدام: cmux canvas new-pane [--type terminal|browser|simulator]"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uso: cmux canvas new-pane [--type terminal|browser|simulator|chief]"
+            "value": "Uso: cmux canvas new-pane [--type terminal|browser|simulator]"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "用法：cmux canvas new-pane [--type terminal|browser|simulator|chief]"
+            "value": "用法：cmux canvas new-pane [--type terminal|browser|simulator]"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "사용법: cmux canvas new-pane [--type terminal|browser|simulator|chief]"
+            "value": "사용법: cmux canvas new-pane [--type terminal|browser|simulator]"
           }
         }
       }
@@ -207616,7 +207616,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dock placement supports terminal, browser, and Chief surfaces"
+            "value": "Dock placement supports terminal and browser surfaces"
           }
         },
         "es": {

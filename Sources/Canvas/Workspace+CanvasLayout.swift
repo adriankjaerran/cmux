@@ -225,7 +225,6 @@ enum CanvasNewPaneType {
     case terminal
     case browser
     case simulator
-    case chief
 }
 
 extension Workspace {
@@ -262,11 +261,6 @@ extension Workspace {
             newPanelId = panel.id
         case .simulator:
             return nil // Simulator pane removed from this fork.
-        case .chief:
-            guard let panel = newChiefSurface(inPane: focusedPaneId, focus: focus) else {
-                return nil
-            }
-            newPanelId = panel.id
         }
         // Give the new surface its own canvas pane (the placer positions it
         // near the focused pane) rather than joining it as a tab.

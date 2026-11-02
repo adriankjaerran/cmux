@@ -3,7 +3,6 @@ import CMUXAgentLaunch
 import CmuxTerminal
 import CmuxTerminalCore
 import CmuxWorkspaces
-import CmuxHomeCore
 import Foundation
 
 extension DockSplitStore {
@@ -240,19 +239,8 @@ extension DockSplitStore {
                 excludingStableIdentities: excludingStableIdentities
             )
         case .chief:
-            guard let chiefSnapshot = snapshot.chief else { return nil }
-            let panel = ChiefPanel(
-                id: panels[snapshot.id] == nil ? snapshot.id : UUID(),
-                conversationID: chiefSnapshot.conversationID.map(ConversationID.init(rawValue:))
-            )
-            guard attachSessionRestoredPanel(panel, snapshot: snapshot, inPane: paneId) != nil else {
-                return nil
-            }
-            if let stableSurfaceId = snapshot.stableSurfaceId,
-               !excludingStableIdentities.contains(stableSurfaceId) {
-                panel.adoptStableSurfaceId(stableSurfaceId)
-            }
-            return panel.id
+            // Fork: Chief was removed; a saved Chief pane restores as nothing.
+            return nil
         default:
             return nil
         }
@@ -779,7 +767,7 @@ extension DockSplitStore {
             title: title,
             hasCustomTitle: snapshot.customTitle != nil,
             icon: panel.displayIcon,
-            iconAsset: panel is ChiefPanel ? ChiefPanel.iconAssetName : nil,
+            iconAsset: nil,
             kind: Self.surfaceKind(for: panel),
             isDirty: panel.isDirty,
             showsNotificationBadge: snapshot.isManuallyUnread,
