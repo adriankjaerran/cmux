@@ -29,7 +29,11 @@ Size: S = under an hour, M = a few hours, L = a day or more. Background: [next-s
 4. CodeRouter: `CMUX_SKIP_CODEROUTER=1` around `scripts/reload.sh:2153`, set in `install-personal.sh`.
 5. Check: build, launch, then confirm no connection to `sentry.io` (`nettop` / Little Snitch) while forcing an error.
 
-## Phase 2: the Home group goes away for good (S)
+## ✅ Phase 2: the Home group goes away for good (S)
+
+Done by removal plan step 8.1 (`bf3a1d0`): the `cmux.chief.home` group and Chief panels are dropped on restore,
+`isChiefHome` / `isChiefHomeGroup` were false, and later steps (8.3, 8.4) deleted Chief altogether. No unit test
+(the `cmuxTests` folder isn't in this repo).
 
 1. On restore (`TabManager.swift:~7300`): drop the group with `externalID == cmux.chief.home` when Chief is off.
 2. Don't restore the Home Chief panel when Chief is off (`Workspace.swift:2426`). A Home workspace left with no panels

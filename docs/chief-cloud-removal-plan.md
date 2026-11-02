@@ -244,7 +244,17 @@ lines that name Chief. Run `git diff -U0 | grep -i agentHome` before committing:
 - ⬜ Drag a tab between panes and between workspaces still works. Close a workspace, reopen it with ⇧⌘T.
 - ⬜ The pinned cmux row: can't close, can't unpin, stays on top, respawns.
 
-### ⬜ 8.4 Delete the Chief and Home packages (S–M, low risk)
+### ✅ 8.4 Delete the Chief and Home packages (S–M, low risk)
+
+**Done:** commit "Phase 8.4: ...". `Sources/Chief/` had already gone in 8.3 (see there). Removed here: the 5 packages,
+their 5 package references, 6 products, 12 `… in Frameworks` build files and their Frameworks-phase and
+`packageProductDependencies` lines in `cmux` and `cmuxTests` (52 pbxproj lines). Also removed (not in the plan):
+`Assets.xcassets/ChiefAvatar.imageset` (only `ChiefPanel` used it), `scripts/chief/record-motion.sh` (records the
+Chief Home UI), and the 5 package names in `scripts/ci/package-test-lane.sh`. No `Package.resolved` change.
+Checked against the test app: build, `--version`, `config doctor` clean, `tree --all` same 12 workspaces,
+`system.capabilities` same 545 methods as the baseline, `chief status` → unknown command, `config get
+chief.enabled` → `false`. No stale Chief/Home/MessagesLab/AgentQuestion bundle in the built app (no rebuild needed).
+Docs updated: `removal-plan.md` Phase 8 ✅, `overview.md`, `plan.md` Phase 2 ✅.
 
 **What it removes:** `Sources/Chief/` (the rest), `Packages/macOS/CmuxChief`, `Packages/Shared/CmuxHomeCore`,
 `CmuxHomeRender`, `CmuxMessagesLab`, `CmuxAgentQuestion`.
@@ -259,9 +269,9 @@ Remove every `Sources/Chief/*.swift` file entry. No `Package.resolved` change (a
 **Risk:** low once 8.3 builds. The CLI doesn't link any of these.
 
 - ⬜ Standard checks.
-- ⬜ No `CmuxChief_*`, `CmuxHomeRender_*`, `CmuxMessagesLab_*`, `CmuxAgentQuestion_*` bundle in the built app
+- ✅ No `CmuxChief_*`, `CmuxHomeRender_*`, `CmuxMessagesLab_*`, `CmuxAgentQuestion_*` bundle in the built app
   (see "stale bundles" above).
-- ⬜ Update `removal-plan.md` (Phase 8 ✅), `docs/overview.md`, `docs/plan.md` Phase 2 (done by 8.1).
+- ✅ Update `removal-plan.md` (Phase 8 ✅), `docs/overview.md`, `docs/plan.md` Phase 2 (done by 8.1).
 
 ---
 

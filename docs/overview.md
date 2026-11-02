@@ -50,7 +50,6 @@ These build and ship today. They are the trimming list in [ideas.md](ideas.md).
 | | Feature | Note |
 |---|---|---|
 | ⚠️ | Cloud, Auth, mobile pairing, `cmux vm` | `CmuxCloud*`, `CMUXAuthCore`, `CmuxAuthRuntime`, `CmuxMobile*`, Iroh (removal plan Phase 9) |
-| ⚠️ | Chief and Chief Home | `CmuxChief`, `CmuxHomeCore`, `CmuxHomeRender`, `CmuxMessagesLab` (Phase 8) |
 | ⚠️ | CodeRouter CLI commands | `cmux coderouter` / `cmux cr` and the guide panel are still in the app; the binary is no longer downloaded |
 | ❌ | cmux-tui client (cloud Machines panel) | Skipped by `reload.sh` |
 
@@ -73,3 +72,4 @@ See the table in the [README](../README.md#whats-different-from-upstream-cmux) a
 | VPN / Computer Use leftovers | `cmux vpn`, Computer Use settings stubs, `ComputerUseHelper.icon` (`45ec320`) |
 | Simulator leftovers | The five "Simulator: …" shortcuts, "New Simulator Pane", `simulator.*` socket stubs (`b9f12ee`); `PanelType.simulator` stays so old layouts load |
 | Send Feedback | `CmuxFeedback`, the Help/sidebar items, `cmux feedback`, `feedback.open` / `feedback.submit` (`7e6c136`) |
+| Chief and Chief Home | `cmux chief`, `chief.*` socket methods, the Chief pane, Home group and sidebar rows, `Sources/Chief/`, the packages `CmuxChief`, `CmuxHomeCore`, `CmuxHomeRender`, `CmuxMessagesLab`, `CmuxAgentQuestion` (`bf3a1d0`, `945611c`, `7159ca8`, Phase 8.4); the `chief` config key and `PanelType.chief` stay so old configs and layouts load |

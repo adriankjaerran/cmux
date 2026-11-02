@@ -1227,8 +1227,6 @@
 		A5B00004A1B2C3D4E5F60718 /* CMUXAgentLaunch in Frameworks */ = {isa = PBXBuildFile; productRef = A5B00002A1B2C3D4E5F60718 /* CMUXAgentLaunch */; };
 		A5B00005A1B2C3D4E5F60718 /* CMUXAgentLaunch in Frameworks */ = {isa = PBXBuildFile; productRef = A5B00002A1B2C3D4E5F60718 /* CMUXAgentLaunch */; };
 		C1175700000000000000004D /* CMUXAgentLaunch in Frameworks */ = {isa = PBXBuildFile; productRef = A5B00002A1B2C3D4E5F60718 /* CMUXAgentLaunch */; };
-		C41EF009BCDEC523B90363B2 /* CmuxAgentQuestion in Frameworks */ = {isa = PBXBuildFile; productRef = C41EFC6ABCCA2CC66615C13F /* CmuxAgentQuestion */; };
-		C41EFCE8C271596B6061796E /* CmuxAgentQuestion in Frameworks */ = {isa = PBXBuildFile; productRef = C41EFC6ABCCA2CC66615C13F /* CmuxAgentQuestion */; };
 		9758E0039758E0039758E003 /* CmuxAgentSessionStore in Frameworks */ = {isa = PBXBuildFile; productRef = 9758E0029758E0029758E002 /* CmuxAgentSessionStore */; };
 		9758E0049758E0049758E004 /* CmuxAgentSessionStore in Frameworks */ = {isa = PBXBuildFile; productRef = 9758E0029758E0029758E002 /* CmuxAgentSessionStore */; };
 		8295A0018295A0018295A001 /* CmuxAlertContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8295A0028295A0028295A002 /* CmuxAlertContent.swift */; };
@@ -1253,8 +1251,6 @@
 		CA52A003CA52A003CA52A003 /* CmuxCanvas in Frameworks */ = {isa = PBXBuildFile; productRef = CA52A005CA52A005CA52A005 /* CmuxCanvas */; };
 		CA52A007CA52A007CA52A007 /* CmuxCanvas in Frameworks */ = {isa = PBXBuildFile; productRef = CA52A005CA52A005CA52A005 /* CmuxCanvas */; };
 		CA53A003CA53A003CA53A003 /* CmuxCanvasUI in Frameworks */ = {isa = PBXBuildFile; productRef = CA53A005CA53A005CA53A005 /* CmuxCanvasUI */; };
-		C41EF411946E3406B488FD35 /* CmuxChief in Frameworks */ = {isa = PBXBuildFile; productRef = C41EFC335C9AAB5A0FA57460 /* CmuxChief */; };
-		C41EFD4E969983044C4167F6 /* CmuxChief in Frameworks */ = {isa = PBXBuildFile; productRef = C41EFC335C9AAB5A0FA57460 /* CmuxChief */; };
 		303E131D2D8A8F96C08F3825 /* CMUXCLI+AdmittedRestore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D3513BB67E65A937E22D56 /* CMUXCLI+AdmittedRestore.swift */; };
 		0DFC9ACEAC8FE623B33CEC32 /* CMUXCLI+AgentHibernation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 356578A4696939A1CB24F66D /* CMUXCLI+AgentHibernation.swift */; };
 		A12123000000000000000005 /* CMUXCLI+AgentHibernationSessionEnd.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12123000000000000000006 /* CMUXCLI+AgentHibernationSessionEnd.swift */; };
@@ -1514,10 +1510,6 @@
 		4E2D7E500000000000000004 /* CmuxHerdrResume in Frameworks */ = {isa = PBXBuildFile; productRef = 4E2D7E500000000000000002 /* CmuxHerdrResume */; };
 				800100000000000000000201 /* CmuxHive in Frameworks */ = {isa = PBXBuildFile; productRef = 800100000000000000000202 /* CmuxHive */; };
 		800100000000000000000203 /* CmuxHive in Frameworks */ = {isa = PBXBuildFile; productRef = 800100000000000000000202 /* CmuxHive */; };
-		C41EF7EFC080BC21DC42138B /* CmuxHomeCore in Frameworks */ = {isa = PBXBuildFile; productRef = C41EF5588332B5106DFDCF2F /* CmuxHomeCore */; };
-		C41EF9ACF80E55B091F9E5D8 /* CmuxHomeCore in Frameworks */ = {isa = PBXBuildFile; productRef = C41EF5588332B5106DFDCF2F /* CmuxHomeCore */; };
-		C41EF880677B1D69CBD82004 /* CmuxHomeRender in Frameworks */ = {isa = PBXBuildFile; productRef = C41EFCB474BA4402CC80BB10 /* CmuxHomeRender */; };
-		C41EF9518CA1B900682A5060 /* CmuxHomeRender in Frameworks */ = {isa = PBXBuildFile; productRef = C41EFCB474BA4402CC80BB10 /* CmuxHomeRender */; };
 		A11C00010000000000000001 /* CmuxHostedSystemSymbolImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11C00010000000000000002 /* CmuxHostedSystemSymbolImage.swift */; };
 		A11C00040000000000000001 /* CmuxHostedSystemSymbolImageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11C00040000000000000002 /* CmuxHostedSystemSymbolImageTests.swift */; };
 		C0DE46010000000000000001 /* CMUXInstalledExtensionSidebarHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE46010000000000000002 /* CMUXInstalledExtensionSidebarHostView.swift */; };
@@ -2597,10 +2589,6 @@
 		C0DE70590000000000000002 /* MenuBarProfilingSubmissionActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE70590000000000000001 /* MenuBarProfilingSubmissionActions.swift */; };
 		3865A0033865A0033865A003 /* MenubarSearchPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3865B0033865B0033865B003 /* MenubarSearchPopover.swift */; };
 		E1000000A1B2C3D4E5F60718 /* MenuKeyEquivalentRoutingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000001A1B2C3D4E5F60718 /* MenuKeyEquivalentRoutingUITests.swift */; };
-		C41EF37855F3934FF56E3782 /* MessagesLabHome in Frameworks */ = {isa = PBXBuildFile; productRef = C41EFD14216C41CEC2144779 /* MessagesLabHome */; };
-		C41EF457DD8F7DC1AD41FBD3 /* MessagesLabHome in Frameworks */ = {isa = PBXBuildFile; productRef = C41EFD14216C41CEC2144779 /* MessagesLabHome */; };
-		C41EF6F99E75FAD1F939EA6B /* MessagesLabSidebar in Frameworks */ = {isa = PBXBuildFile; productRef = C41EF70B32F196180E6A7CEC /* MessagesLabSidebar */; };
-		C41EF7BA6B59F227A33EF2FA /* MessagesLabSidebar in Frameworks */ = {isa = PBXBuildFile; productRef = C41EF70B32F196180E6A7CEC /* MessagesLabSidebar */; };
 		C1A900000000000000000017 /* MetaCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A900000000000000000016 /* MetaCommands.swift */; };
 		5732A0015732A0015732A001 /* MinimalModeInvalidationProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5732B0015732B0015732B001 /* MinimalModeInvalidationProbe.swift */; };
 		5732A0085732A0085732A008 /* MinimalModeInvalidationProbeKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5732B0085732B0085732B008 /* MinimalModeInvalidationProbeKey.swift */; };
@@ -9171,7 +9159,6 @@
 				D0F6A0000000000000000004 /* CmuxAgentDeliveryCore in Frameworks */,
 				A77A0003A1B2C3D4E5F60001 /* CmuxAgentJournal in Frameworks */,
 				A5B00003A1B2C3D4E5F60718 /* CMUXAgentLaunch in Frameworks */,
-				C41EFCE8C271596B6061796E /* CmuxAgentQuestion in Frameworks */,
 				9758E0039758E0039758E003 /* CmuxAgentSessionStore in Frameworks */,
 				C9A2B00000000000000000B3 /* CmuxAppKitSupportUI in Frameworks */,
 				5EDB6027B346C46521A93C74 /* CMUXAuthCore in Frameworks */,
@@ -9179,7 +9166,6 @@
 				E3B7A30000000000000000C3 /* CmuxBrowser in Frameworks */,
 				CA52A003CA52A003CA52A003 /* CmuxCanvas in Frameworks */,
 				CA53A003CA53A003CA53A003 /* CmuxCanvasUI in Frameworks */,
-				C41EF411946E3406B488FD35 /* CmuxChief in Frameworks */,
 				C10DC1000000000000000004 /* CmuxCloud in Frameworks */,
 				D0F2A0000000000000000003 /* CmuxCloudBannerCore in Frameworks */,
 				D0F3A0000000000000000003 /* CmuxCloudImagePaste in Frameworks */,
@@ -9197,8 +9183,6 @@
 				C617000000000000000000A3 /* CmuxGit in Frameworks */,
 				4E2D7E500000000000000003 /* CmuxHerdrResume in Frameworks */,
 				800100000000000000000201 /* CmuxHive in Frameworks */,
-				C41EF7EFC080BC21DC42138B /* CmuxHomeCore in Frameworks */,
-				C41EF9518CA1B900682A5060 /* CmuxHomeRender in Frameworks */,
 				1A0B0C0D0E0F101112132013 /* CmuxIrohTransport in Frameworks */,
 				1A0B0C0D0E0F101112132113 /* CmuxIrxTransport in Frameworks */,
 				D0F7A0000000000000000004 /* CmuxMemoryPressure in Frameworks */,
@@ -9240,8 +9224,6 @@
 				A5001006 /* GhosttyKit.xcframework in Frameworks */,
 				1A0B0C0D0E0F101112132213 /* IrohLib in Frameworks */,
 				A5001290 /* MarkdownUI in Frameworks */,
-				C41EF457DD8F7DC1AD41FBD3 /* MessagesLabHome in Frameworks */,
-				C41EF7BA6B59F227A33EF2FA /* MessagesLabSidebar in Frameworks */,
 				F20F85FC5900550685FA33AD /* StackAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -9291,14 +9273,12 @@
 				B057B0017E57B0017E57B001 /* Bonsplit in Frameworks */,
 				AC4A6E7C4A700001AC4A0005 /* CmuxAgentChat in Frameworks */,
 				D0F6A0000000000000000005 /* CmuxAgentDeliveryCore in Frameworks */,
-				C41EF009BCDEC523B90363B2 /* CmuxAgentQuestion in Frameworks */,
 				9758E0049758E0049758E004 /* CmuxAgentSessionStore in Frameworks */,
 				C9A2B00000000000000000C3 /* CmuxAppKitSupportUI in Frameworks */,
 				A99940010000000000000001 /* CMUXAuthCore in Frameworks */,
 				A99940020000000000000001 /* CmuxAuthRuntime in Frameworks */,
 				D7032A060000000000000001 /* CmuxBrowser in Frameworks */,
 				CA52A007CA52A007CA52A007 /* CmuxCanvas in Frameworks */,
-				C41EFD4E969983044C4167F6 /* CmuxChief in Frameworks */,
 				D0F2A0000000000000000004 /* CmuxCloudBannerCore in Frameworks */,
 				D0F3A0000000000000000004 /* CmuxCloudImagePaste in Frameworks */,
 				C10DC1000000000000000008 /* CmuxCloudResizeCore in Frameworks */,
@@ -9312,8 +9292,6 @@
 				5E2701040000000000000004 /* CmuxFoundation in Frameworks */,
 				4E2D7E500000000000000004 /* CmuxHerdrResume in Frameworks */,
 				800100000000000000000203 /* CmuxHive in Frameworks */,
-				C41EF9ACF80E55B091F9E5D8 /* CmuxHomeCore in Frameworks */,
-				C41EF880677B1D69CBD82004 /* CmuxHomeRender in Frameworks */,
 				1A0B0C0D0E0F101112132014 /* CmuxIrohTransport in Frameworks */,
 				1A0B0C0D0E0F101112132114 /* CmuxIrxTransport in Frameworks */,
 				D0F7A0000000000000000005 /* CmuxMemoryPressure in Frameworks */,
@@ -9334,8 +9312,6 @@
 				730600040000000000000001 /* CmuxWindowing in Frameworks */,
 				A13296000000000000000103 /* CmuxWorkspacePresence in Frameworks */,
 				1A0B0C0D0E0F101112132214 /* IrohLib in Frameworks */,
-				C41EF37855F3934FF56E3782 /* MessagesLabHome in Frameworks */,
-				C41EF6F99E75FAD1F939EA6B /* MessagesLabSidebar in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -14058,12 +14034,6 @@
 				1A0B0C0D0E0F101112132002 /* CmuxMobileTransport */,
 				D0F3A0000000000000000002 /* CmuxCloudImagePaste */,
 				C4B1E0000000000000000002 /* CmuxMobileHost */,
-				C41EFC6ABCCA2CC66615C13F /* CmuxAgentQuestion */,
-				C41EF5588332B5106DFDCF2F /* CmuxHomeCore */,
-				C41EFCB474BA4402CC80BB10 /* CmuxHomeRender */,
-				C41EFD14216C41CEC2144779 /* MessagesLabHome */,
-				C41EF70B32F196180E6A7CEC /* MessagesLabSidebar */,
-				C41EFC335C9AAB5A0FA57460 /* CmuxChief */,
 			);
 			productName = cmux;
 			productReference = A5001000 /* cmux.app */;
@@ -14200,12 +14170,6 @@
 				D0F3A0000000000000000002 /* CmuxCloudImagePaste */,
 				C4B1E0000000000000000002 /* CmuxMobileHost */,
 				D0F7A0000000000000000003 /* CmuxMemoryPressure */,
-				C41EFC6ABCCA2CC66615C13F /* CmuxAgentQuestion */,
-				C41EF5588332B5106DFDCF2F /* CmuxHomeCore */,
-				C41EFCB474BA4402CC80BB10 /* CmuxHomeRender */,
-				C41EFD14216C41CEC2144779 /* MessagesLabHome */,
-				C41EF70B32F196180E6A7CEC /* MessagesLabSidebar */,
-				C41EFC335C9AAB5A0FA57460 /* CmuxChief */,
 			);
 			productName = cmuxTests;
 			productReference = F1000002A1B2C3D4E5F60718 /* cmuxTests.xctest */;
@@ -14322,11 +14286,6 @@
 				1A0B0C0D0E0F101112132001 /* XCLocalSwiftPackageReference "CmuxMobileTransport" */,
 				D0F3A0000000000000000001 /* XCLocalSwiftPackageReference "CmuxCloudImagePaste" */,
 				C4B1E0000000000000000001 /* XCLocalSwiftPackageReference "CmuxMobileHost" */,
-				C41EFB9E161569E98068258F /* XCLocalSwiftPackageReference "CmuxAgentQuestion" */,
-				C41EF5BF1CE1A7A52E3B32FE /* XCLocalSwiftPackageReference "CmuxHomeCore" */,
-				C41EFBDCEED78044C6346BBB /* XCLocalSwiftPackageReference "CmuxHomeRender" */,
-				C41EF9C09737A00F7AD3765F /* XCLocalSwiftPackageReference "CmuxMessagesLab" */,
-				C41EFAE53091633032911038 /* XCLocalSwiftPackageReference "CmuxChief" */,
 			);
 			productRefGroup = A5001042 /* Products */;
 			projectDirPath = "";
@@ -19507,11 +19466,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		C41EFAE53091633032911038 /* XCLocalSwiftPackageReference "CmuxChief" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/macOS/CmuxChief; };
-		C41EF9C09737A00F7AD3765F /* XCLocalSwiftPackageReference "CmuxMessagesLab" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/Shared/CmuxMessagesLab; };
-		C41EFBDCEED78044C6346BBB /* XCLocalSwiftPackageReference "CmuxHomeRender" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/Shared/CmuxHomeRender; };
-		C41EF5BF1CE1A7A52E3B32FE /* XCLocalSwiftPackageReference "CmuxHomeCore" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/Shared/CmuxHomeCore; };
-		C41EFB9E161569E98068258F /* XCLocalSwiftPackageReference "CmuxAgentQuestion" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/Shared/CmuxAgentQuestion; };
 		C10DC1000000000000000001 /* XCLocalSwiftPackageReference "CmuxCloud" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/macOS/CmuxCloud;
@@ -19818,12 +19772,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		C41EFC335C9AAB5A0FA57460 /* CmuxChief */ = {isa = XCSwiftPackageProductDependency; package = C41EFAE53091633032911038 /* XCLocalSwiftPackageReference "CmuxChief" */; productName = CmuxChief; };
-		C41EF70B32F196180E6A7CEC /* MessagesLabSidebar */ = {isa = XCSwiftPackageProductDependency; package = C41EF9C09737A00F7AD3765F /* XCLocalSwiftPackageReference "CmuxMessagesLab" */; productName = MessagesLabSidebar; };
-		C41EFD14216C41CEC2144779 /* MessagesLabHome */ = {isa = XCSwiftPackageProductDependency; package = C41EF9C09737A00F7AD3765F /* XCLocalSwiftPackageReference "CmuxMessagesLab" */; productName = MessagesLabHome; };
-		C41EFCB474BA4402CC80BB10 /* CmuxHomeRender */ = {isa = XCSwiftPackageProductDependency; package = C41EFBDCEED78044C6346BBB /* XCLocalSwiftPackageReference "CmuxHomeRender" */; productName = CmuxHomeRender; };
-		C41EF5588332B5106DFDCF2F /* CmuxHomeCore */ = {isa = XCSwiftPackageProductDependency; package = C41EF5BF1CE1A7A52E3B32FE /* XCLocalSwiftPackageReference "CmuxHomeCore" */; productName = CmuxHomeCore; };
-		C41EFC6ABCCA2CC66615C13F /* CmuxAgentQuestion */ = {isa = XCSwiftPackageProductDependency; package = C41EFB9E161569E98068258F /* XCLocalSwiftPackageReference "CmuxAgentQuestion" */; productName = CmuxAgentQuestion; };
 		C10DC1000000000000000005 /* CmuxCloudResizeCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D0F5A0000000000000000001 /* XCLocalSwiftPackageReference "CmuxCloudResizeCore" */;

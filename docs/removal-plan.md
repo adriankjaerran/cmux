@@ -34,7 +34,7 @@ Model for how to do a removal: `git show --stat 61dca2e` (Simulator, Computer Us
 | ✅ 5 | Leftovers from the last removal (`cmux vpn`, Computer Use bits) | S | low | yes |
 | ✅ 6 | The 5 "Simulator: …" shortcuts and `simulator.*` stubs | M | low–medium | yes |
 | ✅ 7 | Send Feedback | S–M | low | yes |
-| 8 | Chief and Chief Home | M–L | medium | yes |
+| ✅ 8 | Chief and Chief Home | M–L | medium | yes |
 | 9 | Cloud, Auth, mobile pairing, cmux-tui / Machines, `cmux vm` | L (several commits) | high | yes |
 
 Each phase is one commit, one test build, one reinstall. Never two phases in one build.
@@ -412,7 +412,14 @@ you before; it goes with Phase 9. The profiling window keeps its saved email und
   and nothing else in the footer moved (check by hand).
 - ⬜ Shells and agents work. `scripts/install-personal.sh`.
 
-## Phase 8: Chief and Chief Home (M–L, medium risk)
+## ✅ Phase 8: Chief and Chief Home (M–L, medium risk)
+
+**Done** in four steps, see [chief-cloud-removal-plan.md](chief-cloud-removal-plan.md) Phase 8: Chief off for good
+(`bf3a1d0`), commands, socket methods, Settings card and shortcut (`945611c`), Chief panes, Home navigation,
+sidebar rows, drag-and-drop and `Sources/Chief/` (`7159ca8`), then the packages `CmuxChief`, `CmuxHomeCore`,
+`CmuxHomeRender`, `CmuxMessagesLab`, `CmuxAgentQuestion` (Phase 8.4 commit). Kept: the `chief` config key and
+`chief.*` settings parsing, `PanelType.chief`, `SurfaceKind.chief`, `DockSurfaceKind.chief` (all restore or create
+nothing), `ChiefSettingsBridge.swift` (Mobile still reads it until Phase 9), the agent home code.
 
 **What it is:** Chief is upstream's built-in "manager" agent with its own pane, memory and a "Home" group
 (`cmux.chief.home`) that can't be unpinned or deleted. You replaced it with the pinned cmux agent and have
@@ -440,11 +447,11 @@ have uncommitted changes). Then:
 **Must keep:** the `chief` key in the config schema (accept and ignore it); `PanelType.chief`; the
 `agent message` command and `agent.message.*` methods (they're separate from Chief and your cmux agent uses them).
 
-- ⬜ `scripts/test-app.sh --seed`; no Home group; all your groups (Personal, Schjødt, Hoegh) and the pinned cmux
-  row come back; groups can be unpinned and deleted.
+- ✅ `scripts/test-app.sh --seed`; no Home group; all workspaces come back (checked with `tree --all`). ⬜ The
+  pinned cmux row and unpinning/deleting a group (check by hand).
 - ⬜ The pinned cmux agent restarts after an app restart (`zsh/cmux.zsh` → `cmux-agent.sh`) and can message an
   agent (`cmux_message_agent`).
-- ⬜ `cmux config doctor` is clean with `"chief": {"enabled": false}` still in `cmux.json`.
+- ✅ `cmux config doctor` is clean with `"chief": {"enabled": false}` still in `cmux.json`.
 - ⬜ `scripts/install-personal.sh`.
 
 ## Phase 9: Cloud, Auth, mobile pairing, cmux-tui / Machines, `cmux vm` (L, high risk; several commits)
