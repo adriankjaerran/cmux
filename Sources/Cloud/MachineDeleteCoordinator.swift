@@ -39,7 +39,7 @@ final class MachineDeleteCoordinator {
             // reads as already deleted while the machine keeps running.
             try await VMClient.shared.destroy(
                 id: $0,
-                teamID: CmuxTuiSurfaceProviderRegistry.shared.ownerTeamID(forMachineID: $0)
+                teamID: nil
             )
         },
         didHide: @escaping @MainActor (String) -> Void = { MachineDeleteCoordinator.detachLocalPresentations(of: $0) },

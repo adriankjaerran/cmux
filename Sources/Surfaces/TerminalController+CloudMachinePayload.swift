@@ -48,3 +48,37 @@ extension TerminalController {
         ]
     }
 }
+
+extension SurfaceMachineInfo {
+    /// Copy for a failed remote graph refresh (moved from the deleted cmux-tui provider,
+    /// Phase 9.12 (E)). State-specific failures take precedence over diagnostics because a
+    /// missing graph is not necessarily a network failure. Internal snake-case reason codes
+    /// stay out of user-facing errors.
+    var linkFailureMessage: String {
+        let machineUnavailableMessage = String(
+            localized: "cloud.operation.failure.machineUnavailable",
+            defaultValue: "cmux cannot reach the Cloud service for this machine right now."
+        )
+        let networkMessage = String(
+            localized: "cloud.operation.failure.network",
+            defaultValue: "The Cloud connection did not complete. Check your connection and try again."
+        )
+        switch linkState {
+        case .asleep:
+            return String(localized: "cloud.operation.failure.machineAsleep", defaultValue: "This machine is asleep. Wake it to connect.")
+        case .unavailable:
+            return machineUnavailableMessage
+        default:
+            guard let linkError else { return networkMessage }
+            let message = linkError.trimmingCharacters(in: .whitespacesAndNewlines)
+            if message == "cloud_api_unavailable" {
+                return machineUnavailableMessage
+            }
+            guard !message.isEmpty,
+                  message.range(of: #"^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$"#, options: .regularExpression) == nil else {
+                return networkMessage
+            }
+            return message
+        }
+    }
+}

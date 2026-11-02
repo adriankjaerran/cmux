@@ -10,7 +10,7 @@ extension SurfaceCatalog {
                 machines: machines[machine].map { [$0] } ?? [],
                 resources: (resourceIDsByMachine[machine] ?? []).compactMap { resources[$0] }.sorted { $0.catalogPrecedes($1) },
                 projections: projections.filter { $0.resource.machine == machine }.sorted { $0.panelID.uuidString < $1.panelID.uuidString },
-                displayCreationMachines: (provider(for: machine) as? CmuxTuiSurfaceProvider)?.supportsDisplayCreation == true ? [machine] : nil
+                displayCreationMachines: nil
             )
         } else {
             input = snapshot

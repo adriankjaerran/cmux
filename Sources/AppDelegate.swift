@@ -827,7 +827,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private(set) var cloudMachinePinStore: CloudMachinePinStore?
     /// "Introducing cmux cloud", shown once from the first main window.
     private(set) lazy var cloudWelcomeWindowController = CloudWelcomeWindowController()
-    private(set) lazy var cloudActivationCoordinator = CloudActivationCoordinator(prepare: { try await CmuxTuiSurfaceProviderRegistry.shared.prepareForActivation() }, cleanup: { await CmuxTuiSurfaceProviderRegistry.shared.cancelActivationPreparation() }, analytics: .app)
+    private(set) lazy var cloudActivationCoordinator = CloudActivationCoordinator(prepare: { throw CancellationError() }, cleanup: {}, analytics: .app)
     var cloudWorkspaceCoordinator: CloudWorkspaceCoordinator?
     var cloudWorkspaceOperationController: CloudWorkspaceOperationController?
     var newMachineSheetPresenter: (any NewMachineSheetPresenting)?
@@ -1612,7 +1612,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         SurfaceCatalog.shared.focusProjection = { projection in
             SurfacePaneFactory.focus(panelID: projection.panelID, in: projection.workspaceID)
         }
-        CmuxTuiSurfaceProviderRegistry.shared.start(catalog: .shared)
         let env = ProcessInfo.processInfo.environment
         let telemetryEnabled = TelemetrySettings.enabledForCurrentLaunch
         let sentryStartupPolicy = MacSentryStartupPolicy(
@@ -7842,9 +7841,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             CommandPaletteContextKeys.workspaceIsCloud,
             workspace.isManagedCloudVMWorkspace || workspace.cloudVMID != nil
         )
-        let cloudCapabilities = workspace.cloudVMID.flatMap { vmID in
-            (SurfaceCatalog.shared.provider(for: .cloud(vmID)) as? CmuxTuiSurfaceProvider)?.capabilities
-        }
+        // Cloud machine capabilities came from the cmux-tui provider (gone in Phase 9.12 (E)).
+        let cloudCapabilities: VMCapabilities? = nil
         snapshot.setBool(CommandPaletteContextKeys.cloudVMCapabilitiesKnown, cloudCapabilities != nil)
         snapshot.setBool(CommandPaletteContextKeys.cloudVMSupportsFork, cloudCapabilities?.canFork ?? true)
         snapshot.setBool(CommandPaletteContextKeys.cloudVMSupportsSnapshot, cloudCapabilities?.snapshot ?? true)
@@ -9050,8 +9048,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let target = vmID.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !target.isEmpty else { return }
         closeLocalWorkspaces(forCloudVMID: target)
-        // The sidebar's headless link to that machine has nothing left to talk to.
-        CmuxTuiSurfaceProviderRegistry.shared.machineWasDeleted(target)
     }
 
     /// The local workspace attached to a cloud machine, through either transport: the

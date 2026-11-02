@@ -599,7 +599,7 @@ struct cmuxApp: App {
                                   workspace.terminalPanel(for: panelID) != nil else { return }
                             let failure = CloudPaneCreationFailure(
                                 machine: .cloud("preview"),
-                                error: CmuxTuiSurfaceProvider.ProviderError.stateUnavailable("preview")
+                                error: CancellationError()
                             )
                             workspace.setCloudMaterializationFailure(
                                 surfaceID: panelID,

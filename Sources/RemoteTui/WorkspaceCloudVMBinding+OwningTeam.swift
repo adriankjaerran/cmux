@@ -9,9 +9,6 @@ extension WorkspaceCloudVMBinding {
     @MainActor
     static func owningTeamID(forVMID vmID: String, previous: WorkspaceCloudVMBinding?) -> String? {
         guard !vmID.hasPrefix("ssh:") else { return nil }
-        if let owner = CmuxTuiSurfaceProviderRegistry.shared.ownerTeamID(forMachineID: vmID) {
-            return owner
-        }
         if let previous, previous.vmID == vmID, let team = previous.teamID {
             return team
         }

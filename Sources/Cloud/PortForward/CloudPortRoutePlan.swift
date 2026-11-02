@@ -31,7 +31,7 @@ enum CloudPortRoutePlan: Equatable, Sendable {
             return .unsupported(String(format: String(localized: "cloudTree.port.noPrivateAddress", defaultValue: "%@ has no private network address yet; refresh the machine list and retry."), resource.machine.rawValue))
         }
         let raw = resource.url ?? (desktop
-            ? CmuxTuiSurfaceProvider.privateDesktopURL(privateAddress: address, port: port)
+            ? CloudGuestDisplay.privateDesktopURL(privateAddress: address, port: port)
             : CmuxInternalHostnames().directPortURL(privateAddress: address, port: port))
         guard let url = CloudPortRoutePolicy().privateURL(raw, address: address, allowLoopback: resource.machine.isSSH) else {
             return .unsupported(String(localized: "cloud.portAccess.invalidURL", defaultValue: "This port does not have a valid HTTP or HTTPS address."))

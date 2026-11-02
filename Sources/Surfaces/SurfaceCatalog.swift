@@ -687,13 +687,6 @@ final class SurfaceCatalog {
                 guard Workspace.liveWorkspace(id: loadingReservation.workspaceID)?.discardCloudMachineLoadingPanel(panelID: loadingReservation.panelID, machineID: loadingReservation.machineID) == true else { throw CancellationError() }
             }
             let resolved = attachRemoteView(resolvedRemoteView, to: existing)
-            if resource.kind != .terminal,
-               let provider = providers[id.machine] as? CmuxTuiSurfaceProvider,
-               let browser = SurfacePaneFactory.browserPanel(panelID: resolved.panelID, in: resolved.workspaceID),
-               (browser.cloudAccess.model == nil || browser.cloudAccess.model?.phase == .closed),
-               let raw = resource.url, let url = URL(string: raw) {
-                provider.configureBrowser(browser, url: url)
-            }
             if focus { focusProjection?(resolved) }
             return (resolved, true)
         }

@@ -312,15 +312,6 @@ extension Workspace {
                 throw CancellationError()
             }
             defer { onFinish() }
-            // The stable terminal id is available before surface attachment.
-            // Route reservation input into that PTY immediately so remote shell
-            // startup owns echo and line discipline just like a local shell.
-            if let cloudProvider = catalog.provider(for: created.machine) as? CmuxTuiSurfaceProvider {
-                _ = try await cloudProvider.bindOptimisticTerminalInput(
-                    reservation.inputRelay,
-                    terminalID: created.id.key
-                )
-            }
             let remoteView = try reservation.sourcePlacement.remoteView(of: created)
             // The device layout can mirror the terminal here before its receipt
             // binds this reservation: a layout event that beats the create
@@ -379,8 +370,6 @@ extension Workspace {
                 reservation.creationReceipt.beginAttempt()
                 onStart()
                 self?.restartReservedCloudTerminalPane(reservation)
-                (catalog.provider(for: reservation.machine) as? CmuxTuiSurfaceProvider)?
-                    .beginAttachHandshake(for: reservation)
             },
             onFinish: onFinish,
             inlineFailure: { [weak self, reservation] error in

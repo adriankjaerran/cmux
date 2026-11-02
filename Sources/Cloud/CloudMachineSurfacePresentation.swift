@@ -13,7 +13,7 @@ struct CloudMachineSurfacePresentation {
         guard info.hasDesktop else { return [] }
         return [CmuxTuiSnapshotParser.display(
             machine: info.id,
-            directURL: info.privateAddress.map { CmuxTuiSurfaceProvider.privateDesktopURL(privateAddress: $0) }
+            directURL: info.privateAddress.map { CloudGuestDisplay.privateDesktopURL(privateAddress: $0, port: CmuxTuiSnapshotParser.desktopPort) }
         )]
     }
 

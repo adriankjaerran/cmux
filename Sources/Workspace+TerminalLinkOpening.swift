@@ -41,13 +41,9 @@ extension Workspace: TerminalLinkOpenContainer {
         return true
     }
 
-    func cloudTerminalLinkTarget(url: URL, sourcePanelId: UUID) -> CloudTerminalLinkTarget? {
-        guard let target = surfaceOwnershipTarget(for: sourcePanelId),
-              let resource = SurfaceCatalog.shared.resource(forPanel: target.surfaceID)
-                ?? SurfaceCatalog.shared.resource(forPanel: target.containerPanelID),
-              let address = SurfaceCatalog.shared.machineInfo(for: resource.machine)?.privateAddress,
-              let target = CmuxTuiSurfaceProvider.cloudTerminalLinkTarget(url: url, resource: resource, privateAddress: address) else { return nil }
-        return target
+    /// Cloud terminal links went with the cmux-tui provider (Phase 9.12 (E)).
+    func cloudTerminalLinkTarget(url _: URL, sourcePanelId _: UUID) -> CloudTerminalLinkTarget? {
+        nil
     }
 
     func deferTerminalFileLinkOpen(

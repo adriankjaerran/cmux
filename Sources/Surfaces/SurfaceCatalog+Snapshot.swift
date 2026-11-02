@@ -28,14 +28,8 @@ extension SurfaceCatalog {
     /// enumerate destructive operations. Presentation still withholds a stale
     /// graph's cwd, and stale machines are flagged, exactly as `snapshot` does.
     var authoritativeSnapshot: SurfaceCatalogSnapshot {
-        let displayCreationMachines = Set(machines.keys.filter { machine in
-            guard let provider = provider(for: machine) as? CmuxTuiSurfaceProvider else { return false }
-            // Keep the action live after a failed or stale discovery. The
-            // provider retries the guest probe when the user clicks New
-            // Display, instead of converting a transient probe failure into a
-            // permanently disabled row.
-            return provider.supportsDisplayCreation
-        })
+        // Display creation was a cmux-tui provider feature (gone in Phase 9.12 (E)).
+        let displayCreationMachines = Set<SurfaceMachineID>()
         return SurfaceCatalogSnapshot(
             machines: machines.values.map(authoritativeMachineInfo).sorted {
                 if $0.id.isLocal != $1.id.isLocal { return $0.id.isLocal }

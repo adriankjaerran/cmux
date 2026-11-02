@@ -68,7 +68,6 @@ extension AppDelegate {
                 }
             }
         }
-        CmuxTuiSurfaceProviderRegistry.shared.syncPollingToActivationPolicy()
     }
 
     /// `DisableRemoteConnections` activation. Every live cmux-created remote
@@ -108,17 +107,7 @@ extension AppDelegate {
         managedCloudPolicyTask = Task { @MainActor [weak self] in
             _ = await previous?.value
             guard let self else { return }
-            guard ManagedDevicePolicy().isEnforced(.disableCloud) else {
-                CmuxTuiSurfaceProviderRegistry.shared.start(catalog: .shared)
-                return
-            }
-            await CmuxTuiSurfaceProviderRegistry.shared.accessDidEnd()
-            guard ManagedDevicePolicy().isEnforced(.disableCloud) else {
-                // The profile was removed mid-teardown: Cloud is allowed again,
-                // so restart discovery instead of ending live access.
-                CmuxTuiSurfaceProviderRegistry.shared.start(catalog: .shared)
-                return
-            }
+            guard ManagedDevicePolicy().isEnforced(.disableCloud) else { return }
             self.endCloudVMAccess(reason: .managedPolicy)
             // endCloudVMAccess starts VPN removal too. Discovery cannot be
             // re-armed until that part of the same transition has drained.

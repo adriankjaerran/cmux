@@ -4728,10 +4728,6 @@ final class BrowserPanel: Panel, ObservableObject {
         currentURL = restoredURL
         if let resource = snapshot.cloudResource {
             restoredCloudTeamID = snapshot.cloudTeamID
-            if let machineID = resource.machine.cloudMachineID {
-                CmuxTuiSurfaceProviderRegistry.shared.adoptOwnerTeam(snapshot.cloudTeamID, forMachineID: machineID)
-                CmuxTuiSurfaceProviderRegistry.shared.adoptPrivateAddress(restoredURL?.host, forMachineID: machineID)
-            }
             restoreCloudResource(resource, preferredURL: restoredURL, activate: shouldRenderRestoredWebView)
             if !shouldRenderRestoredWebView { shouldRenderWebView = false; refreshNavigationAvailability() }
             return

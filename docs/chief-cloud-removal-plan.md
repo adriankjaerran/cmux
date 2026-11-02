@@ -928,6 +928,31 @@ sections and the terminal-output hooks), (D) `Sources/Auth` (9.13), (E) the cmux
 `Sources/Surfaces`, (F) `Sources/Cloud` plus the top-level cloud files (this step). A file that stays and names a
 deleted type gets the reference stubbed or removed, even in folders a later commit deletes.
 
+**(E) done ("Phase 9.12 (E)").** Deleted the cmux-tui provider: all 37 `Sources/Surfaces/CmuxTui*` files except
+`CmuxTuiRemoteRouting.swift` (kept: pure helper the **CLI** target compiles for `cmux agent` help and `--focus` parsing),
+plus `PendingRemoteCreation`, `CloudTerminalLayoutCreation`, `SurfaceSocketCommands+VMFileDelivery`, and from
+`Sources/Cloud` `InProcessMachineCreateLauncher` and `CloudTeamScopeObserver` (42 files). Also deleted from
+`SurfaceSocketCommands.swift`: every `socketWorkerVM*` handler (unwired since 9.11) and their helpers
+(`cloudTuiProvider`, `openRemoteWorkspace*`, `resolveRemoteWorkspaceForOpen`, `cloudRenameSocketError`).
+- **Moved, kept:** `SurfaceMachineInfo.linkFailureMessage` → `TerminalController+CloudMachinePayload.swift`
+  (`surface.catalog` `link_error_message`; null for local); `.cmuxCloudTeamScopeDidChange/Ready` names →
+  `Sources/Cloud/CloudMenuModel.swift` (no poster left).
+- Stubs (same result as before for local, where the provider cast always failed): `SurfaceCatalog` display discovery,
+  rename and creation throw `noProvider` / return false (`surface.new_display` already refuses local); port discovery
+  no-ops; browser-document publishing, display tab rename and reserved-pane attach do nothing / fail the reservation;
+  cloud terminal link targets nil; Cloud browser creation route nil; restored Cloud browser panes show the
+  "unavailable" placeholder; `tuiMirrorSession` nil; command palette Cloud capabilities nil;
+  `AppDelegate.cloudActivationCoordinator` prepare throws; `CmuxTuiSurfaceProviderRegistry.start` at launch and in
+  managed-policy changes gone; `surfaceCatalogQuery`'s missing-machine refresh is a no-op.
+- pbxproj: two merged lines (two entries on one line) were split; a dangling group child
+  `CmuxTuiSurfaceProvider+CreationRecovery.swift` (no file ref) removed.
+- Checks: build, `--version`, `config doctor` (same), `tree --all`, 388 methods (same), `surface.catalog` same shape and
+  identical local machine entry, `current.list` same keys (before/after D and E), `surface.refresh`, `surface.list`,
+  `surface.new_display` (refuses local as before); scratch workspace: `send` + `read-screen`, right split, closed after.
+- Left for (F): the other ~50 `Cloud*`/`Workspace+Cloud*`/`SurfaceCatalog+Cloud*` files in `Sources/Surfaces`
+  (woven into `SurfaceCatalog`, `Workspace`, `TerminalController`), `CloudTerminalOverlayCoordinator.swift`,
+  `BrowserPanel+CloudConnection.swift`.
+
 **Tried after 9.11 and reverted (needs a decision).** Deleting the 243 listed paths (all of `Sources/Cloud`, the
 top-level files below, the four deferred `Panels` files, `Resources/CloudWelcome`; **not** `CloudFilePreviewCache`/
 `Lease`, which serve SSH) is clean in the pbxproj, but the build then needs edits in about 70 files that name types

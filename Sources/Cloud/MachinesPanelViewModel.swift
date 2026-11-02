@@ -222,7 +222,7 @@ final class MachinesPanelViewModel: ObservableObject {
         catalogProvider: @escaping @MainActor () -> SurfaceCatalogSnapshot = {
             MachinesPanelViewModel.catalog(
                 SurfaceCatalog.shared.snapshot,
-                hiding: CmuxTuiSurfaceProviderRegistry.shared.foreignTeamMachineIDs
+                hiding: []
             )
         },
         localWorkspacesProvider: (@MainActor () -> [CloudTreeLocalWorkspace])? = nil
@@ -584,7 +584,7 @@ final class MachinesPanelViewModel: ObservableObject {
     /// admitted again only after the shared registry refreshes the new account.
     @discardableResult
     func refreshAccountScope(
-        refreshCatalog: @escaping @MainActor () async -> Bool = { await CmuxTuiSurfaceProviderRegistry.shared.refresh(force: true) }
+        refreshCatalog: @escaping @MainActor () async -> Bool = { false }
     ) -> Task<Void, Never> {
         resetForAuthTransition()
         machinePinStore?.refreshScope()

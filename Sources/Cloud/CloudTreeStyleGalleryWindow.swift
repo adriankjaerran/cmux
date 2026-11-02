@@ -118,7 +118,7 @@ private struct CloudTreeStyleGalleryColumn: View {
                     onWillMutate: { _ in },
                     onDidMutate: {},
                     onFailure: { _ in },
-                    refresh: { Task { await CmuxTuiSurfaceProviderRegistry.shared.refresh(force: true) } },
+                    refresh: {},
                     workspaceCreationHost: { AppDelegate.shared?.tabManager.map { CloudWorkspaceCreationHost(manager: $0) } }
                 ),
                 expansionStore: expansionStore,

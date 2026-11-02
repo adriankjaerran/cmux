@@ -7437,9 +7437,8 @@ struct ContentView: View {
                 CommandPaletteContextKeys.workspaceIsCloud,
                 workspace.isManagedCloudVMWorkspace || workspace.cloudVMID != nil
             )
-            let cloudCapabilities = workspace.cloudVMID.flatMap { vmID in
-                (SurfaceCatalog.shared.provider(for: .cloud(vmID)) as? CmuxTuiSurfaceProvider)?.capabilities
-            }
+            // Cloud machine capabilities came from the cmux-tui provider (gone in Phase 9.12 (E)).
+            let cloudCapabilities: VMCapabilities? = nil
             snapshot.setBool(
                 CommandPaletteContextKeys.cloudVMCapabilitiesKnown,
                 cloudCapabilities != nil

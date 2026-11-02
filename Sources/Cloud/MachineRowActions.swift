@@ -182,14 +182,9 @@ struct MachineRowActions {
         onCompletion: ((CloudVMActionLauncher.Completion) -> Void)? = nil,
         onCancellationReady: ((CloudVMActionLauncher.CancellationHandle) -> Void)? = nil
     ) -> Bool {
-        if let operationID, InProcessMachineCreateLauncher.parse(arguments: arguments) != nil {
-            return InProcessMachineCreateLauncher.start(
-                arguments: arguments,
-                operationID: operationID,
-                onOutput: onOutput,
-                onCompletion: onCompletion,
-                onCancellationReady: onCancellationReady
-            )
+        // The in-process create needed the cmux-tui provider registry (gone in Phase 9.12 (E)).
+        if operationID != nil, CloudMachineCreateArgumentParser().parse(arguments: arguments) != nil {
+            return false
         }
         // `vm new` mints a fresh machine with an ephemeral home and
         // attaches it; the base slot stays reachable via the ＋ menu's Open Base.

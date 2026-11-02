@@ -228,3 +228,10 @@ final class CloudMenuModel {
 
     static let didChangeNotification = Notification.Name("cmux.cloudMenuModel.didChange")
 }
+
+extension Notification.Name {
+    /// Moved here from `CloudTeamScopeObserver` (deleted in Phase 9.12 (E)); nothing posts them any more.
+    static let cmuxCloudTeamScopeDidChange = Notification.Name("cmux.cloudTeamScopeDidChange")
+    /// Posted once the new scope is discovered, without waiting for machine details.
+    static let cmuxCloudTeamScopeReady = Notification.Name("cmux.cloudTeamScopeReady")
+}

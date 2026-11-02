@@ -233,13 +233,10 @@ extension SurfaceCatalog {
                 Workspace.liveWorkspace(id: destination.workspaceID)?
                     .reserveCloudTerminalPane(machine: machine, at: destination, focus: focus)
             },
-            attach: { reservation, resource, remoteTabID in
-                guard let provider = SurfaceCatalog.shared.provider(for: resource.machine) as? CmuxTuiSurfaceProvider else {
-                    Workspace.liveWorkspace(id: reservation.workspaceID)?
-                        .failReservedCloudTerminalPane(reservation, error: SurfaceCatalogError.noProvider(resource.machine))
-                    return
-                }
-                provider.attachReservedTerminalPane(reservation, resource: resource, remoteTabID: remoteTabID)
+            attach: { reservation, resource, _ in
+                // Reserved panes were only attached by the cmux-tui provider (gone in Phase 9.12 (E)).
+                Workspace.liveWorkspace(id: reservation.workspaceID)?
+                    .failReservedCloudTerminalPane(reservation, error: SurfaceCatalogError.noProvider(resource.machine))
             }
         )
     }

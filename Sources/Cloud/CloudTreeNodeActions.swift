@@ -574,12 +574,10 @@ struct CloudTreeNodeActions {
             copyToPasteboard: Self.copyToPasteboard,
             copyPortLink: { resource in
                 guard let port = resource.forwardedPort else { return }
-                run(String(localized: "cloudTree.operation.copyPortLink", defaultValue: "Preparing the link\u{2026}")) { catalog in
-                    guard let provider = catalog.provider(for: resource.machine) as? CmuxTuiSurfaceProvider else {
-                        throw SurfaceCatalogError.unsupported(SurfaceCatalog.portPreviewUnavailableMessage(machineID: resource.machine.rawValue))
-                    }
-                    // The same link the pane loads and `vm.port_open` reports.
-                    Self.copyToPasteboard(try await provider.portLinkURL(port: port))
+                _ = port
+                run(String(localized: "cloudTree.operation.copyPortLink", defaultValue: "Preparing the link\u{2026}")) { _ in
+                    // Port links came from the cmux-tui provider (gone in Phase 9.12 (E)).
+                    throw SurfaceCatalogError.unsupported(SurfaceCatalog.portPreviewUnavailableMessage(machineID: resource.machine.rawValue))
                 }
             },
             refresh: refresh
