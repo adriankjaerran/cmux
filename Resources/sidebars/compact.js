@@ -469,6 +469,50 @@ function newWorkspaceInGroup(g) {
   cmux("workspace.group.new_workspace", { group_id: g.id });
 }
 
+// New top-level folder. The app creates it with a fresh anchor workspace and
+// an auto name ("Group N"); the watcher below drops the header we asked for
+// straight into inline rename so the user can type the real name.
+let pendingNewFolder = false;
+const knownGroupIds = new Set();
+let knownGroupsSeeded = false;
+computed(() => {
+  const groups = data.groups() ?? [];
+  for (const g of groups) {
+    if (knownGroupIds.has(g.id)) continue;
+    knownGroupIds.add(g.id);
+    if (knownGroupsSeeded && pendingNewFolder) {
+      pendingNewFolder = false;
+      setEditingId("h:" + g.id);
+    }
+  }
+  knownGroupsSeeded = true;
+});
+
+function newFolder() {
+  pendingNewFolder = true;
+  cmux("workspace.group.create", {});
+}
+
+// Hover strip under the last folder/row: a small "+" that creates a folder.
+function newFolderFooter() {
+  return HStack({ spacing: 6 }, [
+    Image("plus")
+      .font(9).weight("semibold").color("secondary")
+      .frame({ width: 14, height: 16 })
+      .showOnHover(),
+    Text("New Folder").font(11).color("secondary").showOnHover(),
+    Spacer(),
+  ])
+    .paddingLeading(8)
+    .paddingTrailing(8)
+    .paddingVertical(3)
+    .cornerRadius(8)
+    .hoverBackground("#7f7f7f1c")
+    .frame({ maxWidth: "infinity" })
+    .help("New folder")
+    .onTap(newFolder);
+}
+
 // --- rows ----------------------------------------------------------------------
 function workspaceMenu(w) {
   const act = (action) => () =>
@@ -600,8 +644,9 @@ function workspaceEditRow(w, entry) {
 
 function groupHeader(groupId) {
   const g = () => groupById(groupId) ?? { id: groupId, name: "", collapsed: false, pinned: false };
-  const groupAct = (action) => () =>
-    cmux("workspace.group.action", { group_id: groupId, action });
+  // Socket-path methods only: `workspace.group.action` exists solely on the
+  // mobile RPC path, so routing through it here silently did nothing.
+  const groupCall = (method) => () => cmux(method, { group_id: groupId });
   return HStack({ spacing: 6 }, [
     // A folder header: clicking anywhere on it toggles collapse (it has no
     // session of its own; the anchor is a normal row below). Chevron only,
@@ -643,10 +688,12 @@ function groupHeader(groupId) {
       Button("Rename Group", () => setEditingId("h:" + groupId)),
       Button(() => (isCollapsed(g()) ? "Expand" : "Collapse"), () => toggleCollapse(g())),
       Button(() => (g().pinned ? "Unpin Group" : "Pin Group"), () =>
-        cmux("workspace.group.action", { group_id: groupId, action: g().pinned ? "unpin" : "pin" })),
+        cmux(g().pinned ? "workspace.group.unpin" : "workspace.group.pin", { group_id: groupId })),
       Divider(),
-      Button("Ungroup", groupAct("ungroup")),
-      Button("Delete Group", groupAct("delete")).destructive(),
+      Button("New Folder", newFolder),
+      Divider(),
+      Button("Ungroup", groupCall("workspace.group.ungroup")),
+      Button("Delete Group", groupCall("sidebar.workspace_group.confirm_delete")).destructive(),
     ]);
 }
 
@@ -697,6 +744,7 @@ sidebar(() =>
       return entry.editing ? workspaceEditRow(w, e) : workspaceRow(w, e);
     }
   ),
+  newFolderFooter(),
   ]),
   { surface: "glass" }
 )

@@ -500,8 +500,9 @@ function workspaceEditRow(w, entry) {
 function groupHeader(groupId) {
   const g = () => groupById(groupId) ?? { id: groupId, name: "", collapsed: false, pinned: false };
   const anchor = () => (data.workspaces() ?? []).find((w) => w.id === g().anchorId);
-  const groupAct = (action) => () =>
-    cmux("workspace.group.action", { group_id: groupId, action });
+  // Socket-path methods only: `workspace.group.action` exists solely on the
+  // mobile RPC path, so routing through it here silently did nothing.
+  const groupCall = (method) => () => cmux(method, { group_id: groupId });
   return HStack({ spacing: 6 }, [
     // The chevron toggles collapse; clicking anywhere else selects the
     // group's anchor workspace (built-in sidebar behavior). Chevron only,
@@ -532,10 +533,10 @@ function groupHeader(groupId) {
       Button("Rename Group", () => setEditingId("h:" + groupId)),
       Button(() => (isCollapsed(g()) ? "Expand" : "Collapse"), () => toggleCollapse(g())),
       Button(() => (g().pinned ? "Unpin Group" : "Pin Group"), () =>
-        cmux("workspace.group.action", { group_id: groupId, action: g().pinned ? "unpin" : "pin" })),
+        cmux(g().pinned ? "workspace.group.unpin" : "workspace.group.pin", { group_id: groupId })),
       Divider(),
-      Button("Ungroup", groupAct("ungroup")),
-      Button("Delete Group", groupAct("delete")).destructive(),
+      Button("Ungroup", groupCall("workspace.group.ungroup")),
+      Button("Delete Group", groupCall("sidebar.workspace_group.confirm_delete")).destructive(),
     ]);
 }
 

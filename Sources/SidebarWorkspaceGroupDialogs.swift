@@ -55,3 +55,28 @@ func confirmDeleteWorkspaceGroup(groupName: String, memberCount: Int) -> Bool {
     }
     return alert.runCmuxModal() == .alertFirstButtonReturn
 }
+
+/// Confirm-then-delete for a group, matching the classic sidebar's Delete
+/// Group: the alert shows the live member count, and only the workspaces the
+/// user confirmed are closed. Used by JS sidebars, which cannot present the
+/// alert themselves.
+/// - Returns: Whether the group was deleted.
+@MainActor
+@discardableResult
+func confirmAndDeleteWorkspaceGroup(groupId: UUID, tabManager: TabManager) -> Bool {
+    guard !tabManager.isChiefHomeGroup(groupId),
+          let confirmation = tabManager.workspaceGrouping.deletionConfirmation(groupId: groupId) else {
+        return false
+    }
+    let isPinned = tabManager.workspaceGroups.first(where: { $0.id == groupId })?.isPinned ?? false
+    if isPinned || confirmation.containedWorkspaceCount > 0 {
+        guard confirmDeleteWorkspaceGroup(
+            groupName: confirmation.groupName,
+            memberCount: confirmation.containedWorkspaceCount
+        ) else {
+            return false
+        }
+    }
+    tabManager.deleteWorkspaceGroup(confirmed: confirmation)
+    return true
+}

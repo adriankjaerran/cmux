@@ -15,6 +15,11 @@ private let cmuxSidebarWorkerQueue = DispatchQueue(label: "com.cmux.sidebar-acti
 /// (CmuxSwiftRenderUI), where its FIFO/newest-wins semantics are unit-tested.
 private let sidebarSelectCoalescer = SidebarSelectCoalescer()
 
+/// Sidebar-only pseudo method: `cmux("sidebar.workspace_group.confirm_delete",
+/// { group_id })` shows the native Delete Group confirmation, then closes the
+/// group's workspaces. Handled in-process, not by the control socket.
+private let cmuxSidebarConfirmDeleteGroupMethod = "sidebar.workspace_group.confirm_delete"
+
 // The custom-sidebar rendering, interpreter, JSON DSL, resizable split, and
 // the file-watching model now live in the `CmuxSwiftRender` (logic) and
 // `CmuxSwiftRenderUI` (SwiftUI) packages. The app target keeps only the
@@ -49,6 +54,22 @@ func makeCmuxSidebarActionDispatch() -> SidebarActionDispatch {
             }
             for command in commands {
                 switch command {
+                case let .cmux(method, params) where method == cmuxSidebarConfirmDeleteGroupMethod:
+                    // Host-only: needs the native confirmation alert, so it never
+                    // reaches the socket. Sync keeps the command's place in order.
+                    guard let groupId = params["group_id"].flatMap(UUID.init(uuidString:)) else { continue }
+                    DispatchQueue.main.sync {
+                        MainActor.assumeIsolated {
+                            guard let tabManager = AppDelegate.shared?.mainWindowContexts.values
+                                .first(where: { context in
+                                    context.tabManager.workspaceGroups.contains { $0.id == groupId }
+                                })?.tabManager else {
+                                NSSound.beep()
+                                return
+                            }
+                            confirmAndDeleteWorkspaceGroup(groupId: groupId, tabManager: tabManager)
+                        }
+                    }
                 case let .cmux(method, params):
                     var payload: [String: Any] = ["method": method, "id": UUID().uuidString]
                     if !params.isEmpty {

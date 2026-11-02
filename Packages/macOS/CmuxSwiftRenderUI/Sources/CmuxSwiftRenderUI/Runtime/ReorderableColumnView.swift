@@ -55,6 +55,9 @@ private final class ReorderDragModel {
     var coarseIndexByRow: [String: Int] = [:]
     var coarseSource = 0
     var coarseTarget = 0
+    /// The `dropTarget` row (e.g. a folder header) the dragged row is
+    /// hovering over; dropping now reports `into` instead of a reorder.
+    var dropIntoId: String?
 }
 
 /// A vertically reorderable column of scene rows with Arc-style drag feedback:
@@ -157,6 +160,7 @@ struct ReorderableColumnView: View {
             model.draggedId = nil
             model.isSettling = false
             model.isCancelling = false
+            model.dropIntoId = nil
             localOrder = nil
         }
     }
@@ -190,6 +194,7 @@ struct ReorderableColumnView: View {
                     model.settledId = nil
                     model.settledIndent = nil
                     model.boundarySide = "above"
+                    model.dropIntoId = nil
                     model.liftIndent = rowIndent(childId)
                     let node = store?.node(childId)
                     model.isBlockDrag = node?.bool("fixed") == true && node?.string("block") != nil
@@ -250,13 +255,36 @@ struct ReorderableColumnView: View {
                 let heights = order.map { rowHeights.height($0) }
                 let indents = order.map { rowIndent($0) }
                 let fixedFlags = order.map { store?.node($0)?.bool("fixed") == true }
-                let target = ReorderMath.targetIndex(
+                let candidate = ReorderMath.targetIndex(
                     heights: heights,
                     sourceIndex: model.sourceIndex,
                     translation: value.translation.height,
                     current: model.targetIndex,
                     spacing: rowSpacing
                 )
+                // Drop-onto rows (folder headers) hold the gap back while the
+                // dragged row hovers over them, and resolve to "into".
+                let resolution = ReorderMath.dropOntoResolution(
+                    heights: heights,
+                    sourceIndex: model.sourceIndex,
+                    translation: value.translation.height,
+                    candidate: candidate,
+                    isDropTarget: order.map { $0 != childId && store?.node($0)?.bool("dropTarget") == true },
+                    spacing: rowSpacing
+                )
+                let target = resolution.target
+                let dropIntoId = resolution.into.map { order[$0] }
+                if dropIntoId != model.dropIntoId {
+                    Self.debugLog("drop-onto \(String(describing: model.dropIntoId)) -> \(String(describing: dropIntoId))")
+                    withAnimation(Self.gapSpring) {
+                        model.dropIntoId = dropIntoId
+                        model.targetIndex = target
+                    }
+                }
+                if dropIntoId != nil {
+                    reportDragFeedback(childId: childId, order: order)
+                    return
+                }
                 // An ambiguous slot (e.g. right after a group's last member)
                 // has two nestings; the pointer's X position picks one, with
                 // hysteresis. The X preview animates in the same spring as
@@ -324,6 +352,7 @@ struct ReorderableColumnView: View {
             model.targetIndex = model.sourceIndex
             model.coarseTarget = model.coarseSource
             model.projectedIndent = nil
+            model.dropIntoId = nil
             model.isSettling = true
         } completion: {
             model.draggedId = nil
@@ -341,6 +370,22 @@ struct ReorderableColumnView: View {
     private func drop(childId: String) {
         defer { clearDragFeedback() }
         removeEscapeMonitor()
+        if let dropIntoId = model.dropIntoId, !model.isBlockDrag {
+            // Dropped onto a folder: the row springs home and the host moves
+            // it into the folder; the authoritative order reconciles after.
+            let intoKey = itemKey(forChild: dropIntoId)
+            let sourceIndex = model.sourceIndex
+            Self.debugLog("drop into=\(intoKey)")
+            cancelDrag()
+            sink.send(node.id, "move", [
+                "id": itemKey(forChild: childId),
+                "index": sourceIndex,
+                "side": "above",
+                "block": false,
+                "into": intoKey,
+            ])
+            return
+        }
         let order = displayOrder
         let isBlock = model.isBlockDrag
         let items = isBlock ? coarseItems(order: order) : order.map { [$0] }
@@ -523,7 +568,26 @@ private struct ReorderableRowView: View {
         let isDragged = draggedId == childId
         let moves = isDragged || (model.isBlockDrag && draggedId != nil && model.blockRows.contains(childId))
         let lifted = isDragged && !model.isSettling
+        let isDropInto = model.dropIntoId == childId
         SceneNodeView(nodeId: childId)
+            // Drop-onto highlight (folder header under a dragged row).
+            .background {
+                if isDropInto {
+                    RoundedRectangle(
+                        cornerRadius: CGFloat(store?.node(childId)?.double("cornerRadius") ?? 8),
+                        style: .continuous
+                    )
+                    .fill(Color.accentColor.opacity(0.22))
+                    .overlay {
+                        RoundedRectangle(
+                            cornerRadius: CGFloat(store?.node(childId)?.double("cornerRadius") ?? 8),
+                            style: .continuous
+                        )
+                        .strokeBorder(Color.accentColor.opacity(0.9), lineWidth: 1.5)
+                    }
+                    .padding(.leading, CGFloat(store?.node(childId)?.double("marginLeading") ?? 0))
+                }
+            }
             // A moving row gets a material backdrop so it stays readable
             // while passing over other rows (and blurs them glass-style);
             // at rest rows stay transparent so the surface shows through.

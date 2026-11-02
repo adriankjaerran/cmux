@@ -65,6 +65,25 @@ extension AppDelegate {
             return item
         }
 
+        /// Same command as File > New Workspace Group (a fresh folder with
+        /// its own anchor workspace), surfaced next to New Workspace.
+        func newWorkspaceGroupItem() -> NSMenuItem {
+            let item = NSMenuItem(
+                title: String(localized: "menu.file.newWorkspaceGroup", defaultValue: "New Workspace Group"),
+                action: #selector(createWorkspaceGroupFromNewWorkspaceMenuItem(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = context.windowId as NSUUID
+            item.image = NSImage(systemSymbolName: "folder.badge.plus", accessibilityDescription: nil)
+            let shortcut = KeyboardShortcutSettings.menuShortcut(for: .newWorkspaceGroup)
+            if let keyEquivalent = shortcut.menuItemKeyEquivalent {
+                item.keyEquivalent = keyEquivalent
+                item.keyEquivalentModifierMask = shortcut.modifierFlags
+            }
+            return item
+        }
+
         func addRenderedSection(_ items: [NSMenuItem]) {
             guard items.contains(where: { !$0.isSeparatorItem }) else { return }
             if renderedSectionCount > 0 {
@@ -97,6 +116,7 @@ extension AppDelegate {
                 while items.last?.isSeparatorItem == true {
                     items.removeLast()
                 }
+                items.append(newWorkspaceGroupItem())
                 addRenderedSection(items)
             case .layouts(let rows):
                 var items: [NSMenuItem] = [
@@ -239,6 +259,18 @@ extension AppDelegate {
 }
 
 extension AppDelegate {
+    @objc func createWorkspaceGroupFromNewWorkspaceMenuItem(_ sender: NSMenuItem) {
+        guard let windowId = (sender.representedObject as? NSUUID) as UUID?,
+              let context = mainWindowContexts.values.first(where: { $0.windowId == windowId }),
+              createEmptyWorkspaceGroup(
+                  tabManager: context.tabManager,
+                  preferredWindow: resolvedWindow(for: context)
+              ) else {
+            NSSound.beep()
+            return
+        }
+    }
+
     /// The shortcut a plus-menu row should advertise: the live
     /// `KeyboardShortcutSettings` binding for built-in actions, else the
     /// `shortcut` declared on a config action. Nil when unbound or when the

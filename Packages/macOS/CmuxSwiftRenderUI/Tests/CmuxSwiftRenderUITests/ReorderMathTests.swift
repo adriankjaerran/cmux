@@ -119,6 +119,56 @@ struct ReorderMathTests {
         #expect(ReorderMath.reordered(["a", "b", "c"], from: 1, to: 1) == ["a", "b", "c"])
         #expect(ReorderMath.reordered(["a"], from: 0, to: 5) == ["a"])
     }
+
+    // Rows of 30pt: tops 0/30/60/90. Row 2 is a drop-onto header.
+    private let dropHeights: [CGFloat] = [30, 30, 30, 30]
+    private let dropFlags = [false, false, true, false]
+
+    @Test func dropOntoHeaderWhenCenterIsInMiddleBand() {
+        // Row 0's center starts at 15; row 2's band is 67.5...82.5.
+        let r = ReorderMath.dropOntoResolution(
+            heights: dropHeights, sourceIndex: 0, translation: 60, candidate: 2, isDropTarget: dropFlags)
+        #expect(r.into == 2)
+        #expect(r.target == 1)
+    }
+
+    @Test func dropOntoHeaderBlocksGapUntilBandIsCleared() {
+        // Center 70 - 15 = 55 < band: the plain target already crossed row 2,
+        // but the obstacle caps it on the source side.
+        let before = ReorderMath.dropOntoResolution(
+            heights: dropHeights, sourceIndex: 0, translation: 50, candidate: 2, isDropTarget: dropFlags)
+        #expect(before.into == nil)
+        #expect(before.target == 1)
+        // Center past 82.5: gap moves below the header.
+        let after = ReorderMath.dropOntoResolution(
+            heights: dropHeights, sourceIndex: 0, translation: 70, candidate: 2, isDropTarget: dropFlags)
+        #expect(after.into == nil)
+        #expect(after.target == 2)
+    }
+
+    @Test func dropOntoHeaderFromBelow() {
+        // Row 3's center starts at 105; row 2's band is 67.5...82.5.
+        let into = ReorderMath.dropOntoResolution(
+            heights: dropHeights, sourceIndex: 3, translation: -30, candidate: 2, isDropTarget: dropFlags)
+        #expect(into.into == 2)
+        #expect(into.target == 3)
+        let blocked = ReorderMath.dropOntoResolution(
+            heights: dropHeights, sourceIndex: 3, translation: -20, candidate: 2, isDropTarget: dropFlags)
+        #expect(blocked.into == nil)
+        #expect(blocked.target == 3)
+        let past = ReorderMath.dropOntoResolution(
+            heights: dropHeights, sourceIndex: 3, translation: -45, candidate: 1, isDropTarget: dropFlags)
+        #expect(past.into == nil)
+        #expect(past.target == 1)
+    }
+
+    @Test func dropOntoIgnoresRowsWithoutFlag() {
+        let r = ReorderMath.dropOntoResolution(
+            heights: dropHeights, sourceIndex: 0, translation: 30, candidate: 1,
+            isDropTarget: [false, false, false, false])
+        #expect(r.into == nil)
+        #expect(r.target == 1)
+    }
 }
 
 import CoreGraphics

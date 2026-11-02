@@ -203,6 +203,56 @@ enum ReorderMath {
         return current
     }
 
+    /// Applies drop-onto rows (e.g. folder headers) to a gap target.
+    ///
+    /// A drop-onto row is an obstacle: while the dragged row's center is over
+    /// its middle band the drag resolves to "into" that row and the gap stays
+    /// on the source side of it; the gap only jumps past the row once the
+    /// center has cleared the band. Rows the gap has not crossed sit at their
+    /// pre-drag positions, so the band is tested in pre-drag coordinates.
+    ///
+    /// - Parameters:
+    ///   - candidate: the plain gap target from ``targetIndex(heights:sourceIndex:translation:current:hysteresis:spacing:)``.
+    ///   - isDropTarget: per row, whether it accepts drop-onto.
+    ///   - band: fraction of the row height on each side excluded from the
+    ///     middle band (0.25 = the middle half).
+    /// - Returns: the adjusted gap target and the drop-onto row index, if any.
+    static func dropOntoResolution(
+        heights: [CGFloat],
+        sourceIndex: Int,
+        translation: CGFloat,
+        candidate: Int,
+        isDropTarget: [Bool],
+        band: CGFloat = 0.25,
+        spacing: CGFloat = 0
+    ) -> (target: Int, into: Int?) {
+        guard heights.indices.contains(sourceIndex), isDropTarget.count == heights.count else {
+            return (candidate, nil)
+        }
+        var tops: [CGFloat] = []
+        var y: CGFloat = 0
+        for height in heights {
+            tops.append(y)
+            y += height + spacing
+        }
+        let center = tops[sourceIndex] + heights[sourceIndex] / 2 + translation
+        var target = candidate
+        // Nearest obstacles first, so the first one that blocks wins.
+        for j in stride(from: sourceIndex + 1, to: heights.count, by: 1) where isDropTarget[j] {
+            let near = tops[j] + heights[j] * band
+            let far = tops[j] + heights[j] * (1 - band)
+            if center >= near, center <= far { return (j - 1, j) }
+            if center < far { target = min(target, j - 1); break }
+        }
+        for j in stride(from: sourceIndex - 1, through: 0, by: -1) where isDropTarget[j] {
+            let near = tops[j] + heights[j] * (1 - band)
+            let far = tops[j] + heights[j] * band
+            if center <= near, center >= far { return (j + 1, j) }
+            if center > far { target = max(target, j + 1); break }
+        }
+        return (target, nil)
+    }
+
     /// `order` with the element at `sourceIndex` moved to `targetIndex`.
     static func reordered<T>(_ order: [T], from sourceIndex: Int, to targetIndex: Int) -> [T] {
         guard order.indices.contains(sourceIndex), order.indices.contains(targetIndex),
