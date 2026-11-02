@@ -56,5 +56,7 @@ fi
 
 echo "==> Test app: $BUILT_APP"
 if [[ "$open_app" -eq 1 ]]; then
-  open "$BUILT_APP"
+  # Don't hand cmux Personal's CMUX_* environment (tag, socket, URL scheme) to the test app
+  # when this runs from a Personal terminal.
+  env $(env | awk -F= '/^CMUX_/{print "-u " $1}') open "$BUILT_APP"
 fi
