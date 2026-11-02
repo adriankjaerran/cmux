@@ -88,10 +88,6 @@ extension KeyboardShortcutSettings.Action {
              .diffViewerScrollToBottom,
              .diffViewerScrollToTop,
              .diffViewerOpenFileSearch,
-             .simulatorHome, .simulatorRotateLeft,
-             .simulatorRotateRight,
-             .simulatorToggleAppearance,
-             .simulatorToggleSoftwareKeyboard,
              .diffViewerNextFile, .diffViewerPreviousFile,
              .diffViewerNextHunk, .diffViewerPreviousHunk, .diffViewerToggleViewed:
             .focusResolved

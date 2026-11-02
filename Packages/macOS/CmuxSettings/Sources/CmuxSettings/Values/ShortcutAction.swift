@@ -243,18 +243,6 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case diffViewerPreviousHunk
     /// Toggles the "Viewed" mark on the current file inside the focused diff viewer.
     case diffViewerToggleViewed
-
-    // MARK: Simulator
-    /// Presses the Home button in the focused Simulator pane.
-    case simulatorHome
-    /// Rotates the focused Simulator pane counterclockwise.
-    case simulatorRotateLeft
-    /// Rotates the focused Simulator pane clockwise.
-    case simulatorRotateRight
-    /// Toggles light and dark appearance in the focused Simulator pane.
-    case simulatorToggleAppearance
-    /// Toggles the software keyboard in the focused Simulator pane.
-    case simulatorToggleSoftwareKeyboard
 }
 
 extension ShortcutAction {
@@ -354,9 +342,6 @@ extension ShortcutAction {
             return .atom(.filePreviewTextEditorFocus)
         case .markdownZoomIn, .markdownZoomOut, .markdownZoomReset:
             return .atom(.markdownFocus)
-        case .simulatorHome, .simulatorRotateLeft, .simulatorRotateRight,
-             .simulatorToggleAppearance, .simulatorToggleSoftwareKeyboard:
-            return .atom(.simulatorFocus)
         case .canvasZoomIn, .canvasZoomOut, .canvasZoomReset:
             return .and(
                 .key(ShortcutContextKnownKey.workspaceCanvasLayout.rawValue),

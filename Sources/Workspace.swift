@@ -609,7 +609,6 @@ extension Workspace {
         let markdownSnapshot: SessionMarkdownPanelSnapshot?
         let filePreviewSnapshot: SessionFilePreviewPanelSnapshot?
         let rightSidebarToolSnapshot: SessionRightSidebarToolPanelSnapshot?; var customSidebarSnapshot: SessionCustomSidebarPanelSnapshot? = nil
-        var simulatorSnapshot: SessionSimulatorPanelSnapshot? = nil
         let agentSessionSnapshot: SessionAgentSessionPanelSnapshot?
         let projectSnapshot: SessionProjectPanelSnapshot?; var workspaceTodoSnapshot: SessionWorkspaceTodoPanelSnapshot? = nil
         var coderouterGuideSnapshot: SessionCoderouterGuidePanelSnapshot? = nil
@@ -878,7 +877,6 @@ extension Workspace {
             filePreview: filePreviewSnapshot,
             rightSidebarTool: rightSidebarToolSnapshot,
             customSidebar: customSidebarSnapshot,
-            simulator: simulatorSnapshot,
             agentSession: agentSessionSnapshot,
             project: projectSnapshot,
             workspaceTodo: workspaceTodoSnapshot,
@@ -4753,7 +4751,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         switch action {
         case .mobileConnect: return CmuxFeatureFlags.shared.isMobileConnectButtonEnabled
         case .newAgentChat: return CmuxFeatureFlags.shared.isAgentChatUIEnabled
-        case .newSimulator: return false
         case .newBrowser:
             return BrowserAvailabilitySettings.offersBrowserAffordance(
                 isEnabled: BrowserAvailabilitySettings.isEnabled()
@@ -15458,8 +15455,6 @@ extension Workspace: BonsplitDelegate {
                         debugSource: "surfaceTabBar.mobileConnect"
                     )
                 }
-            case .newSimulator:
-                NSSound.beep() // Simulator pane removed from this fork.
             case .copyWorkingDirectory, .copyProjectRoot, .copyScreen:
                 if let copyAction = builtInAction.terminalCopyAction {
                     // Target the tab selected in the pane whose button was

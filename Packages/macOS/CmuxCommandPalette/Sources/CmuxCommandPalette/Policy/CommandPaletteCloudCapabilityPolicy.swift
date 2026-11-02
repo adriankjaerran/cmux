@@ -37,7 +37,6 @@ public struct CommandPaletteCloudCapabilityPolicy: Sendable {
             return .cloudOnly
         case "palette.newBrowserWorkspace",
              "palette.newAgentChat",
-             "palette.newSimulatorPane",
              "palette.openFolder",
              "palette.openFolderInVSCodeInline",
              "palette.openWorkspacePullRequests",

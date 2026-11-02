@@ -10,6 +10,5 @@ extension AppDelegate {
             && action != .resetWorkspaceTerminalFontSize
             && action != .fileExplorerOpenSelection
             && action != .fileExplorerOpenSelectionFinderAlias
-            && !KeyboardShortcutSettings.Action.simulatorActions.contains(action)
     }
 }

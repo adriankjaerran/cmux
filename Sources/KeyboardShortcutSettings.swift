@@ -236,8 +236,6 @@ enum KeyboardShortcutSettings {
         case diffViewerScrollToBottom
         case diffViewerScrollToTop
         case diffViewerOpenFileSearch
-        case simulatorHome, simulatorRotateLeft, simulatorRotateRight
-        case simulatorToggleAppearance, simulatorToggleSoftwareKeyboard
         case diffViewerNextFile, diffViewerPreviousFile, diffViewerNextHunk, diffViewerPreviousHunk, diffViewerToggleViewed
 
         var id: String { rawValue }
@@ -421,9 +419,6 @@ enum KeyboardShortcutSettings {
             case .diffViewerScrollToBottom: return String(localized: "shortcut.diffViewerScrollToBottom.label", defaultValue: "Viewers: Scroll to Bottom")
             case .diffViewerScrollToTop: return String(localized: "shortcut.diffViewerScrollToTop.label", defaultValue: "Viewers: Scroll to Top")
             case .diffViewerOpenFileSearch: return String(localized: "shortcut.diffViewerOpenFileSearch.label", defaultValue: "Diff Viewer: Open File Search")
-            case .simulatorHome, .simulatorRotateLeft, .simulatorRotateRight,
-                 .simulatorToggleAppearance, .simulatorToggleSoftwareKeyboard:
-                return simulatorLabel
             case .diffViewerNextFile, .diffViewerPreviousFile, .diffViewerNextHunk, .diffViewerPreviousHunk, .diffViewerToggleViewed:
                 return diffViewerNavigationLabel
             }
@@ -790,9 +785,6 @@ enum KeyboardShortcutSettings {
                 return StoredShortcut(key: "/", command: false, shift: false, option: false, control: false)
             case .diffViewerNextFile, .diffViewerPreviousFile, .diffViewerNextHunk, .diffViewerPreviousHunk, .diffViewerToggleViewed:
                 return diffViewerNavigationDefaultShortcut
-            case .simulatorHome, .simulatorRotateLeft, .simulatorRotateRight,
-                 .simulatorToggleAppearance, .simulatorToggleSoftwareKeyboard:
-                return simulatorDefaultShortcut
             }
         }
         func conflicts(

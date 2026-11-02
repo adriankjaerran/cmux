@@ -18136,7 +18136,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 )
                 if workspace != nil { onExecuted?() }
                 return workspace != nil
-            case .newSimulator: return false // Simulator pane removed from this fork.
             case .newTerminal:
                 context.tabManager.newSurface()
                 onExecuted?()

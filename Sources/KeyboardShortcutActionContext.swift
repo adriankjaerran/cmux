@@ -236,8 +236,6 @@ extension KeyboardShortcutSettings.Action {
         case .switchRightSidebarToFiles, .switchRightSidebarToFind,
              .switchRightSidebarToSessions, .switchRightSidebarToFeed, .switchRightSidebarToDock,
              .switchRightSidebarToMachines,
-             .simulatorHome, .simulatorRotateLeft, .simulatorRotateRight,
-             .simulatorToggleAppearance, .simulatorToggleSoftwareKeyboard,
              .commandPaletteNext, .commandPalettePrevious:
             return true
         default:
@@ -276,9 +274,6 @@ extension KeyboardShortcutSettings.Action {
             return .filePreviewTextEditor
         case .markdownZoomIn, .markdownZoomOut, .markdownZoomReset:
             return .markdownPanel
-        case .simulatorHome, .simulatorRotateLeft, .simulatorRotateRight,
-             .simulatorToggleAppearance, .simulatorToggleSoftwareKeyboard:
-            return .simulatorPanel
         case .canvasZoomIn, .canvasZoomOut, .canvasZoomReset:
             return .canvasLayoutOutsideFocusedContent
         case .canvasRevealFocusedPane, .canvasOverview,

@@ -250,16 +250,6 @@ extension ShortcutAction {
             return String(localized: "shortcut.diffViewerPreviousHunk.label", defaultValue: "Diff Viewer: Previous Hunk")
         case .diffViewerToggleViewed:
             return String(localized: "shortcut.diffViewerToggleViewed.label", defaultValue: "Diff Viewer: Toggle Viewed")
-        case .simulatorHome:
-            return String(localized: "shortcut.simulatorHome.label", defaultValue: "Simulator: Home")
-        case .simulatorRotateLeft:
-            return String(localized: "shortcut.simulatorRotateLeft.label", defaultValue: "Simulator: Rotate Left")
-        case .simulatorRotateRight:
-            return String(localized: "shortcut.simulatorRotateRight.label", defaultValue: "Simulator: Rotate Right")
-        case .simulatorToggleAppearance:
-            return String(localized: "shortcut.simulatorToggleAppearance.label", defaultValue: "Simulator: Toggle Appearance")
-        case .simulatorToggleSoftwareKeyboard:
-            return String(localized: "shortcut.simulatorToggleSoftwareKeyboard.label", defaultValue: "Simulator: Toggle Software Keyboard")
         }
     }
 }

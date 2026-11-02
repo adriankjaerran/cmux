@@ -7893,9 +7893,6 @@ struct ContentView: View {
                 when: { !$0.bool(CommandPaletteContextKeys.browserDisabled) }
             )
         )
-        if CmuxFeatureFlags.shared.isSimulatorEnabled {
-            contributions.append(.newSimulatorPane)
-        }
         contributions.append(
             CommandPaletteCommandContribution(
                 commandId: "palette.closeTab",
@@ -9195,7 +9192,6 @@ struct ContentView: View {
                 _ = AppDelegate.shared?.openBrowserAndFocusAddressBar()
             }
         }
-        registry.registerNewSimulatorPane(tabManager: tabManager, windowId: windowId)
         registry.register(commandId: "palette.closeTab") {
             if let dockBrowserStore, let browserTarget {
                 guard dockBrowserStore.containsPanel(
