@@ -54,8 +54,6 @@ extension TerminalController {
         "debug.cloudtree.rows",
         "debug.terminal.simulate_file_drop",
         "debug.sidebar.simulate_drag",
-        "debug.mobile.transport.disconnect",
-        "debug.mobile.transport.reconnect_loop",
     ]
 }
 #endif

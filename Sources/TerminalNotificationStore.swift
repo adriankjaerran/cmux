@@ -204,12 +204,6 @@ final class TerminalNotificationStore: ObservableObject {
         guard !ids.isEmpty else { return }
         recordDismissTombstones(ids: ids.compactMap { UUID(uuidString: $0) })
         let unreadCount = indexes.unreadCount
-        // Live lane: nonisolated static fan-out; short-circuits when no phone is
-        // subscribed.
-        MobileHostService.emitEvent(
-            topic: Self.dismissedEventTopic,
-            payload: ["ids": ids, "unread_count": unreadCount]
-        )
         // Cold lane: mirror the dismiss through APNs for every registered
         // device, attached or not (no-op unless phone forwarding is on).
         PhonePushClient.shared.forwardDismissed(ids: ids, badgeCount: unreadCount)
@@ -244,10 +238,6 @@ final class TerminalNotificationStore: ObservableObject {
         let count = indexes.unreadCount
         guard count != lastEmittedPhoneBadgeCount else { return }
         lastEmittedPhoneBadgeCount = count
-        MobileHostService.emitEvent(
-            topic: Self.badgeEventTopic,
-            payload: ["unread_count": count]
-        )
     }
 
     private enum AuthorizationRequestOrigin: String {
@@ -388,12 +378,7 @@ final class TerminalNotificationStore: ObservableObject {
         )
         notificationFeedHistory = NotificationFeedHistoryStore(
             fileURL: NotificationFeedHistoryStore.defaultFileURL()
-        ) { revision in
-            MobileHostService.emitEvent(
-                topic: Self.feedChangedEventTopic,
-                payload: ["revision": revision]
-            )
-        }
+        ) { _ in }
         indexes = Self.buildIndexes(for: notifications)
         userDefaultsObserver = NotificationCenter.default.addUserDefaultsObserver(object: nil) { [weak self] in
             Task { @MainActor [weak self] in
@@ -3069,12 +3054,7 @@ final class TerminalNotificationStore: ObservableObject {
         TerminalMutationBus.shared.discardPendingNotifications()
         recordedAgentCorrelationKeys.removeAll()
         self.notifications = notifications
-        notificationFeedHistory = NotificationFeedHistoryStore(fileURL: nil) { revision in
-            MobileHostService.emitEvent(
-                topic: Self.feedChangedEventTopic,
-                payload: ["revision": revision]
-            )
-        }
+        notificationFeedHistory = NotificationFeedHistoryStore(fileURL: nil) { _ in }
         clearWorkspaceManualUnread()
         clearSurfaceManualUnread()
         clearPanelDerivedWorkspaceUnread()

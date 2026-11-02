@@ -185,11 +185,12 @@ extension TabManager: SidebarGitHosting {
     }
 
     func mobileHostHasRecentActivity(within interval: TimeInterval) -> Bool {
-        MobileHostRequestActivity.hasRecentActivity(within: interval)
+        // No phone requests since Sources/Mobile went (Phase 9.14).
+        false
     }
 
     func mobileHostQuietDelay(for interval: TimeInterval) -> TimeInterval {
-        MobileHostRequestActivity.quietDelay(for: interval)
+        0
     }
 
     /// Reports whether the app-wide terminal input admission window is active.

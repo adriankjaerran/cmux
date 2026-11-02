@@ -202,12 +202,8 @@ struct PanelContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         case .mobilePairing:
-            if panel is MobilePairingPanel {
-                MobilePairingPanelView(
-                    appearance: appearance,
-                    onRequestPanelFocus: onRequestPanelFocus
-                )
-            }
+            // Mobile pairing went with Sources/Mobile (Phase 9.14); the case stays for old sessions.
+            EmptyView()
         case .accountSignIn:
             if let accountSignInPanel = panel as? AccountSignInPanel {
                 AccountSignInPanelView(

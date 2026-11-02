@@ -98,20 +98,7 @@ final class PresenceHeartbeatClient {
     /// receive the fresh port/IP within a round trip instead of waiting out
     /// the 15s cadence.
     private func startObservingRoutes() {
-        guard routesObserveTask == nil else { return }
-        routesObserveTask = Task { @MainActor [weak self] in
-            for await status in MobileHostService.shared.statusUpdates() {
-                guard let self, !Task.isCancelled else { break }
-                guard self.currentRoutes != status.routes else { continue }
-                self.currentRoutes = status.routes
-                // Push the change live only while the heartbeat loop runs; a
-                // disabled client stays silent and the cached set rides the
-                // first beat whenever the loop starts.
-                if self.loopTask != nil {
-                    await self.sendHeartbeat(stopping: false)
-                }
-            }
-        }
+        // The mobile host status stream went with Sources/Mobile (Phase 9.14).
     }
 
     // MARK: - Loop lifecycle

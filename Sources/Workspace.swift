@@ -15293,17 +15293,8 @@ extension Workspace: BonsplitDelegate {
             case .cloudVM:
                 _ = AppDelegate.shared?.performCloudVMAction(tabManager: owningTabManager, preferredWindow: presentingWindow, debugSource: "surfaceTabBar.cloudVM")
             case .mobileConnect:
-                // Audible feedback instead of a silent no-op when the managed
-                // policy suppresses the pairing chokepoint.
-                if MobileRemoteControlPolicy.isDisabled {
-                    NSSound.beep()
-                } else {
-                    _ = AppDelegate.shared?.performMobileConnectWorkspaceAction(
-                        tabManager: owningTabManager,
-                        preferredWindow: presentingWindow,
-                        debugSource: "surfaceTabBar.mobileConnect"
-                    )
-                }
+                // Mobile pairing went with Sources/Mobile (Phase 9.14).
+                NSSound.beep()
             case .copyWorkingDirectory, .copyProjectRoot, .copyScreen:
                 if let copyAction = builtInAction.terminalCopyAction {
                     // Target the tab selected in the pane whose button was

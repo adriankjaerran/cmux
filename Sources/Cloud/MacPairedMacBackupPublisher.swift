@@ -102,7 +102,7 @@ final class MacPairedMacBackupPublisher {
     }
 
     private func evaluate() {
-        guard MobileHostService.isListeningEnabled else {
+        guard false else {
             observeTask?.cancel()
             observeTask = nil
             lastPublishedRoutes = []
@@ -112,23 +112,11 @@ final class MacPairedMacBackupPublisher {
     }
 
     private func startObserving() {
-        guard observeTask == nil else { return }
-        observeTask = Task { @MainActor [weak self] in
-            for await status in MobileHostService.shared.statusUpdates() {
-                guard let self, !Task.isCancelled else { break }
-                self.latestRoutes = status.routes
-                guard MobileHostService.isListeningEnabled else {
-                    self.lastPublishedRoutes = []
-                    continue
-                }
-                guard !status.routes.isEmpty, status.routes != self.lastPublishedRoutes else { continue }
-                await self.publish(routes: status.routes)
-            }
-        }
+        // The mobile host status stream went with Sources/Mobile (Phase 9.14).
     }
 
     private func publish(routes: [CmxAttachRoute]) async {
-        guard MobileHostService.isListeningEnabled else {
+        guard false else {
             lastPublishedRoutes = []
             return
         }
@@ -140,7 +128,7 @@ final class MacPairedMacBackupPublisher {
         } catch {
             return // not signed in -> nothing to publish
         }
-        guard MobileHostService.isListeningEnabled else {
+        guard false else {
             lastPublishedRoutes = []
             return
         }
@@ -175,10 +163,9 @@ final class MacPairedMacBackupPublisher {
         ])
         guard let payload = try? JSONEncoder().encode(body) else { return }
 
-        guard let targetNamespace =
-            MobileIOSPairingTargetStore().selectedNamespace else {
-            return
-        }
+        // The iOS pairing target store went with Sources/Mobile (Phase 9.14).
+        let targetNamespace: MobileIOSAppNamespace? = nil
+        guard let targetNamespace else { return }
         let req = Self.makeRequest(
             url: url,
             accessToken: tokens.accessToken,
@@ -236,7 +223,7 @@ final class MacPairedMacBackupPublisher {
     /// Republishes unchanged routes after the selected iOS target changes.
     func pairingTargetDidChange(routes: [CmxAttachRoute]) {
         lastPublishedRoutes = []
-        guard MobileHostService.isListeningEnabled, !routes.isEmpty else { return }
+        guard false, !routes.isEmpty else { return }
         Task { await publish(routes: routes) }
     }
 }

@@ -837,7 +837,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     var newMachineSheetPresenter: (any NewMachineSheetPresenting)?
     /// Strongly-held observers for every active TabManager. Each observer owns
     /// Combine subscriptions that publish workspace.updated to mobile clients.
-    private var mobileWorkspaceListObservers: [ObjectIdentifier: MobileWorkspaceListObserver] = [:]
     private let agentChatTranscriptService = AgentChatTranscriptService()
     var settingsRuntime: SettingsRuntime?
     private(set) var browserDataImportCoordinator: BrowserDataImportCoordinator?
@@ -2426,8 +2425,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         TerminalController.shared.agentChatTranscriptService = agentChatTranscriptService
         TerminalController.shared.attachAutomationEngine(automationEngine)
         automationEngine.start()
-        ensureMobileWorkspaceListObserver(for: tabManager)
-        MobileTerminalRenderObserver.shared.start()
         agentChatTranscriptService.start()
         SidebarAgentUsageCoordinator { [weak self] id in self?.tabManagerFor(tabId: id)?.workspacesById[id]?.sidebarMetadata }.start()
         installManagedPolicyEnforcement()
@@ -5074,27 +5071,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         NotificationCenter.default.post(name: .mainWindowContextsDidChange, object: self)
     }
 
-    func ensureMobileWorkspaceListObserver(for tabManager: TabManager) {
-        let id = ObjectIdentifier(tabManager)
-        let configStore = mainWindowContext(for: tabManager)?.cmuxConfigStore
-        if let observer = mobileWorkspaceListObservers[id] {
-            observer.updateConfigStore(configStore)
-        } else {
-            mobileWorkspaceListObservers[id] = MobileWorkspaceListObserver(
-                tabManager: tabManager,
-                sidebarUnread: notificationStore?.sidebarUnread,
-                configStore: configStore
-            )
-        }
-    }
-
-    private func removeMobileWorkspaceListObserverIfUnused(for tabManager: TabManager) {
-        guard !mainWindowContexts.values.contains(where: { $0.tabManager === tabManager }) else {
-            return
-        }
-        mobileWorkspaceListObservers.removeValue(forKey: ObjectIdentifier(tabManager))
-    }
-
     private func finalizeRejectedMainWindowRegistrationIfUnowned(_ tabManager: TabManager) {
         guard !ownsMainWindowTabManager(tabManager) else { return }
         tabManager.finalizeAllWorkspacesForWindowClose()
@@ -5292,7 +5268,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         )
 #endif
         ensureSocketListenerIfEnabled(tabManager: tabManager, source: "mainWindow.register")
-        ensureMobileWorkspaceListObserver(for: tabManager)
         notifyMainWindowContextsDidChange()
         if window.isKeyWindow {
             setActiveMainWindow(window)
@@ -6746,7 +6721,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // protection or frame-notification demand after its context is retired.
         removed.tabManager.workspaceSwitchCoordinator.cancel()
         removed.teardownWindowDock()
-        removeMobileWorkspaceListObserverIfUnused(for: removed.tabManager)
         notifyMainWindowContextsDidChange()
         return removed
     }
@@ -6755,7 +6729,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     func discardOrphanedMainWindowContext(_ context: MainWindowContext, allowWindowlessFallback: Bool = false) {
         context.tabManager.workspaceSwitchCoordinator.cancel()
         guard transitionMainWindowContextToOrphaned(context) else { return }
-        removeMobileWorkspaceListObserverIfUnused(for: context.tabManager)
         notifyMainWindowContextsDidChange()
 
         if tabManager === context.tabManager {
@@ -8395,17 +8368,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return createdWorkspace
     }
 
-    /// Opens the mobile pairing flow as a dedicated workspace, reusing the
-    /// existing pairing workspace in the target window when one is open.
-    ///
-    /// - Parameters:
-    ///   - preferredTabManager: The target window's workspace manager.
-    ///   - preferredWindow: The target main window, when known.
-    ///   - focusWorkspace: Whether to select and focus the pairing workspace.
-    ///   - enforceFeatureFlag: Whether the Mobile Pairing button flag gates the action.
-    ///   - bringWindowForward: Whether to activate the resolved main window.
-    ///   - debugSource: The entrypoint name used in debug diagnostics.
-    /// - Returns: The reused or newly created pairing workspace, or `nil` when unavailable.
+    /// Mobile pairing went with `Sources/Mobile` (Phase 9.14): every entry
+    /// point (Settings, palette, menu, `workspace.action mobile_connect`)
+    /// answers unavailable.
     @discardableResult
     func performMobileConnectWorkspaceAction(
         tabManager preferredTabManager: TabManager? = nil,
@@ -8415,61 +8380,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         bringWindowForward: Bool = false,
         debugSource: String = "mobileConnect"
     ) -> Workspace? {
-        // Shared chokepoint for every pairing-window entry (Settings, palette,
-        // menu): pairing is unavailable under a managed remote-control disable.
-        guard MobileRemoteControlPolicy.isEnabled else {
 #if DEBUG
-            cmuxDebugLog("mobileConnect.blocked_managed_policy source=\(debugSource)")
+        cmuxDebugLog("mobileConnect.unavailable source=\(debugSource)")
 #endif
-            return nil
-        }
-        guard !enforceFeatureFlag || CmuxFeatureFlags.shared.isMobileConnectButtonEnabled else {
-#if DEBUG
-            cmuxDebugLog("mobileConnect.blocked_flag source=\(debugSource)")
-#endif
-            return nil
-        }
-        guard let manager = preferredTabManager
-            ?? synchronizeActiveMainWindowContext(preferredWindow: preferredWindow) else {
-            return nil
-        }
-        if bringWindowForward {
-            guard let context = mainWindowContext(for: manager),
-                  let window = resolvedWindow(for: context),
-                  focusWindowForAppActivation(window, reason: .workspaceCreation) else {
-                return nil
-            }
-        }
-
-        if let workspace = manager.tabs.first(where: { workspace in
-            workspace.panels.values.contains { $0 is MobilePairingPanel }
-        }), let panel = workspace.panels.values.first(where: { $0 is MobilePairingPanel }) {
-            if focusWorkspace {
-                manager.selectedTabId = workspace.id
-                workspace.focusPanel(panel.id)
-            }
-            return workspace
-        }
-
-        let title = String(localized: "mobile.pairing.window.title", defaultValue: "Mobile Pairing")
-        guard let workspace = manager.addWorkspaceIfActive(
-            title: title,
-            select: focusWorkspace,
-            eagerLoadTerminal: false,
-            autoWelcomeIfNeeded: false,
-            autoRefreshMetadata: false,
-            allowTextBoxFocusDefault: false
-        ) else {
-            return nil
-        }
-        guard let initialPanelID = workspace.focusedPanelId,
-              let paneID = workspace.paneId(forPanelId: initialPanelID),
-              workspace.newMobilePairingSurface(inPane: paneID, focus: focusWorkspace) != nil else {
-            manager.closeWorkspace(workspace, recordHistory: false)
-            return nil
-        }
-        _ = workspace.closePanel(initialPanelID, force: true)
-        return workspace
+        return nil
     }
 
     func proUpgradeWorkspaceExists(workspaceId: UUID) -> Bool {

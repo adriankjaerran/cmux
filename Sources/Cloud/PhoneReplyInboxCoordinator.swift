@@ -108,8 +108,7 @@ final class PhoneReplyInboxCoordinator {
         // `DisableRemoteControl` (MDM): a relayed reply is phone input into a
         // terminal, the same as a direct RPC send, so the sweep stays idle
         // under the policy. Parked replies age out server-side.
-        guard MobileRemoteControlPolicy.isEnabled,
-              MobileHostService.isListeningEnabled else { return }
+        guard false else { return }
         guard let client, let inject = injectTerminalInput else {
             #if DEBUG
             cmuxDebugLog("phoneReply.sweepAborted cause=\(client == nil ? "no_client" : "no_injector")")

@@ -350,29 +350,15 @@ extension TerminalController {
         }
     }
 
-    /// Pushes `mobile.terminal.size_state` with each phone's own participant id.
+    /// Phone event pushes went with Sources/Mobile (Phase 9.14); the sizing
+    /// host still calls these, so they stay as no-ops.
     func emitMobileSizeState(
         surfaceID: UUID,
         state: TerminalSizingState,
         selfParticipantID: @escaping (Set<String>) -> String?
-    ) {
-        let stateObject = TerminalSizingWireCoder().jsonObject(state)
-        MobileHostService.shared.emitClientScopedEvent(topic: Self.mobileSizeStateTopic) { clientIDs in
-            [
-                "surface_id": surfaceID.uuidString,
-                "state": stateObject,
-                "self_participant_id": selfParticipantID(clientIDs) ?? NSNull(),
-            ]
-        }
-    }
+    ) {}
 
-    /// Pushes `mobile.terminal.detached` to the one phone it concerns.
-    func emitMobileDetached(surfaceID: UUID, clientID: String, detachment: TerminalSharingDetachment) {
-        let payload = TerminalSizingWireCoder().detachedPayload(surfaceID: surfaceID.uuidString, detachment: detachment)
-        MobileHostService.shared.emitClientScopedEvent(topic: Self.mobileDetachedTopic) { clientIDs in
-            clientIDs.contains(clientID) ? payload : nil
-        }
-    }
+    func emitMobileDetached(surfaceID: UUID, clientID: String, detachment: TerminalSharingDetachment) {}
 
     /// Adds `size_state` and `self_participant_id` to a replay answer.
     func addSharedSizingReplayFields(to payload: inout [String: Any], surfaceID: UUID, clientID: String?) {
@@ -553,30 +539,6 @@ extension TerminalController {
 
     // MARK: - Mobile RPC
 
-    /// `mobile.terminal.reattach {surface_id, client_id, as_viewer}`: lifts a
-    /// disconnect and answers like `mobile.terminal.replay`.
-    func v2MobileTerminalReattach(params: [String: Any]) -> V2CallResult {
-        guard let resolved = mobileCanonicalTerminalTarget(params: params) else {
-            return .err(code: "not_found", message: "Terminal surface not found", data: nil)
-        }
-        guard let clientID = v2String(params, "client_id") else {
-            return .err(code: "invalid_params", message: "Missing client_id", data: nil)
-        }
-        let asViewer = v2Bool(params, "as_viewer") ?? false
-        let surfaceID = resolved.surfaceID
-        cloudDetachedPhonesBySurfaceID[surfaceID]?[clientID] = nil
-        if cloudDetachedPhonesBySurfaceID[surfaceID]?.isEmpty == true { cloudDetachedPhonesBySurfaceID[surfaceID] = nil }
-        if var host = localSizingHostsBySurfaceID[surfaceID] {
-            host.reattach(LocalTerminalSizingHost.phoneParticipantID(clientID: clientID), asViewer: asViewer)
-            localSizingHostsBySurfaceID[surfaceID] = host
-        }
-        var replayParams = params
-        if asViewer, cloudSizingRelaysBySurfaceID[surfaceID]?.value?.relaysPhones == true {
-            replayParams["counts_override"] = false
-        }
-        return v2MobileTerminalReplay(params: replayParams)
-    }
-
     /// `mobile.terminal.size_policy.set {surface_id, policy}`.
     func v2MobileTerminalSizePolicySet(params: [String: Any]) -> V2CallResult {
         guard let resolved = mobileCanonicalTerminalTarget(params: params) else {
@@ -603,7 +565,6 @@ extension TerminalController {
         }
         let identity = localSizingIdentity()
         let clientID = v2String(params, "client_id")
-            ?? connectionID.flatMap { MobileHostService.shared.clientIDs(forConnectionID: $0).sorted().first }
         let deviceName = clientID.flatMap { mobileViewportReportsBySurfaceID[resolved.surfaceID]?[$0]?.deviceName }
         let actor = TerminalDetachActor(userID: identity.userID, displayName: identity.displayName, deviceName: deviceName)
         guard terminalSharing.disconnect(participantID: participantID, surfaceID: resolved.surfaceID, by: actor) else {

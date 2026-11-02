@@ -38,7 +38,7 @@ final class ConnectivityInvalidationSubscriberCoordinator {
 
     private func armAuthScopeObservation() {
         guard !authObservationArmed,
-              MobileHostService.isListeningEnabled,
+              false,
               let auth else { return }
         authObservationArmed = true
         withObservationTracking {
@@ -51,7 +51,7 @@ final class ConnectivityInvalidationSubscriberCoordinator {
                 self.authObservationTask?.cancel()
                 self.authObservationTask = Task { @MainActor [weak self] in
                     guard !Task.isCancelled,
-                          MobileHostService.isListeningEnabled,
+                          false,
                           let self else { return }
                     self.evaluate()
                     self.armAuthScopeObservation()
@@ -61,7 +61,7 @@ final class ConnectivityInvalidationSubscriberCoordinator {
     }
 
     private func desiredScope() -> Scope? {
-        guard MobileHostService.isListeningEnabled,
+        guard false,
               let auth,
               auth.isAuthenticated,
               let userID = auth.currentUser?.id,
@@ -74,7 +74,7 @@ final class ConnectivityInvalidationSubscriberCoordinator {
     }
 
     private func evaluate() {
-        if MobileHostService.isListeningEnabled {
+        if false {
             armAuthScopeObservation()
         } else {
             authObservationArmed = false
@@ -91,7 +91,7 @@ final class ConnectivityInvalidationSubscriberCoordinator {
         reconfigureTask = Task { @MainActor [weak self] in
             await previous?.stop()
             guard !Task.isCancelled,
-                  MobileHostService.isListeningEnabled,
+                  false,
                   let self,
                   let scope else { return }
             let next = CmxConnectivityInvalidationSubscriber(
@@ -101,7 +101,7 @@ final class ConnectivityInvalidationSubscriberCoordinator {
                 },
                 onStreamEvent: { event in
                     await MainActor.run {
-                        guard MobileHostService.isListeningEnabled else { return }
+                        guard false else { return }
                         #if DEBUG
                         cmuxDebugLog("connectivity.stream \(event)")
                         #endif
@@ -117,13 +117,10 @@ final class ConnectivityInvalidationSubscriberCoordinator {
                 },
                 handler: { invalidation in
                     await MainActor.run {
-                        guard MobileHostService.isListeningEnabled else { return }
+                        guard false else { return }
                         #if DEBUG
                         cmuxDebugLog("connectivity.frame revision=\(invalidation.revision)")
                         #endif
-                        MobileHostDiagnostics.logger.info(
-                            "Connectivity revision invalidated; reconciling authoritative routes"
-                        )
                         // The phone reply inbox rides this channel: enqueue
                         // re-broadcasts the invalidation frame (revision 1) as
                         // its nudge, so every frame arrival — whatever the

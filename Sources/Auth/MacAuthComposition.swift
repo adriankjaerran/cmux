@@ -199,7 +199,6 @@ struct MacAuthComposition {
                 AppDelegate.shared?.prepareCloudVMAccessForSignOut()
                 browserAppSession.beginAuthTransition()
                 DeviceRegistryClient.shared.beginSignOut()
-                MobileHostIrxRuntime.shared.beginSignOutPreparation()
             },
             localSignOut: {
                 await browserAppSession.clearCmuxWebSession()

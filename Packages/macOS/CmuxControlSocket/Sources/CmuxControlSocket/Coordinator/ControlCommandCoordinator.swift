@@ -80,7 +80,6 @@ public final class ControlCommandCoordinator {
         if let result = handlePane(request) { return result }
         if let result = handleCanvas(request) { return result }
         if let result = handleTerminalInput(request) { return result }
-        if let result = handleMobileHost(request) { return result }
         if let result = handleWorkspace(request) { return result }
         if let result = handleSurface(request) { return result }
         if let result = handleSystem(request) { return result }

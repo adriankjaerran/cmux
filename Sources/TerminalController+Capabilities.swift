@@ -50,12 +50,8 @@ extension TerminalController {
             "caffeine.status",
             "caffeine.set",
             "comments.list",
-            "terminal.create",
             "terminal.input",
             "terminal.paste",
-            "terminal.paste_image",
-            "terminal.replay",
-            "terminal.viewport", "terminal.scroll", "terminal.mouse",
             "auth.login",
             "surface.catalog",
             "current.list",
@@ -346,7 +342,8 @@ extension TerminalController {
             "version": 2,
             "socket_path": socketServer.currentSocketPath,
             "access_mode": socketServer.accessMode.rawValue,
-            "capabilities": MobileHostService.mobileHostCapabilities,
+            // The phone capability flags went with Sources/Mobile (Phase 9.14).
+            "capabilities": [String](),
             "methods": methods.sorted()
         ]
     }

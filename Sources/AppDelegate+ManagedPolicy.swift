@@ -21,15 +21,9 @@ extension AppDelegate {
             enforceBrowserURLAllowlistPolicy: { [weak self] in
                 self?.enforceBrowserURLAllowlistPolicy()
             },
-            enforceRemoteControlPolicy: {
-                // syncToSettings() tears the mobile host down under the
-                // policy (including live connections) and re-arms it when
-                // the policy lifts.
-                MobileHostService.shared.syncToSettings()
-            },
-            enforceIncomingAccessPolicy: {
-                MobileHostService.shared.syncToSettings()
-            },
+            // No mobile host since Phase 9.14: nothing to tear down.
+            enforceRemoteControlPolicy: {},
+            enforceIncomingAccessPolicy: {},
             enforceCloudPolicy: { [weak self] in
                 self?.applyManagedCloudPolicy()
             },
@@ -51,7 +45,6 @@ extension AppDelegate {
     /// persisted; only controllers, retries, and transport tasks are stopped.
     func applyCloudFeatureFlag(enabled: Bool) {
         devicesRegistry?.evaluate()
-        MobileHostService.shared.syncToSettings()
         if !enabled {
             MachineCreateCoordinator.shared.cancelAllForAuthTransition(cleanupCreatedMachines: false)
             CloudVMActionLauncher.shared.cancelAllForAuthTransition()

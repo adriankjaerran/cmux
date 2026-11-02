@@ -88,7 +88,6 @@ final class PhonePushClient {
     let configurationState: PhonePushConfigurationState
     private var auth: AuthCoordinator?
     var presenceMonitor: MacPresenceMonitor = .live()
-    private var presenceCache = MacPresenceDecisionCache()
     private var authLifecycleTask: Task<Void, Never>?
     private var pushRecipients: [PhonePushRecipient] = []
     /// Active queue payloads retained only in memory so a recipient-key
@@ -262,7 +261,7 @@ final class PhonePushClient {
         }
         let mode = PhoneForwardingMode.fromDefaults(settingsDefaults)
         guard mode != .always else { return .allowed }
-        let presence = presenceCache.decision(from: presenceMonitor)
+        let presence = presenceMonitor.evaluate()
         return Self.shouldForward(mode: mode, presence: presence)
             ? .allowed
             : .suppressedMacActive
@@ -322,7 +321,7 @@ final class PhonePushClient {
         return Self.admission(
             enabled: enabled,
             mode: mode,
-            presence: presenceCache.decision(from: presenceMonitor)
+            presence: presenceMonitor.evaluate()
         )
     }
     private func enqueue(
@@ -826,12 +825,7 @@ final class PhonePushClient {
         )
         publishStatusChanged()
     }
-    private func publishStatusChanged() {
-        MobileHostService.emitEvent(
-            topic: "phone_push.status.changed",
-            payload: [:]
-        )
-    }
+    private func publishStatusChanged() {}
     private func deliver(
         _ envelope: PhonePushRequestEnvelope
     ) async -> PhonePushHTTPResult {

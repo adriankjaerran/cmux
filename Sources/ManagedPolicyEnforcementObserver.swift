@@ -81,13 +81,14 @@ final class ManagedPolicyEnforcementObserver {
             BrowserURLAllowlistPolicy(defaults: .standard)
         },
         isRemoteControlDisabledByPolicy: @escaping () -> Bool = {
-            MobileRemoteControlPolicy.isDisabled
+            ManagedDevicePolicy().isEnforced(.disableRemoteControl)
+                || ManagedDevicePolicy().isIncomingDeviceAccessDisabled
         },
         isDeviceDiscoveryDisabledByPolicy: @escaping () -> Bool = {
-            MobileRemoteControlPolicy.isDeviceDiscoveryDisabled()
+            ManagedDevicePolicy().isDeviceDiscoveryDisabled
         },
         isIncomingAccessDisabledByPolicy: @escaping () -> Bool = {
-            MobileRemoteControlPolicy.isIncomingAccessDisabled()
+            ManagedDevicePolicy().isIncomingDeviceAccessDisabled
         },
         isCloudDisabledByPolicy: @escaping () -> Bool = {
             ManagedDevicePolicy().isEnforced(.disableCloud)

@@ -34,16 +34,7 @@ final class AgentChatProseStreamWakeDriver {
 
     func start() {
         guard observers.isEmpty else { return }
-        observers.append(notificationCenter.addObserver(
-            forName: .mobileHostEventSubscriptionsDidChange,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.streamer.subscribersDidChange()
-                self?.refreshDemand(kickIfRetained: true)
-            }
-        })
+        // No phone event subscriptions since Sources/Mobile went (Phase 9.14).
         observers.append(notificationCenter.addObserver(
             forName: .ghosttyDidRenderFrame,
             object: nil,

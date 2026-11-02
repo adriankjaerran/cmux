@@ -123,42 +123,6 @@ extension BrowserPanel {
     })()
     """
 
-    /// Replays one phone pointer input and, for clicks, moves page focus into
-    /// the editable under the tap.
-    ///
-    /// Replayed clicks reach the page as DOM events, but WebKit refuses to
-    /// move field focus for clicks in a window that is never key (the
-    /// offscreen render host), so a tapped text field never focuses, the
-    /// phone keyboard never rises, and backspace falls through as a
-    /// page-level history-back. Programmatic JS focus is exempt from the
-    /// key-window rule, so hit-test the click point and focus explicitly.
-    /// - Parameter input: Page-point pointer input from the phone.
-    /// - Returns: The focus-assist outcome (0 no editable, 1 focus moved,
-    ///   2 already focused); 0 for non-click kinds.
-    func replayMobileBrowserPointer(_ input: MobileBrowserPointerInput) async throws -> Int {
-        try MobileBrowserInputReplayer().replayPointer(input, in: webView)
-        guard input.kind == .click else { return 0 }
-        return await assistMobileBrowserEditableFocus(atPageX: input.x, pageY: input.y)
-    }
-
-    /// Replays one phone key input unless it is a bare backspace outside an
-    /// editable, which WebKit would interpret as history back-navigation.
-    ///
-    /// The phone keyboard's backspace is a text-editing key: with no focused
-    /// editable it must be dropped, or deleting "highlighted" text navigates
-    /// the page away and loses state. Modified combinations pass through.
-    /// - Parameter input: A key token and modifiers from the phone.
-    /// - Returns: `true` when the key was delivered, `false` when suppressed.
-    func replayMobileBrowserKey(_ input: MobileBrowserKeyInput) async throws -> Bool {
-        let isBareBackspace = (input.key == "delete" || input.key == "backspace")
-            && input.modifiers.isEmpty
-        if isBareBackspace, await mobileBrowserEditableHasFocus() == false {
-            return false
-        }
-        try MobileBrowserInputReplayer().replayKey(input, in: webView)
-        return true
-    }
-
     /// Whether the streamed page currently focuses an editable element.
     ///
     /// `document.activeElement` reports the shadow HOST when focus sits inside

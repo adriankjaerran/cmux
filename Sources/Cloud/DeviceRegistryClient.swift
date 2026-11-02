@@ -116,7 +116,7 @@ final class DeviceRegistryClient {
     }
 
     private func incomingAccessDidChange() {
-        let allowed = MobileHostService.isListeningEnabled
+        let allowed = false
         guard observedIncomingAccess != allowed else { return }
         observedIncomingAccess = allowed
         updateLeaseRenewal()
@@ -124,15 +124,7 @@ final class DeviceRegistryClient {
     }
 
     private func startObserving() {
-        guard observeTask == nil else { return }
-        observeTask = Task { @MainActor [weak self] in
-            for await status in MobileHostService.shared.statusUpdates() {
-                if Task.isCancelled { break }
-                self?.latestRoutes = status.routes
-                self?.updateLeaseRenewal()
-                self?.enqueuePublication()
-            }
-        }
+        // The mobile host status stream went with Sources/Mobile (Phase 9.14).
     }
 
     private func observeAccount() {
@@ -168,14 +160,14 @@ final class DeviceRegistryClient {
     /// Renews the server's discovery lease independently of presence-worker backpressure.
     func maintainAvailabilityLease() {
         guard !signingOut, !latestRoutes.isEmpty,
-              MobileHostService.isListeningEnabled,
+              false,
               Self.leaseRenewalDue(lastSuccess: lastLeaseRenewal, now: .now) else { return }
         enqueuePublication(renewLease: true)
     }
 
     private func updateLeaseRenewal() {
         let shouldRun = !signingOut && auth?.authenticatedSessionIdentity != nil
-            && !latestRoutes.isEmpty && MobileHostService.isListeningEnabled
+            && !latestRoutes.isEmpty && false
         guard shouldRun else {
             leaseScheduler.cancel()
             return
@@ -235,7 +227,7 @@ final class DeviceRegistryClient {
                 generation: snapshot.generation, accountID: snapshot.accountID
               ) else { return }
         let teamID = auth.resolvedTeamID
-        let incomingAllowed = MobileHostService.isListeningEnabled
+        let incomingAllowed = false
         let routes = incomingAllowed ? latestRoutes : []
         let current = Registration(
             teamID: teamID, tag: MobileHostIdentity.instanceTag(), routes: routes,

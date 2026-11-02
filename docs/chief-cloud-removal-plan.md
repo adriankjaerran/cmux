@@ -982,6 +982,39 @@ Progress (done as separate commits, see the order under 9.12):
   `Sources/Cloud/CloudVMSyncSubscriber` now throw `CancellationError` instead of fetching account tokens (all dead
   since 9.10); the `HiveComputersService: DeviceLinkAuthorizationSource` conformance went. `CmuxHive` package stays
   (9.16). Build + `--version`, `config doctor` (same as 9.11), `tree --all`, 396 methods (no change).
+- (C) `Sources/Mobile` deleted ("Phase 9.14 (C)"), done **before** (B): Mobile named Devices types in ~80 places
+  (`MobileHostIrxRuntime`), Devices named Mobile in two small files, so this order needed far fewer stubs. Also
+  deleted: `MacPresenceDecisionCache.swift`, `MobileNotificationFeedWireItem.swift`,
+  `TerminalController+ControlMobileHostContext/+MobileScrollPrefetch/+MobileInputDelivery.swift`, the
+  `CmuxControlSocket` `Coordinator/MobileHost/` domain, and in `CmuxSettingsUI` `MobileSection`, the four
+  `Iroh*` section files, `IrohSettingsModel`, the mobile pairing/phone-push bindings and environment types and their
+  `SettingsHostActions` requirements (and `HostSettingsActions` witnesses). Differs from the plan:
+  - **Moved, local:** `MobileTerminalByteTee` → `Sources/TerminalOutputByteTee.swift` (`TerminalOutputByteTee`,
+    trimmed to the PTY fan-out `surface.wait_text_change` parks on; replay buffer, render-grid identities and
+    `terminal.bytes` went). `TerminalTheme(ghosttyConfig:)` → `Sources/TerminalTheme+GhosttyConfig.swift`
+    (agent chat theme). `Workspace+MobileAgentStatus.swift`, `TerminalController+MobileWorkspaceList/+MobileSurfaces`
+    stay (local `workspace.group.*`/move/create answers use `v2MobileWorkspaceList`). `PIDPresence`,
+    `PortTerminalDeviceLookup`, `MacPresenceMonitor` stay (local).
+  - **Socket methods removed (8, all phone-only):** `terminal.create`, `terminal.replay`, `terminal.viewport`,
+    `terminal.scroll`, `terminal.mouse`, `terminal.paste_image` (was already `method_not_found`), DEBUG
+    `debug.mobile.transport.disconnect` / `reconnect_loop`. 396 → 388. `system.capabilities` `"capabilities"`
+    (the phone feature flags such as `events.v1`, `feed.v1`) is now `[]`; nothing in `CLI/` reads it.
+  - Terminal-output hooks: `MobileTerminalRenderObserver.start()` (AppDelegate) and the render/viewport calls in the
+    removed verbs went; the tee callback now only feeds `TerminalOutputByteTee`. The viewport governor bodies in
+    `TerminalController` stay (now never fed) for a later cleanup.
+  - Stubs (later steps delete them): `performMobileConnectWorkspaceAction` returns nil (palette, menu,
+    `workspace.action mobile_connect` answer unavailable as when hidden); `.mobilePairing` panels render nothing;
+    `emitMobileSizeState`/`emitMobileDetached` no-ops; phone event emits (agent chat, feed, notifications) dropped;
+    `MobileHostStatusObserverToken` (generic observer token in `HostSettingsActions`) keeps its name.
+    In `Sources/Cloud`: mobile-host status observers stubbed, `isListeningEnabled` → `false`. In `Sources/Devices`:
+    `DeviceWorkspaceLayoutHost` reduced to its three name constants.
+  - `SettingsSectionID` `.mobile`/`.networking` cases **kept** (hidden since 9.1, raw values are persisted); only their
+    slots and views went. `BrowserPanel+MobileBrowserStreaming` stays (woven into `BrowserPanel`); only the phone
+    input replay went. JS dialogs untouched.
+  - Checks: build, `--version`, `config doctor` (same as 9.11), `tree --all`, 388 methods (list above);
+    scratch workspace: `yes | head -100000` then `vim` render (read-screen shows numbered lines, `~`, status),
+    `surface.wait_text_change` woke ~60 ms after output, `send --paste` multi-line, closed after.
+    `surface.catalog`/`current.list` answer. ⬜ Manual: Settings opens (no Mobile/Networking), browser JS dialogs.
 
 **What it removes:** `Sources/Mobile/` (what's left after 9.5/9.6: pairing window, host service, Iroh/Irx runtime,
 browser streaming, ~40 files), `Sources/Devices/` (53), `Sources/Hive/`, `MacPresenceDecisionCache.swift`,

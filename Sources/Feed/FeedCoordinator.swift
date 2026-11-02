@@ -115,21 +115,6 @@ final class FeedCoordinator: @unchecked Sendable {
         // expressions evaluate outside the method's main-actor isolation.
         self.userNotificationCenter = userNotificationCenter
             ?? TerminalNotificationStore.shared.userNotificationCenter
-        // A revision-only invalidation tells subscribed phones to re-list the
-        // workstream feed (`feed.list`). Keep the historical revision namespace
-        // so older phones do not reject the first post-upgrade snapshot.
-        store.onRevisionChange = { revision in
-            MobileHostService.emitEvent(
-                topic: "feed.changed",
-                payload: [
-                    "revision": Self.combinedMobileFeedRevision(
-                        workstream: revision,
-                        notifications: TerminalNotificationStore.shared
-                            .notificationFeedHistory.revision
-                    )
-                ]
-            )
-        }
         NotificationCenter.default.post(name: Self.storeInstalledNotification, object: self)
         // Catch any pending items that were restored from disk whose
         // agent is already gone. After this, live tracking is

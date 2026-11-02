@@ -242,7 +242,7 @@ class GhosttyApp {
     // constructs exactly one instance of each capability here. These statics
     // are the documented transitional accessors for god-file callers
     // (GhosttyTerminalView.swift, AppDelegate, Workspace, TerminalController,
-    // TextBoxInput, MainWindowFocusController, MobileTerminalRenderObserver)
+    // TextBoxInput, MainWindowFocusController)
     // that cannot take constructor injection until their own decomposition
     // slices land. They dissolve into composition-root injection when
     // GhosttyAppService replaces this type.
@@ -3820,7 +3820,7 @@ private final class TerminalSharedBackdropCutoutFilter: CIFilter {
 
 // TerminalSurface and its SearchState moved to the CmuxTerminal package
 // (Surface/TerminalSurface*.swift), with the legacy GhosttyApp /
-// TerminalController / MobileTerminalByteTee / RendererRealizationController /
+// TerminalController / TerminalOutputByteTee / RendererRealizationController /
 // AgentHibernationController reach-ups inverted through
 // TerminalSurfaceRuntimeDependencies (see TerminalSurfaceRuntimeWiring.swift).
 
