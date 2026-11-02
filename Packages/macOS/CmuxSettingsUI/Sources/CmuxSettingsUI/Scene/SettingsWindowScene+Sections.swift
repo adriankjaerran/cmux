@@ -70,10 +70,6 @@ extension SettingsWindowRoot {
             }
         }
 
-        slot(.computers, proxy: proxy) {
-            ComputersSection(hostActions: hostActions, defaultsStore: defaultsStore, catalog: catalog)
-        }
-
         slot(.sidebarAppearance, proxy: proxy) {
             SidebarSection(defaultsStore: defaultsStore, catalog: catalog, hostActions: hostActions)
         }

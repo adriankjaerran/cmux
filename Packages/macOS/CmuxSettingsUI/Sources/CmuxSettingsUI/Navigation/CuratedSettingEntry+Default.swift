@@ -17,7 +17,7 @@ extension Array where Element == CuratedSettingEntry {
     /// a different set of entries pass their own array via
     /// ``SettingsSearchIndex/init(catalog:curatedEntries:)``.
     public static func cmuxDefault(catalog: SettingCatalog) -> [CuratedSettingEntry] {
-        appendingDevicesEntries(to: insertingBrowserMemorySaverEntries(between: [
+        insertingBrowserMemorySaverEntries(between: [
             // Integrations
             .init(section: .automation, id: "claude-code", title: String(localized: "settings.automation.claudeCode", defaultValue: "Claude Code Integration"), synonyms: "Claude Code Integration automation.claudeCodeIntegration claude code hooks agent integration status notifications"),
             .init(section: .automation, id: "pi", title: String(localized: "settings.automation.pi", defaultValue: "Pi Integration", bundle: .module), paths: ["automation.piIntegration"], synonyms: "Pi Integration automation.piIntegration pi agent hooks notifications status"),
@@ -568,7 +568,7 @@ extension Array where Element == CuratedSettingEntry {
 
             // Reset
             .init(section: .reset, id: "reset-all", title: String(localized: "settings.reset.resetAll", defaultValue: "Reset All Settings"), synonyms: "Reset All Settings factory reset restore defaults clear preferences"),
-        ])) + terminalGhosttyOptionEntries + sidebarAgentUsageEntries
+        ]) + terminalGhosttyOptionEntries + sidebarAgentUsageEntries
     }
 
     private static var keyboardShortcutActionSynonyms: String {

@@ -12,7 +12,6 @@ nonisolated private let hostSettingsLogger = Logger(subsystem: "com.cmuxterm.app
 /// Routes Settings actions to app-owned services, keeping the package independent.
 @MainActor
 final class HostSettingsActions: SettingsHostActions {
-    let computersActions: ComputersSettingsActions
     private let configFileURL: URL
     private let browserDataImportCoordinator: BrowserDataImportCoordinator
     private let automationConfigStore: AutomationConfigStore
@@ -66,10 +65,8 @@ final class HostSettingsActions: SettingsHostActions {
                 defaultValue: "Check that the configuration folder is writable and the disk has free space, then try again."
             )
             alert.runModal()
-        },
-        computersActions: ComputersSettingsActions? = nil
+        }
     ) {
-        self.computersActions = computersActions ?? ComputersSettingsActions()
         self.configFileURL = configFileURL
         self.automationConfigStore = automationConfigStore
         self.openAutomationRulesFile = openAutomationRulesFile
