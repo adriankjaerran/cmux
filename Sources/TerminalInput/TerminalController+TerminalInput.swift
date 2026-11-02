@@ -51,3 +51,16 @@ extension TerminalController: ControlTerminalInputContext {
         terminalInputControlResult(v2TerminalInput(params: params.mapValues(\.foundationObject)))
     }
 }
+
+extension TerminalController {
+    /// Advances classic Feed attention and the agent transcript registry from
+    /// the shared accepted-terminal-input seam.
+    @MainActor
+    func noteAcceptedAgentInput(surfaceID: UUID, at: Date = Date()) {
+        _ = agentChatTranscriptService?.noteExplicitInput(
+            surfaceID: surfaceID.uuidString,
+            at: at
+        )
+        FeedCoordinator.shared.noteExplicitInput(surfaceID: surfaceID, at: at)
+    }
+}

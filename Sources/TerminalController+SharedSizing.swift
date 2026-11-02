@@ -1,6 +1,5 @@
 import AppKit
 import Bonsplit
-import CmuxCloud
 import CmuxTerminal
 import CmuxTerminalSharing
 import CmuxTerminalSizing
@@ -21,17 +20,20 @@ extension TerminalController {
 
     /// This Mac's identity as a participant.
     func localSizingIdentity() -> TerminalSharingIdentity {
-        let user = MobileHostService.shared.currentLocalSizingUser()
+        // No account in this fork: the Mac participant has no user.
         return TerminalSharingIdentity(
-            userID: user?.id,
-            displayName: user?.displayName,
+            userID: nil,
+            displayName: nil,
             deviceName: Self.localComputerName,
             deviceID: Self.localSizingDeviceID
         )
     }
 
-    /// This Mac's sizing `device_id`, derived once from its host identity.
-    static let localSizingDeviceID = TerminalSharingIdentity.sizingDeviceID(installID: MobileHostIdentity.deviceID())
+    /// This Mac's sizing `device_id`, derived once from the stored install id
+    /// (`mobileHost.deviceID`, kept from upstream) or a fixed local id.
+    static let localSizingDeviceID = TerminalSharingIdentity.sizingDeviceID(
+        installID: UserDefaults.standard.string(forKey: "mobileHost.deviceID") ?? "local-mac"
+    )
 
     // MARK: - Engine resolution
 

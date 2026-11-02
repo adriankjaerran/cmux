@@ -140,12 +140,4 @@ public protocol ControlSystemContext: AnyObject {
     /// - Parameter params: The raw command params.
     /// - Returns: The fully shaped call result.
     func controlSurfaceSplitOff(params: [String: JSONValue]) -> ControlCallResult
-
-    #if DEBUG
-    /// Configures (or clears, with `nil`) the accepted dev Stack auth token
-    /// for the DEBUG-only `mobile.dev_stack_auth.configure`.
-    ///
-    /// - Parameter token: The token to accept, or `nil` to disable.
-    func controlMobileDevStackAuthSetToken(_ token: String?)
-    #endif
 }

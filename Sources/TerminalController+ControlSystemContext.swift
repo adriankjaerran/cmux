@@ -594,12 +594,4 @@ extension TerminalController: ControlSystemContext {
             return .err(code: code, message: message, data: data.flatMap { JSONValue(foundationObject: $0) })
         }
     }
-
-#if DEBUG
-    // MARK: - mobile.dev_stack_auth.configure (DEBUG)
-
-    func controlMobileDevStackAuthSetToken(_ token: String?) {
-        MobileHostService.shared.debugConfigureAcceptedStackAuthTokenForTesting(token)
-    }
-#endif
 }

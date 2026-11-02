@@ -177,24 +177,6 @@ extension TerminalController {
         ])
     }
 
-    func v2WorkspaceCloudVMOpen(params: [String: Any]) -> V2CallResult {
-        // Cloud machines are gone from this fork; the method answers as disabled.
-        .err(code: ManagedCloudPolicy.socketErrorCode, message: CloudMachinesFeature.disabledMessage, data: nil)
-    }
-
-    func v2WorkspaceCloudVMTerminalReady(params: [String: Any]) -> V2CallResult {
-        // Cloud machines are gone from this fork; the method answers as disabled.
-        .err(code: ManagedCloudPolicy.socketErrorCode, message: CloudMachinesFeature.disabledMessage, data: nil)
-    }
-
-    /// `workspace.cloud_vm_bind`: record which cloud machine a cmux-tui workspace hosts.
-    /// Runs on the main actor like `workspace.cloud_vm_terminal_ready`: it mutates a
-    /// published workspace property the sidebar observes. No focus change.
-    func v2WorkspaceCloudVMBind(params: [String: Any]) -> V2CallResult {
-        // Cloud machines are gone from this fork; the method answers as disabled.
-        .err(code: ManagedCloudPolicy.socketErrorCode, message: CloudMachinesFeature.disabledMessage, data: nil)
-    }
-
     func v2MobileWorkspaceCreate(
         params: [String: Any],
         workingDirectoryValidator: WorkspaceCreateWorkingDirectoryValidator? = nil,

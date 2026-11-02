@@ -844,7 +844,53 @@ gets big: first `configure` and its callers, then the quit path and URL routing.
   ⬜ Clicking the link from Safari: manual.
 - ⬜ Settings → App, Terminal, Sidebar, Automation, Keyboard Shortcuts all open: manual.
 
-### ⬜ 9.11 TerminalController and control socket: remove cloud, auth and mobile methods (M, medium risk)
+### ✅ 9.11 TerminalController and control socket: remove cloud, auth and mobile methods (M, medium risk)
+
+Done (see `git log`, "Phase 9.11"). `system.capabilities` lost 149 methods, all in the allowed families: 73 `vm.*`,
+43 `mobile.*`, 16 `auth.*`, 10 `coderouter.*`, 3 `remotes.*`, `workspace.cloud_vm_open` / `_terminal_ready` /
+`_bind` (and `workspace.ssh.open`, gone since 9.9). Nothing was added. Differs from plan:
+- **Plan was wrong: `auth.login` is local.** It is the socket-password acknowledgement (`SocketPasswordAuthorization`),
+  not the cloud account, so it stays (dispatch and capability). Only the account `auth.status` / `sign_in_url` /
+  `begin_sign_in` / `sign_out` / `auth.team.*` went.
+- CodeRouter handoff: `coderouter.handoff.begin/arm/complete` were a framed handshake inside the socket connection
+  loop. That handling went from the loop, `authorizedSocketCommand` (`AuthorizedSocketCommand` is just `command`
+  now), `processSocketLine` (only the handoff used it), the worker switch and the init (`attachAuth`,
+  `codeRouterHandoffService`, arm grant store). Deleted `Sources/Cloud/CodeRouterHandoffArmGrantStore.swift`,
+  `CodeRouterHandoffClient.swift`, `CodeRouterSocketPeerVerifier.swift`, `CoderouterSocketCommands.swift`. The
+  `CodeRouter*` types in `CmuxControlSocket` (line reader handshake budget, proof) stay unused (9.15+).
+- **Kept, not in the allowed families:** the bare `terminal.create/replay/viewport/scroll/mouse/paste_image`
+  (`paste_image` was already `method_not_found` on the control socket) and `aiAccounts.*`. `aiAccounts.*` now
+  answers `cloud_disabled` from a stub in the worker switch (its handler lived in `VMClientSocketCommands.swift`;
+  before this step `aiAccounts.list` crashed the test app). So `Coordinator/MobileHost/` and
+  `TerminalController+ControlMobileHostContext.swift` stay, trimmed to those five `terminal.*` verbs; the
+  `mobile.*` aliases, `handleMobileHostAsync` and the chat/task members went. The bodies they need stay:
+  `+MobileWorkspaceList.swift`, `+MobileScrollPrefetch.swift` and a trimmed `+MobileSurfaces.swift` (surface
+  descriptors, todo payload, `mobileNonEmpty`, and `mobileBrowserPanelCorrelation` for `Sources/Mobile`). The
+  undocumented `chat.sessions.dump` (never advertised) went with `+MobileChat.swift`.
+- The phone data-plane `mobileHostHandleRPC` (called only by `MobileHostService`, 9.14) is a `method_not_found`
+  stub. Dead phone bodies in `TerminalController.swift` went (`v2MobileHostStatus`, `v2MobileWorkspaceAction`,
+  `v2MobileTerminalSetFont`, compatible tags, dogfood, `v2MobileTerminalPasteImage`); `v2MobileTerminalInput` /
+  `Paste`, the viewport governor and `v2MobileWorkspaceCreate`/`Move`/group variants stay for 9.14 (the phone-reply
+  inbox and `Sources/Mobile` still name some of them).
+- Deleted: `TerminalController+AuthTeam.swift`, 15 `TerminalController+Mobile*.swift` (all but `InputDelivery`,
+  `WorkspaceList`, `ScrollPrefetch`, `Surfaces`), `Sources/Cloud/VMClientSocketCommands*.swift` (4),
+  `Sources/Cloud/TerminalController+CloudDiagnostics.swift` (`vm.file_transfer_failure`, `v2CloudCall`), the async
+  `vm.terminal_rename`/`vm.tab_rename` lane and its deadline helper. `noteAcceptedAgentInput` (Feed attention, local)
+  moved to `Sources/TerminalInput/TerminalController+TerminalInput.swift`.
+- **Plan was wrong: `TerminalController+RemoteRelay*Authorization.swift` are SSH remote-relay** (`CmuxRemoteWorkspace`,
+  the remote daemon relay), not cloud. Kept.
+- v1 `iroh_diag` removed (and from the policy's diagnostic-read set, now empty). DEBUG
+  `mobile.dev_stack_auth.configure` removed (coordinator, system context, debug method list). `debug.mobile.*` and
+  `debug.cloudtree.*` stay (not in the allowed families).
+- `TerminalController+SharedSizing.swift`: no `MobileHostIdentity` or `import CmuxCloud`; the local sizing
+  identity has no user and its device id hashes the stored `mobileHost.deviceID` default (fallback `local-mac`).
+  The `MobileHostService` event emits stay until 9.14.
+- `ControlCommandExecutionPolicy`: no `vm.`/`remotes.`/`coderouter.` prefixes, auth/mobile entries; `aiAccounts.`
+  prefix kept for the stub. Package tests (`ControlCommandCoordinatorMobileHostTests`, policy tests) not updated (not run).
+- `v2VmCall` stays: browser profiles, remote tmux and `Sources/Surfaces` use it; its `VMClientError` mapping goes
+  with the Cloud package (9.15). `TerminalController.cloudTunnel` stays for `Sources/Cloud` (9.12).
+- `cmux ssh` (plain path in `CLI/cmux.swift`) never called `workspace.ssh.open`: it uses `workspace.create`,
+  `workspace.remote.configure/reconnect`, `remote.tmux.sessions`. Nothing in `~/Code/cmux-config` uses a removed method.
 
 **What it removes:** the socket methods only upstream's servers, phone or cloud CLI used.
 
@@ -865,11 +911,14 @@ gets big: first `configure` and its callers, then the quit path and URL routing.
 **Risk:** medium. The NIGHTLY CLI talks to this app. Compare `system.capabilities` with the baseline: only `vm.*`,
 `auth.*`, `mobile.*`, `remotes.*`, `phone_push.*`, `dogfood.*`, `chief.*`, `coderouter.*` may disappear.
 
-- ⬜ Standard checks.
-- ⬜ `diff` the new `system.capabilities` against `/tmp/cmux-baseline/`. Every method in removal-plan.md's list is
-  still there, plus `terminal.paste`, `terminal.input`, `surface.catalog`, `surface.project`, `surface.new_terminal`,
-  `current.list`.
-- ⬜ pi-cmux: `set-status`, `set-progress`, `log`, `notify`, `new-split`, `respawn-pane` from a Pi session.
+- ✅ Standard checks (build, `--version`, `config doctor` same as baseline, `tree --all`). ⬜ ⌘Q/reopen, agents: manual.
+- ✅ `diff` the new `system.capabilities` against `/tmp/cmux-baseline/`: only the allowed families went. Every method in
+  removal-plan.md's list is still there, plus `terminal.paste`, `terminal.input`, `surface.catalog`, `surface.project`,
+  `surface.new_terminal`, `current.list`. `vm.list`, `auth.status`, `mobile.host.status`, `remotes.list`,
+  `workspace.cloud_vm_open` → `method_not_found`; `auth.login` and `terminal.replay`/`viewport` still answer.
+- ✅ pi-cmux verbs via the test CLI in a scratch workspace (closed after): `set-status` (`mykey`), `set-progress`, `log`,
+  `notify`, `new-split right`, `respawn-pane --command`, plus `send --paste` multi-line. ⬜ From a real Pi session: manual.
+  (`set-status pi run` answered OK but listed no entry; looks like the reserved agent key, not checked against Personal.)
 
 ### ⬜ 9.12 Delete `Sources/Cloud` and the top-level cloud files (M, medium risk)
 

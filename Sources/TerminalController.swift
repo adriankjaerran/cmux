@@ -4,7 +4,6 @@ import CmuxSettingsUI
 import AppKit
 import CmuxRemoteSession
 import CmuxCore
-import CmuxAuthRuntime
 import CmuxBrowser
 import CmuxControlSocket
 import CmuxFoundation
@@ -40,19 +39,6 @@ extension Notification.Name {
     static let workstreamEventReceived = Notification.Name("cmux.workstreamEventReceived")
 }
 
-struct CodeRouterHandoffSessionBinding: Sendable, Equatable {
-    let authSessionGeneration: UInt64
-    let resolvedTeamID: String?
-}
-
-private struct SocketLineProcessingResult: Sendable {
-    let response: String?
-    let passwordAuthorization: SocketPasswordAuthorization
-    /// AuthCoordinator session and selected-team state captured before a
-    /// CodeRouter handoff worker starts. A lease response is written only
-    /// while both values are still current on the main actor.
-    let codeRouterHandoffSessionBinding: CodeRouterHandoffSessionBinding?
-}
 // Agent notification gating types (AgentTurnCompleteMode / AgentNotificationMeta /
 // agentNotificationShouldDeliver) live in AgentNotificationGate.swift;
 // AgentNotifyCategory lives in the CmuxSettings package.
@@ -127,8 +113,6 @@ nonisolated private func v2RemotePTYUserFacingErrorMessage(_ message: String) ->
 @MainActor
 class TerminalController {
     static let shared = TerminalController()
-    /// Bounded socket-worker deadline around the hosted CodeRouter mint.
-    nonisolated static let codeRouterHandoffWorkerTimeoutSeconds: TimeInterval = 22
     private enum ReloadConfigurationWaitResult: Sendable {
         case committed
         case failed
@@ -153,15 +137,6 @@ class TerminalController {
     var tabManager: TabManager?
     private let externalNavigationHandler = BrowserExternalNavigationHandler()
     let workspaceCreateIdempotencyCache = WorkspaceCreateIdempotencyCache(capacity: 256)
-    /// The shared auth coordinator + account flow, injected once via
-    /// `attachAuth` at app startup (AppDelegate `configure`) before the socket
-    /// listener starts. Socket auth commands read these on the main actor.
-    @MainActor private(set) var authCoordinator: AuthCoordinator?
-    @MainActor private(set) var accountFlow: HostAccountFlow?
-    /// Hosted CodeRouter handoff service. The service is created at the same
-    /// composition boundary as AuthCoordinator and is read from a worker lane
-    /// through `v2MainSync`; it never exposes Stack credentials to the socket.
-    @MainActor private(set) var codeRouterHandoffService: (any CodeRouterHandoffMinting)?
     @MainActor private(set) var caffeineController: CaffeineController?
     @MainActor var agentChatTranscriptService: AgentChatTranscriptService?
     /// App-lifetime automation engine, attached by the composition root after
@@ -178,9 +153,6 @@ class TerminalController {
     private nonisolated let socketPasswordFileWatcher: FileWatcher?
     nonisolated let socketClientCapabilityAuthority: SocketClientCapabilityAuthority
     private nonisolated let socketClientPreauthorizationLimiter: SocketClientPreauthorizationLimiter
-    /// Ten-second, single-use `exec` transition grants for signed CodeRouter.
-    nonisolated let codeRouterHandoffArmGrantStore =
-        CodeRouterHandoffArmGrantStore()
     /// Bounds worker threads and completion contexts parked for synchronous
     /// `reload_config` acknowledgements. Excess callers receive backpressure.
     private nonisolated let reloadConfigurationWaiterAdmission =
@@ -405,7 +377,6 @@ class TerminalController {
         "workspace.previous",
         "workspace.last",
         "workspace.group.focus",
-        "workspace.cloud_vm_open",
         "surface.focus", "surface.jump_to_last_prompt",
         "pane.focus",
         "pane.last",
@@ -1091,20 +1062,6 @@ class TerminalController {
         transport.isProcessDescendant(pid, of: myPid)
     }
 
-    /// Inject the auth graph. Call once at the composition root, before the
-    /// socket listener accepts auth commands.
-    @MainActor
-    func attachAuth(
-        coordinator: AuthCoordinator,
-        accountFlow: HostAccountFlow,
-        codeRouterHandoffService: (any CodeRouterHandoffMinting)? = nil
-    ) {
-        self.authCoordinator = coordinator
-        self.accountFlow = accountFlow
-        self.codeRouterHandoffService = codeRouterHandoffService
-            ?? CodeRouterHandoffClient(auth: coordinator)
-    }
-
     /// Injects the app-lifetime browser import coordinator before socket RPCs start.
     @MainActor
     func attachBrowserDataImportCoordinator(_ coordinator: BrowserDataImportCoordinator) {
@@ -1206,70 +1163,6 @@ class TerminalController {
         return transport.writeAll(Data(payload.utf8), to: socket)
     }
 
-    /// Writes one CodeRouter handoff response only while both authorization
-    /// domains are current. The main-actor section is intentionally
-    /// synchronous: AuthCoordinator.signOut advances its generation on the
-    /// same actor, so it cannot interleave between the generation check and
-    /// the bounded socket write.
-    private nonisolated func writeCodeRouterHandoffResponse(
-        _ responseData: Data,
-        socket: Int32,
-        authorizationGeneration: UInt64,
-        expectedSessionBinding: CodeRouterHandoffSessionBinding?,
-        trustedPeerAuditToken: SocketPeerAuditToken?,
-        trustedPeerProcessStartTime: SocketPeerProcessStartTime?,
-        codeRouterPeerVerifier: CodeRouterSocketPeerVerifier = .production
-    ) -> Bool? {
-        v2MainSync(commandKey: "coderouter.handoff.complete") {
-            guard let trustedPeerAuditToken,
-                  let trustedPeerProcessStartTime,
-                  let coordinator = self.authCoordinator,
-                  Self.codeRouterHandoffSessionBindingIsCurrent(
-                      expectedGeneration: expectedSessionBinding?.authSessionGeneration,
-                      expectedTeamID: expectedSessionBinding?.resolvedTeamID,
-                      currentGeneration: coordinator.authSessionGeneration,
-                      currentTeamID: coordinator.resolvedTeamID,
-                      isAuthenticated: coordinator.isAuthenticated
-                  ) else {
-                return nil
-            }
-            let socketTransport = self.transport
-            return self.socketServer.withTrustedPeerConnectionAuthorization(
-                authorizationGeneration
-            ) {
-                // Keep this exact-token dynamic validation in the same short
-                // generation-locked body as the secret write. An intervening
-                // exec or PID reuse changes the token and fails closed.
-                guard socketTransport.peerAuditToken(of: socket)
-                        == trustedPeerAuditToken,
-                      socketTransport.processStartTime(
-                          of: trustedPeerAuditToken.processID
-                      ) == trustedPeerProcessStartTime,
-                      codeRouterPeerVerifier.isTrusted(
-                          trustedPeerAuditToken
-                      ) else {
-                    return false
-                }
-                return socketTransport.writeAll(responseData, to: socket)
-            }
-        }
-    }
-
-    nonisolated static func codeRouterHandoffSessionBindingIsCurrent(
-        expectedGeneration: UInt64?,
-        expectedTeamID: String?,
-        currentGeneration: UInt64,
-        currentTeamID: String?,
-        isAuthenticated: Bool
-    ) -> Bool {
-        guard isAuthenticated,
-              let expectedGeneration else {
-            return false
-        }
-        return expectedGeneration == currentGeneration
-            && expectedTeamID == currentTeamID
-    }
-
     /// Interim bridged view of a decoded `ControlRequest` with Foundation
     /// (`Any`) field shapes, so the existing command bodies keep their
     /// `[String: Any]` params until they migrate onto the typed DTOs in the
@@ -1336,8 +1229,7 @@ class TerminalController {
     ]
 
     nonisolated func socketWorkerV2Response(
-        handling parsedRequest: ControlRequest,
-        codeRouterTeamID: String? = nil
+        handling parsedRequest: ControlRequest
     ) -> String? {
         let request = V2SocketRequest(bridging: parsedRequest)
         return withSocketCommandPolicy(commandKey: request.method, isV2: true, params: request.params) {
@@ -1411,37 +1303,6 @@ class TerminalController {
                     }
                 }
             }
-            if ["mobile.task.models.list", "mobile.chat.send", "mobile.chat.interrupt", "mobile.terminal.paste"].contains(request.method) {
-                return v2AsyncResultCall(
-                    id: request.id,
-                    timeoutSeconds: 7
-                ) {
-                    guard let result = await self.controlCommandCoordinator
-                        .handleMobileHostAsync(
-                            parsedRequest,
-                            context: self
-                        ) else {
-                        return .err(
-                            code: "method_not_found",
-                            message: String(
-                                localized: "socket.error.unknownMethod",
-                                defaultValue: "Unknown method"
-                            ),
-                            data: nil
-                        )
-                    }
-                    switch result {
-                    case .ok(let payload):
-                        return .ok(payload.foundationObject)
-                    case let .err(code, message, data):
-                        return .err(
-                            code: code,
-                            message: message,
-                            data: data?.foundationObject
-                        )
-                    }
-                }
-            }
             if let feedResult = controlCommandCoordinator.handleSocketWorkerFeed(
                 parsedRequest,
                 context: self
@@ -1477,16 +1338,10 @@ class TerminalController {
                         message: "feed.push without an id requires wait_timeout_seconds 0"
                     )
                 }
-                _ = socketWorkerV2Response(
-                    request,
-                    codeRouterTeamID: codeRouterTeamID
-                )
+                _ = socketWorkerV2Response(request)
                 return nil
             }
-            return socketWorkerV2Response(
-                request,
-                codeRouterTeamID: codeRouterTeamID
-            )
+            return socketWorkerV2Response(request)
         }
     }
 
@@ -1533,12 +1388,6 @@ class TerminalController {
             // the formatting can never run inline on the main thread.
             case "read_screen":
                 return (true, readScreenText(args))
-            // The v1 diagnostic-read family: the host's iroh DiagnosticLog is
-            // actor-owned, so the snapshot await bridges to this worker via
-            // the established semaphore pattern. NOT mainThreadCallable — the
-            // wait must never block the main thread.
-            case "iroh_diag":
-                return (true, irohDiagText())
             // The v1 resolution reads (tranche D): one v2MainSync snapshot
             // hop each, reply lines formatted here on this worker thread.
             // All mainThreadCallable (the hop collapses inline); the bodies
@@ -1678,140 +1527,13 @@ class TerminalController {
     }
 
     private nonisolated func socketWorkerV2Response(
-        _ request: V2SocketRequest,
-        codeRouterTeamID: String? = nil
+        _ request: V2SocketRequest
     ) -> String {
         switch request.method {
         case "session.agent_recovery.list":
             return v2Result(id: request.id, v2AgentRecoveryList(params: request.params))
         case "session.agent_recovery.restore":
             return v2Result(id: request.id, v2AgentRecoveryRestore(params: request.params))
-        case "coderouter.handoff.complete":
-            guard request.params.count == 2,
-                  let protocolVersion = request.params["protocolVersion"]
-                    as? NSNumber,
-                  CFGetTypeID(protocolVersion) != CFBooleanGetTypeID(),
-                  protocolVersion.intValue == 2,
-                  protocolVersion.doubleValue == 2,
-                  let challenge = request.params["challenge"] as? String,
-                  SocketClientCapabilityProof().decodeBase64URL32(challenge)
-                    != nil else {
-                return v2Error(
-                    id: request.id,
-                    code: "invalid_params",
-                    message: "coderouter.handoff.complete requires protocolVersion 2 and a challenge"
-                )
-            }
-            guard let codeRouterTeamID, !codeRouterTeamID.isEmpty else {
-                return v2Error(
-                    id: request.id,
-                    code: "team_required",
-                    message: "CodeRouter handoff requires an armed team"
-                )
-            }
-
-            let service = v2MainSync(commandKey: request.method) {
-                self.codeRouterHandoffService
-            }
-            guard let service else {
-                return v2Error(
-                    id: request.id,
-                    code: "not_authenticated",
-                    message: Self.codeRouterHandoffLocalizedMessage(.notSignedIn)
-                )
-            }
-            return v2AsyncResultCall(
-                id: request.id,
-                timeoutSeconds: Self.codeRouterHandoffWorkerTimeoutSeconds
-            ) {
-                do {
-                    let lease = try await service.mint(
-                        teamID: codeRouterTeamID
-                    )
-                    guard lease.teamID.utf8.count <= 200,
-                          !lease.teamID.isEmpty,
-                          lease.teamID == codeRouterTeamID,
-                          lease.teamID.unicodeScalars.allSatisfy({
-                              let category = $0.properties.generalCategory
-                              return !$0.properties.isWhitespace
-                                  && category != .control
-                                  && category != .format
-                          }),
-                          CodeRouterHandoffClient.isValidLeaseSyntax(lease.lease),
-                          lease.expiresAt.utf8.count <= 128,
-                          let expiry = CmuxRFC3339DateParser().date(from: lease.expiresAt),
-                          expiry > Date() else {
-                        return .err(
-                            code: "coderouter_handoff_invalid_response",
-                            message: Self.codeRouterHandoffLocalizedMessage(.invalidResponse),
-                            data: nil
-                        )
-                    }
-                    // This is the one intended secret-bearing response. The
-                    // socket authorization gate has already run before this
-                    // worker lane, and no event mapping is registered for the
-                    // handoff method.
-                    return .ok([
-                        "teamId": lease.teamID,
-                        "lease": lease.lease,
-                        "expiresAt": lease.expiresAt,
-                    ])
-                } catch let error as CodeRouterHandoffClientError {
-                    return .err(
-                        code: error.code,
-                        message: Self.codeRouterHandoffLocalizedMessage(error),
-                        data: nil
-                    )
-                } catch {
-                    return .err(
-                        code: "coderouter_handoff_failed",
-                        message: Self.codeRouterHandoffLocalizedMessage(nil),
-                        data: nil
-                    )
-                }
-            }
-        case "auth.status":
-            let semaphore = DispatchSemaphore(value: 0)
-            Task { @MainActor [weak self] in
-                await self?.authCoordinator?.awaitBootstrapped()
-                semaphore.signal()
-            }
-            semaphore.wait()
-            return v2Ok(id: request.id, result: v2AuthStatusPayload(timedOut: false))
-        case "auth.sign_in_url":
-            var signInURL: String?
-            v2MainSync {
-                MainActor.assumeIsolated {
-                    signInURL = self.accountFlow?.manualSignInURL.absoluteString
-                }
-            }
-            var result: [String: Any] = [:]
-            if let signInURL {
-                result["url"] = signInURL
-            }
-            return v2Ok(id: request.id, result: result)
-        case "auth.begin_sign_in":
-            let timeoutSeconds = (request.params["timeout_seconds"] as? Double) ?? 300
-            let semaphore = DispatchSemaphore(value: 0)
-            nonisolated(unsafe) var signedIn = false
-            Task { @MainActor [weak self] in
-                signedIn = await self?.accountFlow?.signIn(
-                    timeout: timeoutSeconds
-                ) ?? false
-                semaphore.signal()
-            }
-            semaphore.wait()
-            return v2Ok(id: request.id, result: v2AuthStatusPayload(timedOut: !signedIn))
-        case "auth.sign_out":
-            let semaphore = DispatchSemaphore(value: 0)
-            Task { @MainActor [weak self] in
-                await self?.accountFlow?.signOut(timeout: 5)
-                semaphore.signal()
-            }
-            semaphore.wait()
-            return v2Ok(id: request.id, result: v2AuthStatusPayload(timedOut: false))
-        case _ where Self.authTeamSocketMethods.contains(request.method):
-            return v2AuthTeamResponse(request)
         case "feed.push":
             return v2Result(
                 id: request.id,
@@ -1988,20 +1710,6 @@ class TerminalController {
                 )
                 return outcome.socketPayload
             }
-        case "mobile.attach_ticket.create":
-            return v2AsyncResultCall(id: request.id, timeoutSeconds: 30) {
-                await self.v2MobileAttachTicketCreate(params: request.params)
-            }
-        case "mobile.panel.artifact.stat", "mobile.panel.artifact.thumbnail":
-            return v2AsyncResultCall(id: request.id, timeoutSeconds: 30) {
-                await self.v2MobilePanelArtifactDispatch(
-                    method: request.method,
-                    params: request.params,
-                    executionContext: nil
-                )
-            }
-        case "mobile.terminal.set_font":
-            return v2Result(id: request.id, v2MobileTerminalSetFont(params: request.params))
         case "terminal.size_state":
             return v2Result(id: request.id, v2MainSync { self.v2TerminalSizeState(params: request.params) })
         case "terminal.size_policy.set":
@@ -2014,10 +1722,6 @@ class TerminalController {
             return v2Result(id: request.id, v2MainSync { self.v2TerminalParticipantDisconnect(params: request.params) })
         case "terminal.participants.disconnect_others":
             return v2Result(id: request.id, v2MainSync { self.v2TerminalParticipantsDisconnectOthers(params: request.params) })
-        case "mobile.compatible_tags.get":
-            return v2Result(id: request.id, v2MobileCompatibleTagsGet())
-        case "mobile.compatible_tags.set":
-            return v2Result(id: request.id, v2MobileCompatibleTagsSet(params: request.params))
         case "system.ping":
             return v2Ok(id: request.id, result: ["pong": true])
         case "system.capabilities":
@@ -2288,21 +1992,10 @@ class TerminalController {
             return socketWorkerCurrentWorkResponse(id: request.id, params: request.params)
         case "surface.catalog", "surface.project", "surface.new_terminal", "surface.new_display":
             return socketWorkerSurfaceResponse(method: request.method, id: request.id, params: request.params)
-        case let method where method.hasPrefix("vm."):
-            // The CLI's own wait (cloud_client_timeout_ms) is transport
-            // metadata, not a method param: strip it before any handler
-            // validates params, and bind it so every control-plane request the
-            // handler makes states the earliest budget (CloudRequestBudget).
-            let budget = Self.socketWorkerVMDispatch(request.params)
-            return CloudRequestBudget.live.withBudgetSync(seconds: budget.seconds) {
-                socketWorkerCloudVMResponse(method: method, id: request.id, params: budget.params)
-            }
-        case let method where method.hasPrefix("remotes."):
-            return socketWorkerRemotesResponse(method: method, id: request.id, params: request.params)
         case let method where method.hasPrefix("aiAccounts."):
-            return socketWorkerAIAccountsResponse(method: method, id: request.id, params: request.params)
-        case let method where method.hasPrefix("coderouter."):
-            return socketWorkerCoderouterResponse(method: method, id: request.id, params: request.params)
+            // Cloud AI accounts are gone from this fork; the family stays
+            // advertised and answers as disabled.
+            return v2Error(id: request.id, code: "cloud_disabled", message: "Cloud is disabled in this build.")
         default:
 #if !DEBUG
             // debug.sidebar.simulate_drag stays policy-listed in Release but
@@ -2455,25 +2148,12 @@ class TerminalController {
             }
         }
         var passwordAuthorization = SocketPasswordAuthorization()
-        var pendingCodeRouterHandoffChallenge:
-            PendingCodeRouterHandoffChallenge?
         let rateLimiter = ControlClientRateLimiter()
         while let line = await lineReader.nextLine(shouldContinueReading: {
             self.socketServer.isConnectionAuthorizationCurrent(authorizationGeneration)
         }) {
             let receivedCommand = line.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !receivedCommand.isEmpty else { continue }
-            // Arm, begin, and complete use an exact JSON frame. Do not let
-            // Foundation trimming turn a surrounding-whitespace frame into a
-            // valid proof-bearing request.
-            let isCodeRouterHandshakeRoute =
-                Self.isCodeRouterHandoffCommand(receivedCommand)
-                    || Self.isCodeRouterHandoffBeginCommand(receivedCommand)
-                    || Self.isCodeRouterHandoffArmCommand(receivedCommand)
-            guard !isCodeRouterHandshakeRoute || line == receivedCommand else {
-                _ = await writer.writeAll(Data((Self.socketClientAccessDeniedResponse + "\n").utf8))
-                return
-            }
             guard socketAuthorizationIsCurrent(
                 authorizationGeneration,
                 passwordAuthorization: &passwordAuthorization
@@ -2481,36 +2161,13 @@ class TerminalController {
                 _ = await writer.writeAll(Data((Self.socketClientAccessDeniedResponse + "\n").utf8))
                 return
             }
-            let isCodeRouterPeerCommand =
-                Self.isCodeRouterHandoffCommand(receivedCommand)
-                    || Self.isCodeRouterHandoffBeginCommand(receivedCommand)
-                    || Self.isCodeRouterHandoffArmCommand(receivedCommand)
-            let currentPeerAuditToken = isCodeRouterPeerCommand
-                ? transport.peerAuditToken(of: socket)
-                : peerAuditToken
-            let currentPeerStartTime = if isCodeRouterPeerCommand,
-                                          let pid {
-                transport.processStartTime(of: pid)
-            } else {
-                peerProcessStartTime
-            }
-            guard !isCodeRouterPeerCommand
-                    || (peerAuditToken?.processID == pid
-                        && peerAuditToken != nil
-                        && currentPeerAuditToken == peerAuditToken
-                        && peerProcessStartTime != nil
-                        && currentPeerStartTime == peerProcessStartTime),
-                  pendingCodeRouterHandoffChallenge == nil
-                    || Self.isCodeRouterHandoffCommand(receivedCommand),
-                  let commandAuthorization = authorizedSocketCommand(
+            guard let commandAuthorization = authorizedSocketCommand(
                 receivedCommand,
                 peerProcessID: pid,
                 peerHasSameUID: peerHasSameUID,
                 peerAuditToken: peerAuditToken,
                 peerProcessStartTime: peerProcessStartTime,
-                authorizationGeneration: authorizationGeneration,
-                pendingCodeRouterHandoffChallenge:
-                    pendingCodeRouterHandoffChallenge
+                authorizationGeneration: authorizationGeneration
             ) else {
                 let response = pid == nil
                     ? Self.socketClientVerificationFailedResponse
@@ -2538,62 +2195,6 @@ class TerminalController {
                 await preauthorizationLimiter.release()
             }
 
-            if Self.isCodeRouterHandoffBeginCommand(trimmed) {
-                guard let authorization = commandAuthorization.codeRouterHandoffBeginAuthorization,
-                      let challenge = Self.makeCodeRouterHandoffChallenge() else {
-                    _ = await writer.writeAll(Data((Self.socketClientAccessDeniedResponse + "\n").utf8))
-                    return
-                }
-                let response = v2Ok(
-                    id: "coderouter-handoff-begin",
-                    result: ["protocolVersion": 2, "challenge": challenge]
-                )
-                guard await writer.writeAll(Data((response + "\n").utf8)) else { return }
-                pendingCodeRouterHandoffChallenge = PendingCodeRouterHandoffChallenge(
-                    authorization: authorization,
-                    challenge: challenge
-                )
-                lineReader.allowCodeRouterHandoffCompletion(timeoutMilliseconds: 2_000)
-                continue
-            }
-            if Self.isCodeRouterHandoffArmCommand(trimmed) {
-                let response = processCodeRouterHandoffArmCommand(
-                    trimmed,
-                    socket: socket,
-                    peerAuditToken: peerAuditToken,
-                    authorizationGeneration: authorizationGeneration,
-                    verifiedProof: commandAuthorization.codeRouterHandoffArmProof
-                )
-                _ = await writer.writeAll(Data((response + "\n").utf8))
-                return
-            }
-            if Self.isCodeRouterHandoffCommand(trimmed) {
-                // Keep the signed mint and final atomic authorization/write
-                // together; ordinary traffic uses the asynchronous dispatcher.
-                let result = processSocketLine(
-                    trimmed,
-                    passwordAuthorization: passwordAuthorization,
-                    trustedCodeRouterPeerAuditToken: commandAuthorization.trustedCodeRouterPeerAuditToken,
-                    expectedCodeRouterHandoffSessionBinding: commandAuthorization.codeRouterHandoffSessionBinding
-                )
-                pendingCodeRouterHandoffChallenge = nil
-                if let response = result.response {
-                    guard writeCodeRouterHandoffResponse(
-                        Data((response + "\n").utf8),
-                        socket: socket,
-                        authorizationGeneration: authorizationGeneration,
-                        expectedSessionBinding: result.codeRouterHandoffSessionBinding,
-                        trustedPeerAuditToken: commandAuthorization.trustedCodeRouterPeerAuditToken,
-                        trustedPeerProcessStartTime: peerProcessStartTime
-                    ) != nil else {
-                        _ = await writer.writeAll(Data((Self.socketClientAccessDeniedResponse + "\n").utf8))
-                        return
-                    }
-                }
-                // A lease is never published to the event bus and completion
-                // always closes the connection, including a failed write.
-                return
-            }
             if isEventsStreamRequest(trimmed) {
                 if let response = authResponseIfNeeded(
                     for: trimmed,
@@ -2634,79 +2235,6 @@ class TerminalController {
         if !socketServer.isConnectionAuthorizationCurrent(authorizationGeneration) {
             _ = await writer.writeAll(Data((Self.socketClientAccessDeniedResponse + "\n").utf8))
         }
-    }
-
-    private nonisolated func processSocketLine(
-        _ command: String,
-        passwordAuthorization: SocketPasswordAuthorization,
-        trustedCodeRouterPeerAuditToken: SocketPeerAuditToken? = nil,
-        expectedCodeRouterHandoffSessionBinding:
-            CodeRouterHandoffSessionBinding? = nil
-    ) -> SocketLineProcessingResult {
-        let codeRouterHandoffSessionBinding: CodeRouterHandoffSessionBinding?
-        if Self.isCodeRouterHandoffCommand(command) {
-            // Capture the auth generation and selected team before the
-            // asynchronous mint begins. The final writer rechecks both on the
-            // main actor, so sign-out or a team switch cannot race a lease into
-            // an already-revoked socket response.
-            codeRouterHandoffSessionBinding =
-                expectedCodeRouterHandoffSessionBinding
-        } else {
-            codeRouterHandoffSessionBinding = nil
-        }
-#if DEBUG
-        let debugInfo = Self.socketCommandDebugInfo(command)
-        let debugStart = DispatchTime.now().uptimeNanoseconds
-        let debugLoggingEnabled = Self.socketCommandDebugLoggingEnabled()
-        Self.installSocketCommandMainHopAccumulator()
-        if debugLoggingEnabled {
-            Self.debugLogSocketCommand(
-                "socket.command.begin proto=\(debugInfo.protocolName) method=\(debugInfo.commandKey)"
-            )
-        }
-#endif
-        var nextPasswordAuthorization = passwordAuthorization
-        if trustedCodeRouterPeerAuditToken == nil,
-           let response = authResponseIfNeeded(
-            for: command,
-            passwordAuthorization: &nextPasswordAuthorization
-        ) {
-#if DEBUG
-            Self.debugLogSocketCommandEndIfNeeded(
-                debugInfo: debugInfo,
-                startedAt: debugStart,
-                response: response,
-                loggingEnabled: debugLoggingEnabled
-            )
-#endif
-            return SocketLineProcessingResult(
-                response: response,
-                passwordAuthorization: nextPasswordAuthorization,
-                codeRouterHandoffSessionBinding:
-                    codeRouterHandoffSessionBinding
-            )
-        }
-
-        let response = processCommandUsingSocketExecutionPolicy(
-            command,
-            codeRouterTeamID: codeRouterHandoffSessionBinding?.resolvedTeamID
-        )
-#if DEBUG
-        if let response {
-            Self.debugLogSocketCommandEndIfNeeded(
-                debugInfo: debugInfo,
-                startedAt: debugStart,
-                response: response,
-                loggingEnabled: debugLoggingEnabled
-            )
-        }
-#endif
-        return SocketLineProcessingResult(
-            response: response,
-            passwordAuthorization: nextPasswordAuthorization,
-            codeRouterHandoffSessionBinding:
-                codeRouterHandoffSessionBinding
-        )
     }
 
 #if DEBUG
@@ -2955,8 +2483,7 @@ class TerminalController {
 #endif
 
     private nonisolated func processCommandUsingSocketExecutionPolicy(
-        _ command: String,
-        codeRouterTeamID: String? = nil
+        _ command: String
     ) -> String? {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -3016,7 +2543,7 @@ class TerminalController {
             }
             if policy.runsOnSocketWorker {
                 return CmuxAutomationInvocationContext.$eventOrigin.withValue(automationOrigin) {
-                    socketWorkerV2Response(handling: request, codeRouterTeamID: codeRouterTeamID)
+                    socketWorkerV2Response(handling: request)
                 }
             }
             return CmuxAutomationInvocationContext.$eventOrigin.withValue(automationOrigin) {
@@ -3436,8 +2963,8 @@ class TerminalController {
         // mobileHostHandleRPC).
 
         // system.identify (forwards to the still-shared v2Identify), system.tree,
-        // auth.login, and the DEBUG-only mobile.dev_stack_auth.configure handled
-        // by ControlCommandCoordinator.
+        // and auth.login (the socket password acknowledgement) handled by
+        // ControlCommandCoordinator.
 
         // Windows (`window.*`) are handled above by ControlCommandCoordinator.
 
@@ -3452,12 +2979,6 @@ class TerminalController {
         // terminal_session_end) handled by
         // ControlCommandCoordinator. The worker-lane
         // workspace.remote.pty_* methods stay on the app-side worker path.
-        case "workspace.cloud_vm_open":
-            return v2Result(id: id, self.v2WorkspaceCloudVMOpen(params: params))
-        case "workspace.cloud_vm_terminal_ready":
-            return v2Result(id: id, self.v2WorkspaceCloudVMTerminalReady(params: params))
-        case "workspace.cloud_vm_bind":
-            return v2Result(id: id, self.v2WorkspaceCloudVMBind(params: params))
         case "workspace.set_auto_title":
             return v2Result(id: id, self.v2WorkspaceSetAutoTitle(params: params))
         case "surface.sync_codex_native_title":
@@ -3641,50 +3162,6 @@ class TerminalController {
             default:
                 return v2Error(id: id, code: "method_not_found", message: "Unknown method")
             }
-    }
-
-    private nonisolated static func codeRouterHandoffLocalizedMessage(
-        _ error: CodeRouterHandoffClientError?
-    ) -> String {
-        guard let error else {
-            return String(
-                localized: "cli.coderouter.handoff.notAuthenticated",
-                defaultValue: "CodeRouter handoff requires a signed-in cmux account. Run `cmux auth login`, then retry.",
-                bundle: .main
-            )
-        }
-        switch error {
-        case .notSignedIn:
-            return String(
-                localized: "cli.coderouter.handoff.notAuthenticated",
-                defaultValue: "CodeRouter handoff requires a signed-in cmux account. Run `cmux auth login`, then retry.",
-                bundle: .main
-            )
-        case .sessionChanged:
-            return String(
-                localized: "cli.coderouter.handoff.sessionChanged",
-                defaultValue: "The cmux account or team changed during the handoff. Try again.",
-                bundle: .main
-            )
-        case .expiredLease:
-            return String(
-                localized: "cli.coderouter.handoff.expired",
-                defaultValue: "The cmux handoff lease expired. Try again.",
-                bundle: .main
-            )
-        case .sessionUnavailable, .backendUnreachable:
-            return String(
-                localized: "cli.coderouter.handoff.unavailable",
-                defaultValue: "The cmux service is not available. Check your connection and try again.",
-                bundle: .main
-            )
-        case .invalidTeam, .invalidResponse, .redirectedResponse, .httpStatus:
-            return String(
-                localized: "cli.coderouter.handoff.failed",
-                defaultValue: "The cmux service rejected the CodeRouter handoff. Try again.",
-                bundle: .main
-            )
-        }
     }
 
     func v2Identify(params: [String: Any]) -> [String: Any] {
@@ -4127,55 +3604,6 @@ class TerminalController {
 
     // MARK: - V2 Helpers (encoding + result plumbing)
     // MARK: - V2 Helpers (encoding + result plumbing)
-
-    private nonisolated func v2AuthStatusPayload(timedOut: Bool) -> [String: Any] {
-        var result: [String: Any] = [:]
-        v2MainSync {
-            MainActor.assumeIsolated {
-                guard let coordinator = self.authCoordinator else {
-                    result = [
-                        "signed_in": false,
-                        "is_restoring_session": false,
-                        "is_loading": false,
-                        "timed_out": timedOut
-                    ]
-                    return
-                }
-                let isSigningIn = self.accountFlow?.isPresentingSignIn ?? false
-                var status: [String: Any] = [
-                    "signed_in": coordinator.isAuthenticated,
-                    "is_restoring_session": coordinator.isRestoringSession,
-                    "is_loading": coordinator.isLoading || isSigningIn,
-                    "timed_out": timedOut
-                ]
-                if let user = coordinator.currentUser {
-                    var userDict: [String: Any] = ["id": user.id]
-                    if let email = user.primaryEmail { userDict["email"] = email }
-                    if let name = user.displayName { userDict["display_name"] = name }
-                    status["user"] = userDict
-                }
-                if let teamID = coordinator.resolvedTeamID {
-                    status["selected_team_id"] = teamID
-                }
-                // A signed-in session without a team scope keeps the pairing
-                // host and Cloud down; report it so the state is diagnosable.
-                status["team_scope_ready"] = coordinator.authenticatedTeamScope != nil
-                status["team_scope_recovering"] = coordinator.hasPendingTeamScopeRecovery
-                if !coordinator.availableTeams.isEmpty {
-                    status["teams"] = coordinator.availableTeams.map { team -> [String: Any] in
-                        var dict: [String: Any] = [
-                            "id": team.id,
-                            "display_name": team.displayName
-                        ]
-                        if let slug = team.slug { dict["slug"] = slug }
-                        return dict
-                    }
-                }
-                result = status
-            }
-        }
-        return result
-    }
 
     nonisolated func v2OrNull(_ value: Any?) -> Any {
         // Avoid relying on `?? NSNull()` inference (Swift toolchains can disagree).
@@ -12307,27 +11735,6 @@ class TerminalController {
     /// base64 encode/decode round-trip — kept verbatim so the reply bytes
     /// match the legacy `readTerminalTextBase64` pipeline exactly — run off
     /// the main actor.
-    /// Serves the v1 `iroh_diag` socket command: the host's Iroh Connection
-    /// Report in the same plain-language format the Settings pane exports,
-    /// read from the same `DiagnosticLog` snapshot path so the two can never
-    /// disagree.
-    private nonisolated func irohDiagText() -> String {
-        let semaphore = DispatchSemaphore(value: 0)
-        nonisolated(unsafe) var export = ""
-        Task {
-            // Reads the nonisolated static ring directly: no main-actor hop, so
-            // the verb keeps working when the main thread is wedged (the case
-            // connection diagnostics exist for). The wait blocks only on the
-            // log's own drain actor, and the execution policy keeps this
-            // command off the main thread, so the wait cannot self-deadlock.
-            let report = await MobileHostDiagnostics.log.snapshot()
-            export = String(decoding: report.humanReadableExport(), as: UTF8.self)
-            semaphore.signal()
-        }
-        semaphore.wait()
-        return export
-    }
-
     private nonisolated func readScreenText(_ args: String) -> String {
         let options: ReadScreenOptions
         switch parseReadScreenArgs(args) {
@@ -15452,383 +14859,20 @@ class TerminalController {
 
     // MARK: - Mobile Host V2 Methods
 
+    /// The phone data-plane RPC is gone from this fork; `MobileHostService`
+    /// (removed in Phase 9.14) still names this entry point.
     @MainActor
     func mobileHostHandleRPC(
         _ request: MobileHostRPCRequest,
         executionContext: MobileHostRPCExecutionContext? = nil
     ) async -> MobileHostRPCResult {
-        // The mobile data-plane RPC speaks `MobileHostRPCRequest` /
-        // `MobileHostRPCResult` and dispatches directly to the app-side
-        // `v2Mobile*` bodies. It deliberately does NOT route through the v2
-        // control-socket `ControlCommandCoordinator` (whose native result type is
-        // `ControlCallResult`): doing so would force a
-        // `MobileHostRPCRequest → ControlRequest → ControlCallResult →
-        // MobileHostRPCResult` type round-trip with no behavior change. The v2
-        // control socket shares the same bodies through `handleMobileHost`, so the
-        // wire bytes stay identical across both entrypoints without a bridge here.
-        if request.mustNameItsTerminal,
-           MobileHostRPCRequest.phoneNamedTerminalID(params: request.params) == nil,
-           !["surface_id", "terminal_id", "tab_id"].contains(where: { v2UUID(request.params, $0) != nil }) {
-            // A phone must name the terminal it writes to or closes; the
-            // focused terminal on this Mac is never a stand-in.
-            return mobileHostResult(.err(
-                code: "terminal_id_required",
-                message: "Terminal input must name its terminal",
-                data: nil
-            ))
-        }
-        // A phone someone disconnected from a terminal sends no input and gets
-        // no replay for it until mobile.terminal.reattach.
-        if let detachedError = mobileDetachedGateError(method: request.method, params: request.params) {
-            return mobileHostResult(detachedError)
-        }
-        let result: V2CallResult
-        switch request.method {
-        case "mobile.host.status":
-            result = v2MobileHostStatus(params: request.params, includePrivateMetadata: false)
-#if DEBUG
-        case "mobile.rpc.methods":
-            result = .ok([
-                "schema_version": 1,
-                "methods": MobileHostService.irohReleaseGateRPCMethods,
-            ])
-#endif
-        case "mobile.attach_ticket.create":
-            result = await v2MobileAttachTicketCreate(params: request.params)
-        case "mobile.workspace.list":
-            // The v2 method carries the authenticated host identity with the
-            // workspace snapshot so a cold reconnect does not need a second
-            // relay round trip. Older clients continue using `workspace.list`.
-            result = v2MobileWorkspaceListWithHostStatus(params: request.params)
-        case "workspace.list":
-            result = v2Bool(request.params, "include_host_status") == true
-                ? v2MobileWorkspaceListWithHostStatus(params: request.params)
-                : v2MobileWorkspaceList(params: request.params)
-        case "mobile.workspace.changes.summary",
-             "mobile.workspace.changes.files",
-             "mobile.workspace.changes.file_diff",
-             "mobile.workspace.changes.file_stat",
-             "mobile.workspace.changes.file_fetch":
-            result = await v2MobileWorkspaceChanges(method: request.method, params: request.params)
-        case "mobile.directory.search":
-            result = await v2MobileDirectorySearch(
-                params: request.params,
-                filesystemJobQuota: mobileTaskFilesystemJobQuota
-            )
-        case "mobile.directory.list":
-            result = await v2MobileDirectoryList(
-                params: request.params,
-                filesystemJobQuota: mobileTaskFilesystemJobQuota
-            )
-        case "workspace.create":
-            result = await v2MobileWorkspaceCreate(params: request.params)
-        case "mobile.task.attachment.upload":
-            result = v2MobileTaskAttachmentUpload(params: request.params)
-        case "mobile.task.models.list":
-            result = await v2MobileTaskModelsList(params: request.params)
-        case "mobile.terminal.create", "terminal.create":
-            result = v2MobileTerminalCreate(params: request.params)
-        case "mobile.terminal.input", "terminal.input":
-            result = v2MobileTerminalInput(params: request.params)
-        case "mobile.terminal.paste", "terminal.paste":
-            result = await v2MobileTerminalPaste(params: request.params)
-        case "mobile.terminal.paste_image", "terminal.paste_image":
-            result = v2MobileTerminalPasteImage(params: request.params)
-        case "mobile.terminal.replay", "terminal.replay":
-            result = v2MobileTerminalReplay(params: request.params)
-        case "mobile.terminal.viewport", "terminal.viewport":
-            result = v2MobileTerminalViewport(params: request.params)
-        case "mobile.terminal.scroll", "terminal.scroll":
-            result = v2MobileTerminalScroll(params: request.params)
-        case "mobile.terminal.reattach":
-            result = v2MobileTerminalReattach(params: request.params)
-        case "mobile.terminal.size_policy.set":
-            result = v2MobileTerminalSizePolicySet(params: request.params)
-        case "mobile.terminal.participant.disconnect":
-            result = v2MobileTerminalParticipantDisconnect(
-                params: request.params,
-                connectionID: executionContext?.connectionID
-            )
-        case "mobile.terminal.mouse", "terminal.mouse":
-            result = v2MobileTerminalMouse(params: request.params)
-        case "mobile.terminal.close":
-            result = v2MobileTerminalClose(params: request.params)
-        case "mobile.terminal.rename":
-            result = v2MobileTerminalRename(params: request.params)
-        case let method where method.hasPrefix("mobile.terminal.artifact."):
-            result = await v2MobileTerminalArtifactDispatch(
-                method: method,
-                params: request.params,
-                executionContext: executionContext
-            )
-        case "workspace.action":
-            result = v2MobileWorkspaceAction(params: request.params)
-        case "workspace.move":
-            result = v2MobileWorkspaceMove(params: request.params)
-        case "workspace.group.action", "workspace.group.create":
-            result = request.method == "workspace.group.create" ? v2MobileWorkspaceGroupCreate(params: request.params) : v2MobileWorkspaceGroupAction(params: request.params)
-        case let method where method.hasPrefix("mobile.chat."):
-            result = await v2MobileChatDispatch(
-                method: method,
-                params: request.params,
-                executionContext: executionContext
-            )
-        case let method where method.hasPrefix("mobile.browser."):
-            result = await v2MobileBrowserDispatch(
-                method: method,
-                params: request.params,
-                connectionID: executionContext?.connectionID
-            )
-        case let method where method.hasPrefix("mobile.simulator."):
-            // The Simulator pane was removed from this fork.
-            result = .err(code: "capability_disabled", message: "Simulator panes are disabled", data: nil)
-        case let method where method.hasPrefix("mobile.todo."):
-            result = v2MobileTodoDispatch(method: method, params: request.params)
-        case "mobile.status.set", "mobile.status.cycle":
-            result = v2MobileTodoDispatch(method: request.method, params: request.params)
-        case "mobile.surface.focus":
-            result = v2MobileSurfaceFocus(params: request.params)
-        case let method where method.hasPrefix("mobile.panel.artifact."):
-            result = await v2MobilePanelArtifactDispatch(
-                method: method,
-                params: request.params,
-                executionContext: executionContext
-            )
-        case "workspace.close":
-            result = v2MobileWorkspaceClose(params: request.params)
-        case "workspace.group.collapse":
-            result = v2MobileWorkspaceGroupSetCollapsed(params: request.params, isCollapsed: true)
-        case "workspace.group.expand":
-            result = v2MobileWorkspaceGroupSetCollapsed(params: request.params, isCollapsed: false)
-        case "notification.dismiss":
-            result = v2MobileNotificationDismiss(params: request.params)
-        case "notification.reconcile":
-            result = v2MobileNotificationReconcile(params: request.params)
-        case "notification.feed.list":
-            result = await v2MobileNotificationFeedList(
-                params: request.params,
-                responseID: request.id.map { String(describing: $0) }
-            )
-        case "feed.list":
-            result = await v2MobileFeedList(
-                params: request.params,
-                responseID: request.id.map { String(describing: $0) }
-            )
-        case "feed.text":
-            result = v2MobileFeedText(params: request.params)
-        case "feed.permission.reply":
-            result = v2FeedPermissionReply(params: request.params)
-        case "feed.question.reply":
-            result = v2FeedQuestionReply(params: request.params)
-        case "feed.exit_plan.reply":
-            result = v2FeedExitPlanReply(params: request.params)
-        case "notification.feed.mark_read":
-            result = v2MobileNotificationFeedMarkRead(params: request.params)
-        case "notification.feed.mark_unread":
-            result = v2MobileNotificationFeedMarkUnread(params: request.params)
-        case "notification.feed.mark_all_read":
-            result = v2MobileNotificationFeedMarkAllRead(params: request.params)
-        case "dogfood.feedback.submit":
-            result = await v2MobileDogfoodFeedbackSubmit(params: request.params)
-        case "mobile.sync.fetch":
-            result = v2MobileSyncFetch(params: request.params)
-        case "phone_push.settings.update":
-            result = v2MobilePhonePushSettingsUpdate(params: request.params)
-        case "phone_push.status.get":
-            // The payload is intentionally content-free. This authenticated
-            // request supplies the same-account token that the client's paired
-            // host-status exchange reuses for the private readiness block.
-            result = .ok(["ok": true])
-        case "phone_push.test":
-            result = v2MobilePhonePushTest()
-        case "caffeine.status":
-            result = v2CaffeineStatus()
-        case "caffeine.set":
-            result = v2CaffeineSet(params: request.params)
-        default:
-            result = .err(code: "method_not_found", message: "Unknown mobile method", data: [
-                "method": request.method
-            ])
-        }
-        return mobileHostResult(result)
-    }
-
-    /// Adds the authenticated host proof to the v2 workspace snapshot. This is
-    /// called after the mobile connection has been admitted. The published v2
-    /// installation identity is authoritative for this response; the physical
-    /// device identity belongs to legacy pairing and must never replace it.
-    /// If the identity is unavailable, return the plain workspace result and
-    /// let the client use its legacy fallback request.
-    @MainActor
-    private func v2MobileWorkspaceListWithHostStatus(
-        params: [String: Any]
-    ) -> V2CallResult {
-        let workspaceResult = v2MobileWorkspaceList(params: params)
-        guard case let .ok(workspacePayload) = workspaceResult,
-              var workspaceObject = workspacePayload as? [String: Any] else {
-            return workspaceResult
-        }
-        guard case let .ok(hostStatusPayload) = MobileHostPublicStatusCache.result(
-            includeIdentity: true
-        ), let hostStatusObject = hostStatusPayload as? [String: Any] else {
-            return workspaceResult
-        }
-        workspaceObject["host_status"] = hostStatusObject
-        return .ok(workspaceObject)
+        mobileHostResult(.err(code: "method_not_found", message: "Unknown mobile method", data: [
+            "method": request.method
+        ]))
     }
 
 
-    /// Fork: the upstream dogfood feedback sink (CmuxFeedback) is gone. It only
-    /// ever accepted @manaflow.ai accounts, so every caller gets the same
-    /// "unauthorized" reply it got before.
-    func v2MobileDogfoodFeedbackSubmit(params: [String: Any]) async -> V2CallResult {
-        .err(
-            code: "unauthorized",
-            message: "Feedback agent sink is restricted to privileged accounts",
-            data: nil
-        )
-    }
 
-    /// Publish a `terminal.set_font` event to connected iOS device(s) so the
-    /// mirrored terminal live-zooms its font (the grid reflows automatically on
-    /// the phone). Drives the same iOS apply path as a pinch/zoom step, just
-    /// initiated from the Mac for automation (`cmux mobile set-font <size>`).
-    ///
-    /// Params: `{ "font_size": Number, optional "surface_id": String,
-    /// optional "workspace_id": String }`. When `surface_id` is omitted the
-    /// phone applies the size to every mounted surface. `nonisolated` because it
-    /// only touches the Sendable connection registry via
-    /// ``MobileHostService/emitEvent(topic:payload:)``.
-    nonisolated func v2MobileTerminalSetFont(params: [String: Any]) -> V2CallResult {
-        guard let fontSize = v2Double(params, "font_size") else {
-            return .err(
-                code: "invalid_params",
-                message: "Missing or invalid font_size",
-                data: nil
-            )
-        }
-        guard fontSize.isFinite, fontSize > 0 else {
-            return .err(
-                code: "invalid_params",
-                message: "font_size must be a positive number of points",
-                data: ["font_size": fontSize]
-            )
-        }
-        var payload: [String: Any] = ["font_size": fontSize]
-        if let surfaceID = v2RawString(params, "surface_id") {
-            payload["surface_id"] = surfaceID
-        }
-        if let workspaceID = v2RawString(params, "workspace_id") {
-            payload["workspace_id"] = workspaceID
-        }
-        let hasSubscribers = MobileHostService.hasEventSubscribers(topic: "terminal.set_font")
-        MobileHostService.emitEvent(topic: "terminal.set_font", payload: payload)
-        return .ok([
-            "ok": true,
-            "font_size": fontSize,
-            "delivered": hasSubscribers,
-        ])
-    }
-
-    /// Returns the sibling Mac dev tags this Mac grants to its paired
-    /// development phones (`cmux mobile compatible-tags list`).
-    nonisolated func v2MobileCompatibleTagsGet() -> V2CallResult {
-        .ok(["tags": MobileCompatibleMacTags.tags()])
-    }
-
-    /// Replaces the sibling-tag grant set and pushes the new set to every
-    /// subscribed phone over `mobile.compatible_tags.changed`, so a connected
-    /// phone re-runs discovery (grant) or prunes (revoke) without a rebuild.
-    /// A phone that is offline right now adopts the set from authenticated
-    /// host status on its next connect.
-    ///
-    /// Params: `{ "tags": [String] }` — the FULL grant set (the CLI implements
-    /// add/remove as read-modify-write), so application is idempotent.
-    nonisolated func v2MobileCompatibleTagsSet(params: [String: Any]) -> V2CallResult {
-        guard let rawTags = params["tags"] as? [String] else {
-            return .err(
-                code: "invalid_params",
-                message: "Missing or invalid tags array",
-                data: nil
-            )
-        }
-        let rejected = MobileCompatibleMacTags.rejectedTags(from: rawTags)
-        guard rejected.isEmpty else {
-            return .err(
-                code: "invalid_params",
-                message: "Release-lane tags cannot be granted to a development phone",
-                data: ["rejected": rejected]
-            )
-        }
-        let stored = MobileCompatibleMacTags.set(rawTags)
-        let topic = "mobile.compatible_tags.changed"
-        let hasSubscribers = MobileHostService.hasEventSubscribers(topic: topic)
-        MobileHostService.emitEvent(topic: topic, payload: ["tags": stored])
-        return .ok([
-            "ok": true,
-            "tags": stored,
-            "delivered": hasSubscribers,
-        ])
-    }
-
-    /// Mobile-gated wrapper over ``v2WorkspaceAction(params:)``.
-    func v2MobileWorkspaceAction(params: [String: Any]) -> V2CallResult {
-        let rawAction = v2RawString(params, "action")
-        guard let action = Self.mobileWorkspaceActionKey(rawAction),
-              Self.mobileAllowsWorkspaceAction(rawAction) else {
-            return .err(
-                code: "method_not_found",
-                message: "Unsupported workspace action for mobile",
-                data: ["action": v2OrNull(rawAction)]
-            )
-        }
-        // Reject a present-but-malformed workspace_id like the other mobile
-        // handlers, then require it to actually be present and resolvable: this
-        // is a mutating action, so it must target an explicit workspace and never
-        // fall back to the Mac's currently selected workspace (which
-        // v2WorkspaceAction would otherwise do for a missing workspace_id).
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        guard let targetWorkspaceID = v2UUID(params, "workspace_id") else {
-            return .err(code: "invalid_params", message: "Missing or invalid workspace_id", data: nil)
-        }
-        if action == "set_description" || action == "clear_description" {
-            guard let tabManager = v2ResolveTabManager(params: params),
-                  let workspace = tabManager.tabs.first(where: { $0.id == targetWorkspaceID }) else {
-                return .err(code: "not_found", message: "Workspace not found", data: nil)
-            }
-            if MobileWorkspaceMetadataLimits
-                .projectedCustomDescription(workspace.customDescription)
-                .isTruncated {
-                return .err(
-                    code: "conflict",
-                    message: "Workspace description is too long to edit from mobile",
-                    data: ["workspace_id": targetWorkspaceID.uuidString]
-                )
-            }
-        }
-        var sanitizedParams = params
-        switch action {
-        case "set_description":
-            guard let normalized = MobileWorkspaceMetadataLimits.normalizedCustomDescription(
-                v2String(params, "description")
-            ) else {
-                return .err(code: "invalid_params", message: "Missing or invalid description", data: nil)
-            }
-            sanitizedParams["description"] = normalized
-        case "set_color":
-            guard let colorRaw = v2String(params, "color")?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !colorRaw.isEmpty,
-                  colorRaw.utf8.count <= MobileWorkspaceMetadataLimits.customColorMaxUTF8Bytes else {
-                return .err(code: "invalid_params", message: "Missing or invalid color", data: nil)
-            }
-            sanitizedParams["color"] = colorRaw
-        default:
-            break
-        }
-        return v2WorkspaceAction(params: sanitizedParams)
-    }
     private func mobileHostResult(_ result: V2CallResult) -> MobileHostRPCResult {
         switch result {
         case let .ok(payload):
@@ -15838,40 +14882,6 @@ class TerminalController {
             let safeData = code == "internal_error" ? nil : data
             return .failure(MobileHostRPCError(code: code, message: safeMessage, data: safeData))
         }
-    }
-    func v2MobileHostStatus(
-        params: [String: Any],
-        includePrivateMetadata: Bool = true
-    ) -> V2CallResult {
-        let status = MobileHostService.shared.statusSnapshot()
-        // Single source of truth shared with the mobile listener's public-status
-        // paths, so the advertised capabilities can never drift. Includes
-        // workspace.actions.v1 (the mobile-gated pin/unpin/rename handler), which
-        // the iOS client uses to show or hide rename/pin.
-        let capabilities = MobileHostService.mobileHostCapabilities
-        guard includePrivateMetadata else {
-            return .ok(MobileHostService.publicStatusPayload(
-                routes: status.routes
-            ))
-        }
-
-        let tabManager = v2ResolveTabManager(params: params)
-        let workspaceCount = tabManager?.tabs.count ?? 0
-        guard case let .ok(identityPayload) = MobileHostPublicStatusCache.result(
-            includeIdentity: true
-        ), var payload = identityPayload as? [String: Any] else {
-            return .ok([
-                "mac_device_id": MobileHostIdentity.deviceID(),
-                "mac_display_name": v2OrNull(MobileHostIdentity.instanceDisplayName()),
-                "host_service": status.payload,
-                "workspace_count": workspaceCount,
-                "terminal_fidelity": "render_grid",
-                "capabilities": capabilities,
-            ])
-        }
-        payload["host_service"] = status.payload
-        payload["workspace_count"] = workspaceCount
-        return .ok(payload)
     }
 
     #if DEBUG
@@ -16419,71 +15429,6 @@ class TerminalController {
             #endif
         }
         return .ok(mobileInputSuccessPayload(payload, acknowledgement: acknowledgement))
-    }
-
-    /// Handle `terminal.paste_image`: a paired client (the iOS app) forwards an
-    /// image it pasted as base64 bytes. We materialize it to a temp file on the
-    /// Mac and inject the shell-escaped path as terminal input, exactly the way a
-    /// local clipboard-image paste does, so the running TUI (e.g. Claude Code)
-    /// attaches the image from the path.
-    func v2MobileTerminalPasteImage(params: [String: Any]) -> V2CallResult {
-        guard let base64 = v2RawString(params, "image_base64"),
-              let imageData = Data(base64Encoded: base64), !imageData.isEmpty else {
-            return .err(code: "invalid_params", message: "Missing or invalid image_base64", data: nil)
-        }
-        let format = v2RawString(params, "image_format") ?? "png"
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        if let error = mobileTerminalAliasValidationError(params: params) {
-            return error
-        }
-        guard let resolved = mobileCanonicalTerminalTarget(params: params) else {
-            return mobileInputNotFound(params: params)
-        }
-        let surfaceId = resolved.surfaceID
-        let terminalTarget = resolved.target
-        let terminalPanel = terminalTarget.panel
-        let delivery = mobileInputDelivery(params: params)
-        if let answer = mobileInputAdmissionAnswer(delivery, workspaceID: resolved.workspace.id, surfaceID: surfaceId) {
-            return answer
-        }
-
-        _ = applyMobileViewportReport(params: params, terminalTarget: terminalTarget)
-
-        guard let escapedPath = GhosttyApp.terminalPasteboard.saveImageData(imageData, fileExtension: format) else {
-            return mobileInputWriteFailure(
-                code: "invalid_params",
-                message: "Image payload was empty or exceeded the size limit",
-                surfaceID: surfaceId,
-                acknowledgement: MobileHostTerminalInputApplier.shared.reject(delivery)
-            )
-        }
-
-        let sendResult = terminalTarget.sendInputResult(escapedPath)
-        let acknowledgement = MobileHostTerminalInputApplier.shared.complete(delivery, result: sendResult)
-        switch sendResult {
-        case .sent:
-            terminalTarget.forceRefresh(reason: "mobileHost.terminalPasteImage")
-        case .queued:
-            break
-        case .inputQueueFull:
-            return mobileInputWriteFailure(code: "input_queue_full", message: Self.terminalInputQueueFullMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
-        case .surfaceUnavailable:
-            return mobileInputWriteFailure(code: "surface_unavailable", message: Self.terminalSurfaceUnavailableMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
-        case .processExited:
-            return mobileInputWriteFailure(code: "process_exited", message: Self.terminalProcessExitedMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
-        }
-        #if DEBUG
-        cmuxDebugLog(
-            "mobile.terminal.paste_image workspace=\(resolved.workspace.id.uuidString.prefix(8)) surface=\(surfaceId.uuidString.prefix(8)) bytes=\(imageData.count) format=\(format)"
-        )
-        #endif
-        return .ok(mobileInputSuccessPayload([
-            "workspace_id": resolved.workspace.id.uuidString,
-            "surface_id": terminalPanel.id.uuidString,
-            "queued": sendResult == .queued,
-        ], acknowledgement: acknowledgement))
     }
 
     /// Deliver a composed block from the mobile composer as a bracketed paste

@@ -1694,12 +1694,8 @@
 		C7FE4192A06F41C15B58BD85 /* CoderouterCLIAccountReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD9ECC7CA728BADD0DEA6F18 /* CoderouterCLIAccountReader.swift */; };
 		AA5547F98E95C043FFD28413 /* CoderouterCLIAccountReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50344B92A8552212731CAE50 /* CoderouterCLIAccountReaderTests.swift */; };
 		67F13AB1D70935EB1DA98379 /* CoderouterGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673E5C029E4E33D55D173734 /* CoderouterGuideView.swift */; };
-		D4C0DE020000000000000001 /* CodeRouterHandoffArmGrantStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C0DE020000000000000002 /* CodeRouterHandoffArmGrantStore.swift */; };
 		D4C0DE020000000000000005 /* CodeRouterHandoffArmGrantStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C0DE020000000000000006 /* CodeRouterHandoffArmGrantStoreTests.swift */; };
-		D4C0DE010000000000000001 /* CodeRouterHandoffClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C0DE010000000000000002 /* CodeRouterHandoffClient.swift */; };
 		ECC272858DDDFFEA5700CCE4 /* CoderouterProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BAEE91D3454ED56377518FE /* CoderouterProvider.swift */; };
-		C0DE60C0000000000000A012 /* CoderouterSocketCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE60C0000000000000A011 /* CoderouterSocketCommands.swift */; };
-		D4C0DE020000000000000003 /* CodeRouterSocketPeerVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C0DE020000000000000004 /* CodeRouterSocketPeerVerifier.swift */; };
 		A9F200000000000000000016 /* CodexAppServerQueuedInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F100000000000000000016 /* CodexAppServerQueuedInput.swift */; };
 		A9E02000000000000000000E /* CodexAppServerSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E01000000000000000000E /* CodexAppServerSession.swift */; };
 		A9E040000000000000000002 /* CodexAppServerSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E040000000000000000001 /* CodexAppServerSessionTests.swift */; };
@@ -3767,7 +3763,6 @@
 		110434021104340211043402 /* TerminalController+AgentRestoreAdmission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110434011104340111043401 /* TerminalController+AgentRestoreAdmission.swift */; };
 		1C2E31B0392EDA1F21B150A4 /* TerminalController+AgentRestoreRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BC27608B94D9C9D703147F2 /* TerminalController+AgentRestoreRecovery.swift */; };
 		2AEE214AD8A145C2BEA7AEE3 /* TerminalController+AgentTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CCD6F86F7D943F79609DF83 /* TerminalController+AgentTitle.swift */; };
-		13019E000000000000000002 /* TerminalController+AuthTeam.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13019E000000000000000001 /* TerminalController+AuthTeam.swift */; };
 		A106490C0000000000000001 /* TerminalController+Automation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A106490B0000000000000001 /* TerminalController+Automation.swift */; };
 		8054A0030000000000000003 /* TerminalController+BrowserAutomationRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8054A0040000000000000004 /* TerminalController+BrowserAutomationRecovery.swift */; };
 		D35A00000000000000000011 /* TerminalController+BrowserDesignMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35B00000000000000000011 /* TerminalController+BrowserDesignMode.swift */; };
@@ -3779,7 +3774,6 @@
 		D35A00000000000000000013 /* TerminalController+BrowserWorkerSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35B00000000000000000013 /* TerminalController+BrowserWorkerSupport.swift */; };
 		CAFE00000000000000000004 /* TerminalController+Caffeine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFE00000000000000000003 /* TerminalController+Caffeine.swift */; };
 		A13056000000000000000101 /* TerminalController+Capabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13056000000000000000001 /* TerminalController+Capabilities.swift */; };
-		89842C7C379A8D850E90B3A4 /* TerminalController+CloudDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E1C76D41B156E54A3C6075 /* TerminalController+CloudDiagnostics.swift */; };
 		C872987BFB612754B125DBCE /* TerminalController+CloudMachinePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1BE71D511FF27AB7D0279A8 /* TerminalController+CloudMachinePayload.swift */; };
 		7A7BA5FDAFA74986B5B764ED /* TerminalController+CloudSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C621745E616B46C2A15DEBAA /* TerminalController+CloudSidebar.swift */; };
 		3C8B1FADA2B94237ADBE70B9 /* TerminalController+CloudTerminalCreation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C422AAD63384578846BC05E /* TerminalController+CloudTerminalCreation.swift */; };
@@ -3828,24 +3822,9 @@
 		8777C0018777C0018777C001 /* TerminalController+DockControlTopology.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8777C0028777C0028777C002 /* TerminalController+DockControlTopology.swift */; };
 		8672D0038672D0038672D003 /* TerminalController+FeedAcknowledgment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8672D0048672D0048672D004 /* TerminalController+FeedAcknowledgment.swift */; };
 		CF8062B5358EF8BACDC4B11E /* TerminalController+MemoryDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465DC70102FF7A836544B98A /* TerminalController+MemoryDiagnostics.swift */; };
-		A7C0F0020000000000000002 /* TerminalController+MobileAttachTicket.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C0F0020000000000000001 /* TerminalController+MobileAttachTicket.swift */; };
-		F2100000000000000000000E /* TerminalController+MobileBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1100000000000000000000E /* TerminalController+MobileBrowser.swift */; };
-		ACA7C4A7000000000000000D /* TerminalController+MobileChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA7C4A7000000000000000E /* TerminalController+MobileChat.swift */; };
-		C7AF10000000000000000003 /* TerminalController+MobileChatArtifacts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AF10000000000000000004 /* TerminalController+MobileChatArtifacts.swift */; };
-		D1B800000000000000000006 /* TerminalController+MobileDirectoryList.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B800000000000000000016 /* TerminalController+MobileDirectoryList.swift */; };
-		D1A700000000000000000002 /* TerminalController+MobileDirectorySearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A700000000000000000005 /* TerminalController+MobileDirectorySearch.swift */; };
-		D7AB00000000000000C101 /* TerminalController+MobileFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7AB00000000000000C100 /* TerminalController+MobileFeed.swift */; };
 		4688B527FE390A0BC3B772E8 /* TerminalController+MobileInputDelivery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67FB0CE02C2AC02973B75A89 /* TerminalController+MobileInputDelivery.swift */; };
-		D7AB00000000000000B001 /* TerminalController+MobileNotificationSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7AB00000000000000B000 /* TerminalController+MobileNotificationSync.swift */; };
-		D1F0A0040000000000000001 /* TerminalController+MobilePhonePushSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1F0A0040000000000000002 /* TerminalController+MobilePhonePushSettings.swift */; };
 		D7AB00000000000000B011 /* TerminalController+MobileScrollPrefetch.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7AB00000000000000B010 /* TerminalController+MobileScrollPrefetch.swift */; };
 		C7AF30000000000000000001 /* TerminalController+MobileSurfaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AF30000000000000000002 /* TerminalController+MobileSurfaces.swift */; };
-		A77A30000000000000000002 /* TerminalController+MobileTaskAttachments.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77A30000000000000000001 /* TerminalController+MobileTaskAttachments.swift */; };
-		A77A31000000000000000002 /* TerminalController+MobileTaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77A31000000000000000001 /* TerminalController+MobileTaskModels.swift */; };
-		C7AF20000000000000000001 /* TerminalController+MobileTerminalArtifacts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AF20000000000000000002 /* TerminalController+MobileTerminalArtifacts.swift */; };
-				B11D00000000000000000001 /* TerminalController+MobileTerminalLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11D00000000000000000002 /* TerminalController+MobileTerminalLifecycle.swift */; };
-		C7AF31000000000000000001 /* TerminalController+MobileTodos.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AF31000000000000000002 /* TerminalController+MobileTodos.swift */; };
-		D1FF00010000000000000002 /* TerminalController+MobileWorkspaceChanges.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FF00010000000000000001 /* TerminalController+MobileWorkspaceChanges.swift */; };
 		C7A50B000000000000000012 /* TerminalController+MobileWorkspaceList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A50B000000000000000011 /* TerminalController+MobileWorkspaceList.swift */; };
 		D7AB0000000000000000000B /* TerminalController+MoveTabToNewWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7AB0000000000000000000C /* TerminalController+MoveTabToNewWorkspace.swift */; };
 		A049D3EEEF099C2E793679D0 /* TerminalController+ProcessDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = C73B29F22CCC610EAEED4C0C /* TerminalController+ProcessDiagnostics.swift */; };
@@ -4236,10 +4215,6 @@
 		9D44FE10A33B02E0D4C891B1 /* VMClientReadCoalescingTests+ListRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06F21D96D760755C4BDC2B1B /* VMClientReadCoalescingTests+ListRecovery.swift */; };
 		36FE0F3F72F372A81FA59EE1 /* VMClientReadCoalescingTests+RequestBudget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB0D1641E591BA0B8366E65 /* VMClientReadCoalescingTests+RequestBudget.swift */; };
 		C12625000000000000000002 /* VMClientReadCoalescingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12625000000000000000001 /* VMClientReadCoalescingTests.swift */; };
-		ECB6A18DEC5D08DC2383081D /* VMClientSocketCommands+AgentUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D0E225AB84528426A1B821 /* VMClientSocketCommands+AgentUpdates.swift */; };
-		3AC7AE496E2A88ED7A2750F4 /* VMClientSocketCommands+Network.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3266CA3D5220D1464EC162 /* VMClientSocketCommands+Network.swift */; };
-		7A0CE1000000000000000044 /* VMClientSocketCommands+Tunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0CE1000000000000000018 /* VMClientSocketCommands+Tunnel.swift */; };
-		ACE4FE2A8F1CC6C0B6A673AB /* VMClientSocketCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEC6F0035B71AE59FA45BA7 /* VMClientSocketCommands.swift */; };
 		C10DC1000000000000000013 /* VMClientTelemetry+Live.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10DC1000000000000000014 /* VMClientTelemetry+Live.swift */; };
 		C37800000000000000000003 /* VMDefaultCloudCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37800000000000000000004 /* VMDefaultCloudCommandTests.swift */; };
 		C37800000000000000000001 /* VMSSHCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37800000000000000000002 /* VMSSHCommandTests.swift */; };
@@ -6192,12 +6167,8 @@
 		BD9ECC7CA728BADD0DEA6F18 /* CoderouterCLIAccountReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoderouterCLIAccountReader.swift; sourceTree = "<group>"; };
 		50344B92A8552212731CAE50 /* CoderouterCLIAccountReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoderouterCLIAccountReaderTests.swift"; sourceTree = "<group>"; };
 		673E5C029E4E33D55D173734 /* CoderouterGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoderouterGuideView.swift; sourceTree = "<group>"; };
-		D4C0DE020000000000000002 /* CodeRouterHandoffArmGrantStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CodeRouterHandoffArmGrantStore.swift; sourceTree = "<group>"; };
 		D4C0DE020000000000000006 /* CodeRouterHandoffArmGrantStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeRouterHandoffArmGrantStoreTests.swift; sourceTree = "<group>"; };
-		D4C0DE010000000000000002 /* CodeRouterHandoffClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CodeRouterHandoffClient.swift; sourceTree = "<group>"; };
 		2BAEE91D3454ED56377518FE /* CoderouterProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoderouterProvider.swift; sourceTree = "<group>"; };
-		C0DE60C0000000000000A011 /* CoderouterSocketCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoderouterSocketCommands.swift; sourceTree = "<group>"; };
-		D4C0DE020000000000000004 /* CodeRouterSocketPeerVerifier.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CodeRouterSocketPeerVerifier.swift; sourceTree = "<group>"; };
 		A9F100000000000000000016 /* CodexAppServerQueuedInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/CodexAppServerQueuedInput.swift; sourceTree = "<group>"; };
 		A9E01000000000000000000E /* CodexAppServerSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/CodexAppServerSession.swift; sourceTree = "<group>"; };
 		A9E040000000000000000001 /* CodexAppServerSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexAppServerSessionTests.swift; sourceTree = "<group>"; };
@@ -8233,7 +8204,6 @@
 		110434011104340111043401 /* TerminalController+AgentRestoreAdmission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+AgentRestoreAdmission.swift"; sourceTree = "<group>"; };
 		8BC27608B94D9C9D703147F2 /* TerminalController+AgentRestoreRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+AgentRestoreRecovery.swift"; sourceTree = "<group>"; };
 		0CCD6F86F7D943F79609DF83 /* TerminalController+AgentTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+AgentTitle.swift"; sourceTree = "<group>"; };
-		13019E000000000000000001 /* TerminalController+AuthTeam.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+AuthTeam.swift"; sourceTree = "<group>"; };
 		A106490B0000000000000001 /* TerminalController+Automation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+Automation.swift"; sourceTree = "<group>"; };
 		8054A0040000000000000004 /* TerminalController+BrowserAutomationRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+BrowserAutomationRecovery.swift"; sourceTree = "<group>"; };
 		D35B00000000000000000011 /* TerminalController+BrowserDesignMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+BrowserDesignMode.swift"; sourceTree = "<group>"; };
@@ -8245,7 +8215,6 @@
 		D35B00000000000000000013 /* TerminalController+BrowserWorkerSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+BrowserWorkerSupport.swift"; sourceTree = "<group>"; };
 		CAFE00000000000000000003 /* TerminalController+Caffeine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+Caffeine.swift"; sourceTree = "<group>"; };
 		A13056000000000000000001 /* TerminalController+Capabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+Capabilities.swift"; sourceTree = "<group>"; };
-		67E1C76D41B156E54A3C6075 /* TerminalController+CloudDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+CloudDiagnostics.swift"; sourceTree = "<group>"; };
 		F1BE71D511FF27AB7D0279A8 /* TerminalController+CloudMachinePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+CloudMachinePayload.swift"; sourceTree = "<group>"; };
 		C621745E616B46C2A15DEBAA /* TerminalController+CloudSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sidebar/TerminalController+CloudSidebar.swift"; sourceTree = "<group>"; };
 		2C422AAD63384578846BC05E /* TerminalController+CloudTerminalCreation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+CloudTerminalCreation.swift"; sourceTree = "<group>"; };
@@ -8294,24 +8263,9 @@
 		8777C0028777C0028777C002 /* TerminalController+DockControlTopology.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+DockControlTopology.swift"; sourceTree = "<group>"; };
 		8672D0048672D0048672D004 /* TerminalController+FeedAcknowledgment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+FeedAcknowledgment.swift"; sourceTree = "<group>"; };
 		465DC70102FF7A836544B98A /* TerminalController+MemoryDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MemoryDiagnostics.swift"; sourceTree = "<group>"; };
-		A7C0F0020000000000000001 /* TerminalController+MobileAttachTicket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileAttachTicket.swift"; sourceTree = "<group>"; };
-		F1100000000000000000000E /* TerminalController+MobileBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileBrowser.swift"; sourceTree = "<group>"; };
-		ACA7C4A7000000000000000E /* TerminalController+MobileChat.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileChat.swift"; sourceTree = "<group>"; };
-		C7AF10000000000000000004 /* TerminalController+MobileChatArtifacts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileChatArtifacts.swift"; sourceTree = "<group>"; };
-		D1B800000000000000000016 /* TerminalController+MobileDirectoryList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileDirectoryList.swift"; sourceTree = "<group>"; };
-		D1A700000000000000000005 /* TerminalController+MobileDirectorySearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileDirectorySearch.swift"; sourceTree = "<group>"; };
-		D7AB00000000000000C100 /* TerminalController+MobileFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileFeed.swift"; sourceTree = "<group>"; };
 		67FB0CE02C2AC02973B75A89 /* TerminalController+MobileInputDelivery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileInputDelivery.swift"; sourceTree = "<group>"; };
-		D7AB00000000000000B000 /* TerminalController+MobileNotificationSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileNotificationSync.swift"; sourceTree = "<group>"; };
-		D1F0A0040000000000000002 /* TerminalController+MobilePhonePushSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobilePhonePushSettings.swift"; sourceTree = "<group>"; };
 		D7AB00000000000000B010 /* TerminalController+MobileScrollPrefetch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileScrollPrefetch.swift"; sourceTree = "<group>"; };
 		C7AF30000000000000000002 /* TerminalController+MobileSurfaces.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileSurfaces.swift"; sourceTree = "<group>"; };
-		A77A30000000000000000001 /* TerminalController+MobileTaskAttachments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileTaskAttachments.swift"; sourceTree = "<group>"; };
-		A77A31000000000000000001 /* TerminalController+MobileTaskModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileTaskModels.swift"; sourceTree = "<group>"; };
-		C7AF20000000000000000002 /* TerminalController+MobileTerminalArtifacts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileTerminalArtifacts.swift"; sourceTree = "<group>"; };
-				B11D00000000000000000002 /* TerminalController+MobileTerminalLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileTerminalLifecycle.swift"; sourceTree = "<group>"; };
-		C7AF31000000000000000002 /* TerminalController+MobileTodos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileTodos.swift"; sourceTree = "<group>"; };
-		D1FF00010000000000000001 /* TerminalController+MobileWorkspaceChanges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileWorkspaceChanges.swift"; sourceTree = "<group>"; };
 		C7A50B000000000000000011 /* TerminalController+MobileWorkspaceList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MobileWorkspaceList.swift"; sourceTree = "<group>"; };
 		D7AB0000000000000000000C /* TerminalController+MoveTabToNewWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+MoveTabToNewWorkspace.swift"; sourceTree = "<group>"; };
 		C73B29F22CCC610EAEED4C0C /* TerminalController+ProcessDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+ProcessDiagnostics.swift"; sourceTree = "<group>"; };
@@ -8702,10 +8656,6 @@
 		06F21D96D760755C4BDC2B1B /* VMClientReadCoalescingTests+ListRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VMClientReadCoalescingTests+ListRecovery.swift"; sourceTree = "<group>"; };
 		7EB0D1641E591BA0B8366E65 /* VMClientReadCoalescingTests+RequestBudget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VMClientReadCoalescingTests+RequestBudget.swift"; sourceTree = "<group>"; };
 		C12625000000000000000001 /* VMClientReadCoalescingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VMClientReadCoalescingTests.swift; sourceTree = "<group>"; };
-		B5D0E225AB84528426A1B821 /* VMClientSocketCommands+AgentUpdates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VMClientSocketCommands+AgentUpdates.swift"; sourceTree = "<group>"; };
-		FF3266CA3D5220D1464EC162 /* VMClientSocketCommands+Network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VMClientSocketCommands+Network.swift"; sourceTree = "<group>"; };
-		7A0CE1000000000000000018 /* VMClientSocketCommands+Tunnel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "VMClientSocketCommands+Tunnel.swift"; sourceTree = "<group>"; };
-		9CEC6F0035B71AE59FA45BA7 /* VMClientSocketCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VMClientSocketCommands.swift; sourceTree = "<group>"; };
 		C10DC1000000000000000014 /* VMClientTelemetry+Live.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VMClientTelemetry+Live.swift"; sourceTree = "<group>"; };
 		C37800000000000000000004 /* VMDefaultCloudCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VMDefaultCloudCommandTests.swift; sourceTree = "<group>"; };
 		C37800000000000000000002 /* VMSSHCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VMSSHCommandTests.swift; sourceTree = "<group>"; };
@@ -9693,22 +9643,15 @@
 				ED8A72856D6A62D59C62247B /* CloudNetworkPolicySheetModel.swift */,
 				0E7C9D653A14A56C31A8C828 /* CloudNetworkPolicySheet.swift */,
 				87CBBE12D927278482712A6D /* CloudNetworkPolicySheetPresenter.swift */,
-				FF3266CA3D5220D1464EC162 /* VMClientSocketCommands+Network.swift */,
-				B5D0E225AB84528426A1B821 /* VMClientSocketCommands+AgentUpdates.swift */,
 				E8DCA0BDC648E6CDCFD3E228 /* MachinesPanelViewModel+Refresh.swift */,
 				E37A99C8431FC45A80855541 /* MachinesPanelViewModel+ListStatus.swift */,
 				D7858F7AEBE9927DEAB5CABC /* MachinesListStatusViews.swift */,
 				FA1253800000000000000006 /* CloudTreeRowIcon.swift */,
-				67E1C76D41B156E54A3C6075 /* TerminalController+CloudDiagnostics.swift */,
 				01095305A629F0014A3872CE /* CloudOperationDetailsView.swift */,
 				7FD541FCCB10442050052A1C /* CloudTreeNode+ErrorCopy.swift */,
 				0D0A6FA47518B9D3AF658084 /* AppDelegate+CloudDiagnostics.swift */,
 				E6B0EDC90EFCD3A415400895 /* CloudDiagnosticsView.swift */,
 				DE134580000000000000000B /* DeviceLinkDiagnosticsSection.swift */,
-				D4C0DE010000000000000002 /* CodeRouterHandoffClient.swift */,
-				D4C0DE020000000000000002 /* CodeRouterHandoffArmGrantStore.swift */,
-				D4C0DE020000000000000004 /* CodeRouterSocketPeerVerifier.swift */,
-				C0DE60C0000000000000A011 /* CoderouterSocketCommands.swift */,
 				D1F0A00100000000000000A2 /* PhonePushClient.swift */,
 				D1F0A0050000000000000002 /* PhonePushIdentityPrewarm.swift */,
 				D1F0A00100000000000000A4 /* PhonePushPayload.swift */,
@@ -9723,8 +9666,6 @@
 				D1F0A0990000000000000004 /* PhoneReplyInboxCoordinator.swift */,
 				D1F0A00100000000000000C2 /* MacPairedMacBackupPublisher.swift */,
 				D1F0A00100000000000000B4 /* PresenceSettings.swift */,
-				9CEC6F0035B71AE59FA45BA7 /* VMClientSocketCommands.swift */,
-				7A0CE1000000000000000018 /* VMClientSocketCommands+Tunnel.swift */,
 				7A0CE1000000000000000052 /* Tunnel */,
 				7A0CE1000000000000000708 /* PortForward */,
 				08610D114C8CF23877176D7E /* MachinesPanelView.swift */,
@@ -9993,7 +9934,6 @@
 				C0DE34020000000000000004 /* CmuxHelpResource.swift */,
 				A50019A1 /* SettingsNavigation.swift */,
 				B11D00000000000000000004 /* Workspace+MobileAgentStatus.swift */,
-				B11D00000000000000000002 /* TerminalController+MobileTerminalLifecycle.swift */,
 				D5671402D5671402D5671402 /* SettingsNavigation+TerminalScrollSpeed.swift */,
 				A50019B1 /* SettingsSearchAliases.swift */,
 				D3610C010000000000000002 /* CmuxSettingsJSONPathSupport.swift */,
@@ -10914,12 +10854,7 @@
 				C0DE00000000000000000C61 /* TerminalController+ControlWorkspaceContext.swift */,
 				81260000000000000000000A /* TerminalController+RemoteTerminalTransportErrors.swift */,
 				7371B0010000000000000002 /* TerminalController+ControlWorkspaceStrings.swift */,
-				D7AB00000000000000B000 /* TerminalController+MobileNotificationSync.swift */,
-				D7AB00000000000000C100 /* TerminalController+MobileFeed.swift */,
-				D1F0A0040000000000000002 /* TerminalController+MobilePhonePushSettings.swift */,
 				D7AB00000000000000B010 /* TerminalController+MobileScrollPrefetch.swift */,
-				D1B800000000000000000016 /* TerminalController+MobileDirectoryList.swift */,
-				D1A700000000000000000005 /* TerminalController+MobileDirectorySearch.swift */,
 				C0DE00000000000000000C81 /* TerminalController+ControlBrowserPanelContext.swift */,
 				C0DE00000000000000000C6D /* TerminalController+ControlDebugContext.swift */,
 				C0DEBEEF0000000000000001 /* TerminalController+DebugMethodNames.swift */,
@@ -10945,15 +10880,7 @@
 				8126BEEF0000000000000002 /* TerminalController+ControlSurfaceGitContext.swift */,
 				C0DE00000000000000000C85 /* TerminalController+ControlSurfaceDock.swift */,
 				C0DE00000000000000000C51 /* TerminalController+ControlMobileHostContext.swift */,
-				A7C0F0020000000000000001 /* TerminalController+MobileAttachTicket.swift */,
-				F1100000000000000000000E /* TerminalController+MobileBrowser.swift */,
 				C7AF30000000000000000002 /* TerminalController+MobileSurfaces.swift */,
-				ACA7C4A7000000000000000E /* TerminalController+MobileChat.swift */,
-				C7AF10000000000000000004 /* TerminalController+MobileChatArtifacts.swift */,
-				A77A30000000000000000001 /* TerminalController+MobileTaskAttachments.swift */,
-				A77A31000000000000000001 /* TerminalController+MobileTaskModels.swift */,
-				C7AF20000000000000000002 /* TerminalController+MobileTerminalArtifacts.swift */,
-				C7AF31000000000000000002 /* TerminalController+MobileTodos.swift */,
 				C0DE00000000000000000C53 /* TerminalController+ControlWorkspaceGroupContext.swift */,
 				466DEB47603469A59697D418 /* TerminalController+ControlWorkspaceTodoContext.swift */,
 				C0DE00000000000000000D83 /* TerminalController+ControlPaneDock.swift */,
@@ -10973,7 +10900,6 @@
 				8777C0028777C0028777C002 /* TerminalController+DockControlTopology.swift */,
 				C7A50B000000000000000001 /* TerminalControllerV2ParamParsingSupport.swift */,
 				C7A50B000000000000000011 /* TerminalController+MobileWorkspaceList.swift */,
-				D1FF00010000000000000001 /* TerminalController+MobileWorkspaceChanges.swift */,
 				C7A505000000000000000001 /* TerminalControllerTopSupport.swift */,
 				A11004000000000000000003 /* CmuxTopTTYOwnership.swift */,
 				C7A501000000000000000001 /* CmuxTopSnapshot.swift */,
@@ -11069,7 +10995,6 @@
 				110438011104380111043801 /* AgentJournalLifecycleCenter+Database.swift */,
 				A77A000FA1B2C3D4E5F60001 /* AgentJournalLazyStore.swift */,
 				A77A0008A1B2C3D4E5F60001 /* TerminalController+AgentJournal.swift */,
-				13019E000000000000000001 /* TerminalController+AuthTeam.swift */,
 				6313B2A1 /* PaneMemoryGuardrailEngine.swift */,
 				6313B3A1 /* PaneMemoryGuardrailEngineOutput.swift */,
 				6313C6A1 /* PaneMemoryGuardrailSampleBatch.swift */,
@@ -15202,11 +15127,7 @@
 				44B5601F54D3BB5BD1B5F913 /* CoderouterAccountState.swift in Sources */,
 				C7FE4192A06F41C15B58BD85 /* CoderouterCLIAccountReader.swift in Sources */,
 				67F13AB1D70935EB1DA98379 /* CoderouterGuideView.swift in Sources */,
-				D4C0DE020000000000000001 /* CodeRouterHandoffArmGrantStore.swift in Sources */,
-				D4C0DE010000000000000001 /* CodeRouterHandoffClient.swift in Sources */,
 				ECC272858DDDFFEA5700CCE4 /* CoderouterProvider.swift in Sources */,
-				C0DE60C0000000000000A012 /* CoderouterSocketCommands.swift in Sources */,
-				D4C0DE020000000000000003 /* CodeRouterSocketPeerVerifier.swift in Sources */,
 				A9F200000000000000000016 /* CodexAppServerQueuedInput.swift in Sources */,
 				A9E02000000000000000000E /* CodexAppServerSession.swift in Sources */,
 				9D04DE21C5281E376C0FE450 /* CodexRestoreHookEvidence.swift in Sources */,
@@ -16500,7 +16421,6 @@
 				110434021104340211043402 /* TerminalController+AgentRestoreAdmission.swift in Sources */,
 				1C2E31B0392EDA1F21B150A4 /* TerminalController+AgentRestoreRecovery.swift in Sources */,
 				2AEE214AD8A145C2BEA7AEE3 /* TerminalController+AgentTitle.swift in Sources */,
-				13019E000000000000000002 /* TerminalController+AuthTeam.swift in Sources */,
 				A106490C0000000000000001 /* TerminalController+Automation.swift in Sources */,
 				8054A0030000000000000003 /* TerminalController+BrowserAutomationRecovery.swift in Sources */,
 				D35A00000000000000000011 /* TerminalController+BrowserDesignMode.swift in Sources */,
@@ -16512,7 +16432,6 @@
 				D35A00000000000000000013 /* TerminalController+BrowserWorkerSupport.swift in Sources */,
 				CAFE00000000000000000004 /* TerminalController+Caffeine.swift in Sources */,
 				A13056000000000000000101 /* TerminalController+Capabilities.swift in Sources */,
-				89842C7C379A8D850E90B3A4 /* TerminalController+CloudDiagnostics.swift in Sources */,
 			C872987BFB612754B125DBCE /* TerminalController+CloudMachinePayload.swift in Sources */,
 				7A7BA5FDAFA74986B5B764ED /* TerminalController+CloudSidebar.swift in Sources */,
 				3C8B1FADA2B94237ADBE70B9 /* TerminalController+CloudTerminalCreation.swift in Sources */,
@@ -16561,24 +16480,9 @@
 				8777C0018777C0018777C001 /* TerminalController+DockControlTopology.swift in Sources */,
 				8672D0038672D0038672D003 /* TerminalController+FeedAcknowledgment.swift in Sources */,
 				CF8062B5358EF8BACDC4B11E /* TerminalController+MemoryDiagnostics.swift in Sources */,
-				A7C0F0020000000000000002 /* TerminalController+MobileAttachTicket.swift in Sources */,
-				F2100000000000000000000E /* TerminalController+MobileBrowser.swift in Sources */,
-				ACA7C4A7000000000000000D /* TerminalController+MobileChat.swift in Sources */,
-				C7AF10000000000000000003 /* TerminalController+MobileChatArtifacts.swift in Sources */,
-				D1B800000000000000000006 /* TerminalController+MobileDirectoryList.swift in Sources */,
-				D1A700000000000000000002 /* TerminalController+MobileDirectorySearch.swift in Sources */,
-				D7AB00000000000000C101 /* TerminalController+MobileFeed.swift in Sources */,
 				4688B527FE390A0BC3B772E8 /* TerminalController+MobileInputDelivery.swift in Sources */,
-				D7AB00000000000000B001 /* TerminalController+MobileNotificationSync.swift in Sources */,
-				D1F0A0040000000000000001 /* TerminalController+MobilePhonePushSettings.swift in Sources */,
 				D7AB00000000000000B011 /* TerminalController+MobileScrollPrefetch.swift in Sources */,
 				C7AF30000000000000000001 /* TerminalController+MobileSurfaces.swift in Sources */,
-				A77A30000000000000000002 /* TerminalController+MobileTaskAttachments.swift in Sources */,
-				A77A31000000000000000002 /* TerminalController+MobileTaskModels.swift in Sources */,
-				C7AF20000000000000000001 /* TerminalController+MobileTerminalArtifacts.swift in Sources */,
-				B11D00000000000000000001 /* TerminalController+MobileTerminalLifecycle.swift in Sources */,
-				C7AF31000000000000000001 /* TerminalController+MobileTodos.swift in Sources */,
-				D1FF00010000000000000002 /* TerminalController+MobileWorkspaceChanges.swift in Sources */,
 				C7A50B000000000000000012 /* TerminalController+MobileWorkspaceList.swift in Sources */,
 				D7AB0000000000000000000B /* TerminalController+MoveTabToNewWorkspace.swift in Sources */,
 				A049D3EEEF099C2E793679D0 /* TerminalController+ProcessDiagnostics.swift in Sources */,
@@ -16863,10 +16767,6 @@
 				F7216001000000000000001 /* VerticalTabsSidebar+EmptyAreasAndFooter.swift in Sources */,
 				C9A57209C9A57209C9A57209 /* VerticalTabsSidebar+WorkspaceGroups.swift in Sources */,
 				A28B087F0000000000000005 /* ViewerNavigationKeyRouter.swift in Sources */,
-				ECB6A18DEC5D08DC2383081D /* VMClientSocketCommands+AgentUpdates.swift in Sources */,
-				3AC7AE496E2A88ED7A2750F4 /* VMClientSocketCommands+Network.swift in Sources */,
-				7A0CE1000000000000000044 /* VMClientSocketCommands+Tunnel.swift in Sources */,
-				ACE4FE2A8F1CC6C0B6A673AB /* VMClientSocketCommands.swift in Sources */,
 				C10DC1000000000000000013 /* VMClientTelemetry+Live.swift in Sources */,
 				C7B206ECEE3E020A96259AFF /* WebKitBrowserReplDriver.swift in Sources */,
 				A10020000000000000000019 /* WebSurfaceSelectionEvaluationOwner.swift in Sources */,
