@@ -974,9 +974,10 @@ the `.account` section case (move the compatibility mapping to `.app`), and `Bro
 
 - ⬜ Standard checks. Settings opens fine; an old `selectedSectionRaw = "account"` lands on App.
 
-### ⬜ 9.14 Delete Mobile pairing, Devices and Hive (M, medium risk)
+### ✅ 9.14 Delete Mobile pairing, Devices and Hive (M, medium risk)
 
-Progress (done as separate commits, see the order under 9.12):
+Done in three commits, "Phase 9.14 (A)", "(C)", "(B)" (in that order, see under 9.12). One deferral: the
+`CmuxSettingsUI` Devices section pieces go with 9.12 (F), see (B) below.
 - (A) `Sources/Hive` deleted ("Phase 9.14 (A)"). `HiveAccountTokenSource` users in `Sources/Devices`
   (`DeviceDirectory`, `DeviceLinkRuntime`, `DeviceSurfaceProviderRegistry`, `DeviceRegistryDirectoryClient`) and
   `Sources/Cloud/CloudVMSyncSubscriber` now throw `CancellationError` instead of fetching account tokens (all dead
@@ -1045,8 +1046,8 @@ Also `Panels/MobilePairing*`. `PanelType.mobilePairing` stays.
 **Risk:** medium. `MobileTerminalByteTee`, `MobileTerminalRenderObserver` and `MobileTerminalFramePacer` are hooked
 into terminal output. Remove their hooks from `GhosttyTerminalView` / `TerminalController` in the same commit.
 
-- ⬜ Standard checks. Run something chatty (`yes | head -100000`) and a full-screen app (`htop`, `vim`): rendering
-  is normal.
+- ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`). ⬜ ⌘Q/reopen, agents, Settings: manual.
+- ✅ Run something chatty (`yes | head -100000`) and a full-screen app (`vim`): rendering is normal (read-screen).
 
 ### ⬜ 9.15 Delete the Cloud and Auth packages and Stack Auth (M, low risk)
 
