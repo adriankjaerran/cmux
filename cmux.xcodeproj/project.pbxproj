@@ -3222,7 +3222,6 @@
 		F5000000A1B2C3D4E5F60718 /* SessionPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5000001A1B2C3D4E5F60718 /* SessionPersistenceTests.swift */; };
 		812600000000000000000003 /* SessionRemoteWorkspaceMoshRestoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 812600000000000000000004 /* SessionRemoteWorkspaceMoshRestoreTests.swift */; };
 		E30780000000000000000014 /* SessionRemoteWorkspaceSnapshot+Restore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30780000000000000000013 /* SessionRemoteWorkspaceSnapshot+Restore.swift */; };
-		3042D5DC7CAA74E5701F26EB /* SessionRemoteWorkspaceSnapshot+TuiSSH.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D0FC4CB20C73A387037AF91 /* SessionRemoteWorkspaceSnapshot+TuiSSH.swift */; };
 		0A1107110000000000000022 /* SessionRestorableAgentSnapshot+Commands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1107110000000000000023 /* SessionRestorableAgentSnapshot+Commands.swift */; };
 		112950000000000000000004 /* SessionRestorableAgentSnapshot+ForkVerb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112950000000000000000003 /* SessionRestorableAgentSnapshot+ForkVerb.swift */; };
 		A7195A3AFC945E508844DC05 /* SessionRestorableAgentSnapshot+HibernationLaunchFidelity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68B75C6322ED3E5FFEDEAE09 /* SessionRestorableAgentSnapshot+HibernationLaunchFidelity.swift */; };
@@ -3583,14 +3582,11 @@
 		D6B29560DEE34B08842A143A /* SSHStartupManualReconnectTests+Fixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37B04BC7D56945E59781D11F /* SSHStartupManualReconnectTests+Fixtures.swift */; };
 		EF70B7123200D1FB6F03DB26 /* SSHStartupManualReconnectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F73A5C0BB93507E18261385 /* SSHStartupManualReconnectTests.swift */; };
 		F6355600A1B2C3D4E5F60718 /* SSHStartupSignalLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6355601A1B2C3D4E5F60718 /* SSHStartupSignalLifecycleTests.swift */; };
-		C5CEF76F24FA34BD48C15272 /* SSHTuiAgentStatusProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6F9E6690E10C81DFA480C03 /* SSHTuiAgentStatusProjector.swift */; };
-		E4A16791C72EAE4C91238486 /* SSHTuiAttachRetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A931B55E58FF471FA1E231AE /* SSHTuiAttachRetry.swift */; };
 		5C2E3186CB5DC54C9424C824 /* SSHTuiAttachRetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62038FEBE991E6F6022BD52F /* SSHTuiAttachRetryTests.swift */; };
 		C7BB9987974451FAD2D5F467 /* SSHTuiLinkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93262C2928EC5E04F1BD4A0 /* SSHTuiLinkManager.swift */; };
 		2ED21DB7F76E4F2F23FC4292 /* SSHTuiMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB37AFFC13C8507E428527F /* SSHTuiMigrationTests.swift */; };
 		687509121DABB2ADED3C0E9A /* SSHTuiOpenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 266B552D3FBFED20D1EDE625 /* SSHTuiOpenTests.swift */; };
 		B9B1DC92B6B88F225DAD7ABB /* SSHTuiPreflightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F044F74E3A921F191E3F0EAF /* SSHTuiPreflightTests.swift */; };
-		0754B84093909FD27762E206 /* SSHTuiWorkspaceCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0C06BAA2A8D5347C1E56F76 /* SSHTuiWorkspaceCoordinator.swift */; };
 		A11C00020000000000000001 /* StackAccountAvatarImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11C00020000000000000002 /* StackAccountAvatarImageLoader.swift */; };
 		A11C00030000000000000001 /* StackAccountAvatarImageLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11C00030000000000000002 /* StackAccountAvatarImageLoaderTests.swift */; };
 		A5C017000000000000000005 /* StackAccountAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C017000000000000000006 /* StackAccountAvatarView.swift */; };
@@ -3876,8 +3872,6 @@
 		A6E57A100000000000000001 /* TerminalController+SocketOverload.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E57A100000000000000002 /* TerminalController+SocketOverload.swift */; };
 		A6E57A110000000000000001 /* TerminalController+SocketServerEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E57A110000000000000002 /* TerminalController+SocketServerEvents.swift */; };
 		C0DE00000000000000000F01 /* TerminalController+SSHSessionAttachContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000F02 /* TerminalController+SSHSessionAttachContext.swift */; };
-		766E1CF043A4DC547CB08FB3 /* TerminalController+SSHTui.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA3197FBB0911D71D4EC1719 /* TerminalController+SSHTui.swift */; };
-		413F407A3FDE62533B6C33E0 /* TerminalController+SSHTuiSessions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53300833C8E02424D6168BD6 /* TerminalController+SSHTuiSessions.swift */; };
 		D11F75A81600B400376861D3 /* TerminalController+SSHWorkspaceResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48B23C47B58CA29EAC5FAC6 /* TerminalController+SSHWorkspaceResolution.swift */; };
 		AE55B7F6000000000000A004 /* TerminalController+SurfaceInputState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE55B7F6000000000000A003 /* TerminalController+SurfaceInputState.swift */; };
 		699581141E8D4560A7B156BD /* TerminalController+SurfaceMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3114E97F34044B0783A3B6F8 /* TerminalController+SurfaceMove.swift */; };
@@ -4380,8 +4374,6 @@
 		A13387000000000000000009 /* Workspace+SplitPaneProvisionalGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1338700000000000000000A /* Workspace+SplitPaneProvisionalGeometry.swift */; };
 		A3058015FBA96C778E460B3A /* Workspace+SplitSpace.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFCEC5E783F29C91BC6A8EE /* Workspace+SplitSpace.swift */; };
 		8300A0040000000000000004 /* Workspace+SSHConnectionBroker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8300A0030000000000000003 /* Workspace+SSHConnectionBroker.swift */; };
-		8694AD6120E0C17F50AE7DC5 /* Workspace+SSHTui.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09F38C6F6416B70783908A20 /* Workspace+SSHTui.swift */; };
-		92906758EC368F8D8A989601 /* Workspace+SSHTuiStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 938D1CC0FD9AA3B4F32498BD /* Workspace+SSHTuiStatus.swift */; };
 		F9219DE12AF2E4D9CFFC66CF /* Workspace+SurfaceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47BBA1A8703756FDDFD53CF3 /* Workspace+SurfaceCatalog.swift */; };
 		CA52B0170000000000000000 /* Workspace+SurfaceNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA52C0170000000000000000 /* Workspace+SurfaceNavigation.swift */; };
 		7DD5BF8AB5B84491BC89EEE9 /* Workspace+SurfaceOwnership.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7305B43543CF4AF29D9966C8 /* Workspace+SurfaceOwnership.swift */; };
@@ -6348,7 +6340,7 @@
 		A5001F000000000000000002 /* DetachedFolderDragIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetachedFolderDragIcon.swift; sourceTree = "<group>"; };
 		B05553C10000000000000002 /* DetachedFolderPathLookupCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetachedFolderPathLookupCache.swift; sourceTree = "<group>"; };
 		B0555304B0555304B0555304 /* DetachedFolderPathLookupCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetachedFolderPathLookupCacheTests.swift; sourceTree = "<group>"; };
-		3215707A3AC7512495F685AA /* DetectedSSHSession+Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/DetectedSSHSession+Workspace.swift"; sourceTree = "<group>"; };
+		3215707A3AC7512495F685AA /* DetectedSSHSession+Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DetectedSSHSession+Workspace.swift"; sourceTree = "<group>"; };
 		CDEFAC0300DEBACE00000003 /* DevBackendStartup+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DevBackendStartup+Status.swift"; sourceTree = "<group>"; };
 		CDEFAC0300DEBACE00000001 /* DevBackendStartup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DevBackendStartup.swift"; sourceTree = "<group>"; };
 				DEC1CE00000000000000000D /* DeviceDirectory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Devices/DeviceDirectory.swift"; sourceTree = "<group>"; };
@@ -7705,7 +7697,6 @@
 		F5000001A1B2C3D4E5F60718 /* SessionPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionPersistenceTests.swift; sourceTree = "<group>"; };
 		812600000000000000000004 /* SessionRemoteWorkspaceMoshRestoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRemoteWorkspaceMoshRestoreTests.swift; sourceTree = "<group>"; };
 		E30780000000000000000013 /* SessionRemoteWorkspaceSnapshot+Restore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionRemoteWorkspaceSnapshot+Restore.swift"; sourceTree = "<group>"; };
-		0D0FC4CB20C73A387037AF91 /* SessionRemoteWorkspaceSnapshot+TuiSSH.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/SessionRemoteWorkspaceSnapshot+TuiSSH.swift"; sourceTree = "<group>"; };
 		0A1107110000000000000023 /* SessionRestorableAgentSnapshot+Commands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionRestorableAgentSnapshot+Commands.swift"; sourceTree = "<group>"; };
 		112950000000000000000003 /* SessionRestorableAgentSnapshot+ForkVerb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionRestorableAgentSnapshot+ForkVerb.swift"; sourceTree = "<group>"; };
 		68B75C6322ED3E5FFEDEAE09 /* SessionRestorableAgentSnapshot+HibernationLaunchFidelity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionRestorableAgentSnapshot+HibernationLaunchFidelity.swift"; sourceTree = "<group>"; };
@@ -8060,14 +8051,11 @@
 		37B04BC7D56945E59781D11F /* SSHStartupManualReconnectTests+Fixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SSHStartupManualReconnectTests+Fixtures.swift"; sourceTree = "<group>"; };
 		4F73A5C0BB93507E18261385 /* SSHStartupManualReconnectTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHStartupManualReconnectTests.swift; sourceTree = "<group>"; };
 		F6355601A1B2C3D4E5F60718 /* SSHStartupSignalLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHStartupSignalLifecycleTests.swift; sourceTree = "<group>"; };
-		A6F9E6690E10C81DFA480C03 /* SSHTuiAgentStatusProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/SSHTuiAgentStatusProjector.swift"; sourceTree = "<group>"; };
-		A931B55E58FF471FA1E231AE /* SSHTuiAttachRetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/SSHTuiAttachRetry.swift"; sourceTree = "<group>"; };
 		62038FEBE991E6F6022BD52F /* SSHTuiAttachRetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SSHTuiAttachRetryTests.swift"; sourceTree = "<group>"; };
 		E93262C2928EC5E04F1BD4A0 /* SSHTuiLinkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/SSHTuiLinkManager.swift"; sourceTree = "<group>"; };
 		0AB37AFFC13C8507E428527F /* SSHTuiMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SSHTuiMigrationTests.swift"; sourceTree = "<group>"; };
 		266B552D3FBFED20D1EDE625 /* SSHTuiOpenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SSHTuiOpenTests.swift"; sourceTree = "<group>"; };
 		F044F74E3A921F191E3F0EAF /* SSHTuiPreflightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SSHTuiPreflightTests.swift"; sourceTree = "<group>"; };
-		F0C06BAA2A8D5347C1E56F76 /* SSHTuiWorkspaceCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/SSHTuiWorkspaceCoordinator.swift"; sourceTree = "<group>"; };
 		A11C00020000000000000002 /* StackAccountAvatarImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackAccountAvatarImageLoader.swift; sourceTree = "<group>"; };
 		A11C00030000000000000002 /* StackAccountAvatarImageLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackAccountAvatarImageLoaderTests.swift; sourceTree = "<group>"; };
 		A5C017000000000000000006 /* StackAccountAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackAccountAvatarView.swift; sourceTree = "<group>"; };
@@ -8352,9 +8340,7 @@
 		A6E57A100000000000000002 /* TerminalController+SocketOverload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+SocketOverload.swift"; sourceTree = "<group>"; };
 		A6E57A110000000000000002 /* TerminalController+SocketServerEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+SocketServerEvents.swift"; sourceTree = "<group>"; };
 		C0DE00000000000000000F02 /* TerminalController+SSHSessionAttachContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+SSHSessionAttachContext.swift"; sourceTree = "<group>"; };
-		BA3197FBB0911D71D4EC1719 /* TerminalController+SSHTui.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/TerminalController+SSHTui.swift"; sourceTree = "<group>"; };
-		53300833C8E02424D6168BD6 /* TerminalController+SSHTuiSessions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/TerminalController+SSHTuiSessions.swift"; sourceTree = "<group>"; };
-		C48B23C47B58CA29EAC5FAC6 /* TerminalController+SSHWorkspaceResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/TerminalController+SSHWorkspaceResolution.swift"; sourceTree = "<group>"; };
+		C48B23C47B58CA29EAC5FAC6 /* TerminalController+SSHWorkspaceResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+SSHWorkspaceResolution.swift"; sourceTree = "<group>"; };
 		AE55B7F6000000000000A003 /* TerminalController+SurfaceInputState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+SurfaceInputState.swift"; sourceTree = "<group>"; };
 		3114E97F34044B0783A3B6F8 /* TerminalController+SurfaceMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+SurfaceMove.swift"; sourceTree = "<group>"; };
 		C1336904A1B2C3D4E5F60718 /* TerminalController+SurfaceResumeApproval.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+SurfaceResumeApproval.swift"; sourceTree = "<group>"; };
@@ -8856,8 +8842,6 @@
 		A1338700000000000000000A /* Workspace+SplitPaneProvisionalGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+SplitPaneProvisionalGeometry.swift"; sourceTree = "<group>"; };
 		FFFCEC5E783F29C91BC6A8EE /* Workspace+SplitSpace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+SplitSpace.swift"; sourceTree = "<group>"; };
 		8300A0030000000000000003 /* Workspace+SSHConnectionBroker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+SSHConnectionBroker.swift"; sourceTree = "<group>"; };
-		09F38C6F6416B70783908A20 /* Workspace+SSHTui.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/Workspace+SSHTui.swift"; sourceTree = "<group>"; };
-		938D1CC0FD9AA3B4F32498BD /* Workspace+SSHTuiStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteTui/Workspace+SSHTuiStatus.swift"; sourceTree = "<group>"; };
 		47BBA1A8703756FDDFD53CF3 /* Workspace+SurfaceCatalog.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Workspace+SurfaceCatalog.swift"; sourceTree = "<group>"; };
 		CA52C0170000000000000000 /* Workspace+SurfaceNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+SurfaceNavigation.swift"; sourceTree = "<group>"; };
 		7305B43543CF4AF29D9966C8 /* Workspace+SurfaceOwnership.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+SurfaceOwnership.swift"; sourceTree = "<group>"; };
@@ -11679,19 +11663,11 @@
 				0E17C0DE0E17C0DE0E17C001 /* RemoteTmuxTransportRegistry.swift */,
 				0F17C0DE0F17C0DE0F17C001 /* RemoteTmuxWindowRegistry.swift */,
 				E8F5DB43CBC1B7DF31B7A0C9 /* RemoteTmuxSSHTransport.swift */,
-				938D1CC0FD9AA3B4F32498BD /* Workspace+SSHTuiStatus.swift */,
 				3215707A3AC7512495F685AA /* DetectedSSHSession+Workspace.swift */,
 				F97A8A59948A6E78A1170AA3 /* CmuxTuiSurfaceProvider+Hosting.swift */,
 				A5B66C7DD8A6A89CAF4027DA /* WorkspaceCloudVMBinding.swift */,
 				C48B23C47B58CA29EAC5FAC6 /* TerminalController+SSHWorkspaceResolution.swift */,
-				53300833C8E02424D6168BD6 /* TerminalController+SSHTuiSessions.swift */,
-				0D0FC4CB20C73A387037AF91 /* SessionRemoteWorkspaceSnapshot+TuiSSH.swift */,
 				FE6E2FAF0A4314F59EE9A1FC /* AppDelegate+TestRuntime.swift */,
-				09F38C6F6416B70783908A20 /* Workspace+SSHTui.swift */,
-				BA3197FBB0911D71D4EC1719 /* TerminalController+SSHTui.swift */,
-				F0C06BAA2A8D5347C1E56F76 /* SSHTuiWorkspaceCoordinator.swift */,
-				A6F9E6690E10C81DFA480C03 /* SSHTuiAgentStatusProjector.swift */,
-				A931B55E58FF471FA1E231AE /* SSHTuiAttachRetry.swift */,
 				E93262C2928EC5E04F1BD4A0 /* SSHTuiLinkManager.swift */,
 				4DF11D8DA81D3BD618151AD3 /* RemoteTuiMachine.swift */,
 				A6F3597E0DD3186E5BB2B528 /* RemoteTuiLinkManaging.swift */,
@@ -16180,7 +16156,6 @@
 				A74770010000000000000009 /* SessionPersistencePolicy+ConfigFrames.swift in Sources */,
 				C65930020000000000000002 /* SessionPersistencePolicy+CrashStorage.swift in Sources */,
 				E30780000000000000000014 /* SessionRemoteWorkspaceSnapshot+Restore.swift in Sources */,
-				3042D5DC7CAA74E5701F26EB /* SessionRemoteWorkspaceSnapshot+TuiSSH.swift in Sources */,
 				0A1107110000000000000022 /* SessionRestorableAgentSnapshot+Commands.swift in Sources */,
 				112950000000000000000004 /* SessionRestorableAgentSnapshot+ForkVerb.swift in Sources */,
 				A7195A3AFC945E508844DC05 /* SessionRestorableAgentSnapshot+HibernationLaunchFidelity.swift in Sources */,
@@ -16399,10 +16374,7 @@
 				A13387000000000000000005 /* SplitPaneGeometryProjection.swift in Sources */,
 				FEAC00000000000000000001 /* SSHFileExplorerMutationCommand.swift in Sources */,
 					E30780000000000000000012 /* SSHPTYAttachStartupCommandBuilder.swift in Sources */,
-				C5CEF76F24FA34BD48C15272 /* SSHTuiAgentStatusProjector.swift in Sources */,
-				E4A16791C72EAE4C91238486 /* SSHTuiAttachRetry.swift in Sources */,
 				C7BB9987974451FAD2D5F467 /* SSHTuiLinkManager.swift in Sources */,
-				0754B84093909FD27762E206 /* SSHTuiWorkspaceCoordinator.swift in Sources */,
 				A11C00020000000000000001 /* StackAccountAvatarImageLoader.swift in Sources */,
 				A5C017000000000000000005 /* StackAccountAvatarView.swift in Sources */,
 				D35B71010000000000000001 /* StartupBreadcrumbLog.swift in Sources */,
@@ -16639,8 +16611,6 @@
 				A6E57A100000000000000001 /* TerminalController+SocketOverload.swift in Sources */,
 				A6E57A110000000000000001 /* TerminalController+SocketServerEvents.swift in Sources */,
 				C0DE00000000000000000F01 /* TerminalController+SSHSessionAttachContext.swift in Sources */,
-				766E1CF043A4DC547CB08FB3 /* TerminalController+SSHTui.swift in Sources */,
-				413F407A3FDE62533B6C33E0 /* TerminalController+SSHTuiSessions.swift in Sources */,
 				D11F75A81600B400376861D3 /* TerminalController+SSHWorkspaceResolution.swift in Sources */,
 				AE55B7F6000000000000A004 /* TerminalController+SurfaceInputState.swift in Sources */,
 				699581141E8D4560A7B156BD /* TerminalController+SurfaceMove.swift in Sources */,
@@ -17020,8 +16990,6 @@
 				A13387000000000000000009 /* Workspace+SplitPaneProvisionalGeometry.swift in Sources */,
 				A3058015FBA96C778E460B3A /* Workspace+SplitSpace.swift in Sources */,
 				8300A0040000000000000004 /* Workspace+SSHConnectionBroker.swift in Sources */,
-				8694AD6120E0C17F50AE7DC5 /* Workspace+SSHTui.swift in Sources */,
-				92906758EC368F8D8A989601 /* Workspace+SSHTuiStatus.swift in Sources */,
 				F9219DE12AF2E4D9CFFC66CF /* Workspace+SurfaceCatalog.swift in Sources */,
 				CA52B0170000000000000000 /* Workspace+SurfaceNavigation.swift in Sources */,
 				7DD5BF8AB5B84491BC89EEE9 /* Workspace+SurfaceOwnership.swift in Sources */,

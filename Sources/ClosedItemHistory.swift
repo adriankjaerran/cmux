@@ -389,15 +389,11 @@ final class ClosedItemHistoryStore: ObservableObject {
         }
     }
 
-    /// A Cloud workspace through either transport — the legacy managed remote
-    /// (`managedCloudVMID`) or the cmux-tui binding (`cloudVM`) — the same
-    /// definition session restore uses under `DisableCloud`, so a purge and a
-    /// blocked restore agree on what a Cloud record is.
+    /// A Cloud workspace through the legacy managed remote (`managedCloudVMID`),
+    /// the same definition session restore uses under `DisableCloud`, so a purge
+    /// and a blocked restore agree on what a Cloud record is.
     static func workspaceSnapshotHostsCloudVM(_ snapshot: SessionWorkspaceSnapshot) -> Bool {
-        if snapshot.remote?.managedCloudVMID?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
-            return true
-        }
-        return snapshot.cloudVM != nil
+        snapshot.remote?.managedCloudVMID?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
     @discardableResult private func trimToCapacityIfNeeded() -> Bool {

@@ -2067,33 +2067,18 @@ class TerminalController {
             return v2Result(id: request.id, v2SurfaceReadText(params: request.params))
         case "surface.input_state":
             return v2Result(id: request.id, v2SurfaceInputState(params: request.params))
-        case "workspace.ssh.open":
-            return v2VmCall(id: request.id, timeoutSeconds: 190) {
-                try await self.openSSHTuiWorkspace(params: request.params)
-            }
         case "surface.ssh_session_attach.resolve":
             return v2AsyncResultCall(id: request.id, timeoutSeconds: 180) {
-                if let result = await self.tuiSSHSessionAttachResolve(params: request.params) { return result }
                 return self.v2SSHSessionAttachResolve(params: request.params)
             }
         case "workspace.env":
             return v2Result(id: request.id, v2WorkspaceEnv(params: request.params))
         case "workspace.remote.pty_sessions":
             return v2AsyncResultCall(id: request.id, timeoutSeconds: 180) {
-                if let result = await self.tuiSSHSessions(params: request.params) {
-                    guard request.params["all_workspaces"] as? Bool == true else { return result }
-                    // The legacy transport's blocking reads stay on this worker,
-                    // outside the native graph's main-actor projection path.
-                    return self.mergeRemotePTYSessionLists(
-                        tui: result,
-                        legacy: self.v2WorkspaceRemotePTYSessions(params: request.params)
-                    )
-                }
                 return self.v2WorkspaceRemotePTYSessions(params: request.params)
             }
         case "workspace.remote.pty_close":
             return v2AsyncResultCall(id: request.id, timeoutSeconds: 180) {
-                if let result = await self.closeTuiSSHSession(params: request.params) { return result }
                 return self.v2WorkspaceRemotePTYClose(params: request.params)
             }
         case "workspace.remote.pty_detach":
@@ -4382,9 +4367,6 @@ class TerminalController {
                     )
                 )
             }
-            if let failure = error as? SSHTuiOpenFailure {
-                return v2Error(id: id, code: "ssh_failed", message: failure.reason)
-            }
             if let catalogError = error as? SurfaceCatalogError {
                 switch catalogError {
                 case .nothingToOpen:
@@ -5134,7 +5116,7 @@ class TerminalController {
                 guard let app = AppDelegate.shared else { return }
                 for summary in app.listMainWindowSummaries() {
                     guard let owner = app.tabManagerFor(windowId: summary.windowId) else { continue }
-                    for workspace in owner.tabs where workspace.isRemoteWorkspace && !workspace.usesSSHTui {
+                    for workspace in owner.tabs where workspace.isRemoteWorkspace {
                         targets.append(
                             RemotePTYSocketTarget(
                                 controller: workspace.remotePTYSessionControllerForSocketCommand(),

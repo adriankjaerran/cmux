@@ -17,6 +17,13 @@ import GhosttyKit
 /// (`Workspace+CloudTerminalReservation`).
 @MainActor
 extension Workspace {
+    /// Resolves both Cloud and SSH projections through their registered provider.
+    func tuiMirrorSession(for surfaceID: UUID) -> CloudTuiManualMirrorSession? {
+        guard let projection = SurfaceCatalog.shared.projectionIncludingPendingRestore(forPanel: surfaceID),
+              let provider = SurfaceCatalog.shared.provider(for: projection.resource.machine) as? CmuxTuiSurfaceProvider else { return nil }
+        return provider.manualMirrorSessions[surfaceID]
+    }
+
     /// A saved device terminal stays process-free until its provider reconnects:
     /// the pane is built on the same manual-mirror path as a live attachment.
     func restoreDeviceDisplayPanel(_ snapshot: SessionPanelSnapshot, in pane: PaneID) -> UUID? {

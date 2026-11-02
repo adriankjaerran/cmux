@@ -28,14 +28,7 @@ extension Workspace: TerminalLinkOpenContainer {
     /// Resolve the connection from the terminal's authoritative owner, including native SSH projections.
     func remoteTerminalFilePreviewConfiguration(for surfaceID: UUID) -> WorkspaceRemoteConfiguration? {
         guard let configuration = remoteConfiguration, configuration.transport == .ssh else { return nil }
-        if usesSSHTui {
-            let expectedMachine = SurfaceMachineID(rawValue: SSHTuiConnection(configuration: configuration).id)
-            guard machineOwningSurface(surfaceID) == expectedMachine else {
-                return nil
-            }
-        } else if !isRemoteTerminalSurface(surfaceID) {
-            return nil
-        }
+        guard isRemoteTerminalSurface(surfaceID) else { return nil }
         return configuration
     }
 

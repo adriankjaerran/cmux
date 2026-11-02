@@ -169,7 +169,7 @@ extension TerminalController {
                     ? panelId
                     : workspace.panelIdFromSurfaceId(TabID(uuid: panelId))
                 if let resolvedPanelId,
-                   !(panelOnlyIfMultiple && workspace.panels.count < 2 && workspace.cloudVMBinding == nil) {
+                   !(panelOnlyIfMultiple && workspace.panels.count < 2) {
                     panelApplied = SurfaceCatalog.shared.submitCloudPanelRename(
                         workspace: workspace, panelID: resolvedPanelId, title: title, source: .auto,
                         context: CloudAgentNameContext(wire: params["cloud_name_context"])

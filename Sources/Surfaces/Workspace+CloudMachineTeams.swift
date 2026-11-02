@@ -17,15 +17,4 @@ extension Workspace {
         }
         return teams.isEmpty ? nil : teams
     }
-
-    /// Hands persisted owning teams to the Cloud registry before panes restore.
-    func adoptRestoredCloudMachineTeams(_ snapshot: SessionWorkspaceSnapshot) {
-        let registry = CmuxTuiSurfaceProviderRegistry.shared
-        for (machineID, teamID) in snapshot.cloudMachineTeams ?? [:] {
-            registry.adoptOwnerTeam(teamID, forMachineID: machineID)
-        }
-        if let binding = snapshot.cloudVM {
-            registry.adoptOwnerTeam(binding.teamID, forMachineID: binding.vmID)
-        }
-    }
 }

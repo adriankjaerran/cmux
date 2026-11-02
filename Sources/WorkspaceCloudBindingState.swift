@@ -2,16 +2,11 @@ import CmuxSurfaceCatalogModel
 import Foundation
 import Observation
 
-/// Owns a workspace's Cloud binding for SwiftUI observation and async sidebar projections.
+/// Owns a workspace's remote (device) projection metadata for SwiftUI observation and async
+/// sidebar projections. The Cloud machine binding itself is gone.
 @MainActor
 @Observable
 final class WorkspaceCloudBindingState {
-    var binding: WorkspaceCloudVMBinding? {
-        didSet {
-            guard oldValue != binding else { return }
-            cloudBindingDidChange()
-        }
-    }
     private(set) var revision: UInt64 = 0
     private(set) var projectedResources: [UUID: SurfaceResourceID] = [:]
     private(set) var machineNames: [String: String] = [:]

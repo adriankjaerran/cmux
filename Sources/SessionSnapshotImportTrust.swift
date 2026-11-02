@@ -103,17 +103,14 @@ enum SessionSnapshotImportTrust {
             var window = sanitized.windows[windowIndex]
             for workspaceIndex in window.tabManager.workspaces.indices {
                 var workspace = window.tabManager.workspaces[workspaceIndex]
-                if workspace.remote != nil || workspace.cloudVM != nil
+                if workspace.remote != nil
                     || workspace.environment?.isEmpty == false
-                    || workspace.surfaceProjections?.isEmpty == false
-                    || workspace.cloudMachineTeams?.isEmpty == false {
+                    || workspace.surfaceProjections?.isEmpty == false {
                     report.droppedRemoteWorkspaceCount += 1
                 }
                 workspace.remote = nil
-                workspace.cloudVM = nil
                 workspace.environment = nil
                 workspace.surfaceProjections = nil
-                workspace.cloudMachineTeams = nil
                 workspace.panels = sanitize(workspace.panels)
                 if var dock = workspace.dock {
                     dock.panels = sanitize(dock.panels)

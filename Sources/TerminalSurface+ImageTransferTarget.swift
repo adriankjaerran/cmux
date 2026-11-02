@@ -10,12 +10,6 @@ extension TerminalSurface {
         // The bound session remains authoritative even during reconnect, before
         // its local workspace or a fresh remote numeric surface can be resolved.
         let workspace = workspace ?? owningWorkspace()
-        // Native SSH projections use SCP/SFTP upload for both paste and drag/drop.
-        // They never turn an SSH file into a local path.
-        if let workspace, workspace.usesSSHTui,
-           workspace.machineOwningSurface(id)?.isSSH == true {
-            return .remote(.workspaceRemote)
-        }
         guard let workspace else { return .local }
         if workspace.isRemoteTerminalSurface(id) {
             return .remote(.workspaceRemote)

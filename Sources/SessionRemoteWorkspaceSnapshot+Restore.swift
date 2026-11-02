@@ -59,8 +59,6 @@ extension SessionRemoteWorkspaceSnapshot {
             // empty value remains an explicit disable.
             || (self.agentSocketPathOverrideIsSet == true &&
                 SSHAgentSocketResolver(environment: [:]).normalizedAgentSocketPath(self.agentSocketPath) == nil)
-        if let configuration = tuiSSHConfiguration(agentSocketPath: agentSocketPath) { return configuration }
-        if let configuration = legacyTmuxSSHConfiguration(agentSocketPath: agentSocketPath) { return configuration }
         if skipDaemonBootstrap != true, (terminalTransport ?? .ssh) == .ssh,
            preserveAfterTerminalExit == true {
             // Preserve the old descriptor for recovery, but never resume its daemon
@@ -632,5 +630,16 @@ extension SessionRemoteWorkspaceSnapshot {
     static func acceptsAgentConnections(atPath path: String) -> Bool {
         UnixSocketConnectProbe().acceptsConnections(atPath: path)
             || UnixSocketConnectProbe(peerCheck: UnixSocketPeerCheck(expectedUserID: 0)).acceptsConnections(atPath: path)
+    }
+}
+
+extension WorkspaceRemoteConfiguration {
+    /// A managed SSH descriptor with no cmuxd-remote relay or daemon endpoint that must
+    /// survive the terminal: the shape a saved cmux-tui carrier restores to now that
+    /// SSH-TUI is gone (see `SessionRemoteWorkspaceSnapshot.workspaceConfiguration`).
+    /// It is kept for recovery only and never dials or starts a workload.
+    var isRelaylessSSHRecoveryDescriptor: Bool {
+        transport == .ssh && terminalTransport == .ssh && !skipDaemonBootstrap &&
+            relayPort == nil && daemonWebSocketEndpoint == nil && preserveAfterTerminalExit
     }
 }

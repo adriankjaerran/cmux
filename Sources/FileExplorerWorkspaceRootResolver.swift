@@ -12,26 +12,6 @@ struct FileExplorerWorkspaceRootResolver {
     }
 
     func resolve(_ workspace: Workspace) -> FileExplorerWorkspaceRoot {
-        // A legacy `ssh:` binding keeps using its SSH transport, otherwise Files
-        // would silently change hosts. Any other (Cloud) binding has no root.
-        if let binding = workspace.cloudVMBinding {
-            let vmID = binding.vmID
-            if vmID.hasPrefix("ssh:") {
-                guard let configuration = workspace.remoteConfiguration,
-                      configuration.transport == .ssh else { return .none }
-                return .remoteSSH(
-                    workspaceId: workspace.id,
-                    connection: SSHFileExplorerConnection(destination: configuration.destination,
-                        port: configuration.port, identityFile: configuration.identityFile, sshOptions: configuration.fileOperationSSHOptions),
-                    displayTarget: configuration.displayTarget,
-                    rootPath: workspace.trustedRemoteCurrentDirectory,
-                    isAvailable: workspace.remoteConnectionState == .connected,
-                    unavailableDetail: workspace.remoteConnectionDetail ?? workspace.remoteDaemonStatus.detail
-                )
-            }
-            // Cloud is gone from this fork: a Cloud binding has no Files root.
-            return .none
-        }
         if workspace.usesRemoteDirectoryProvenance {
             // A projection without an unambiguous workspace owner never becomes local or SSH.
             if !workspace.cloudBindingState.projectedResources.isEmpty ||

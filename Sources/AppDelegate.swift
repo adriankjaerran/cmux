@@ -562,12 +562,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     var aboutTitlebarDebugStore: AboutTitlebarDebugStore { debugWindowsCoordinator.aboutTitlebarStore }
     /// Coordinates remote tmux (`ssh … tmux -CC`) mirroring; composition-root owned.
     let remoteTmuxController = RemoteTmuxController()
-    lazy var sshTuiWorkspaceCoordinator = SSHTuiWorkspaceCoordinator(
-        catalog: SurfaceCatalog.shared,
-        clientURL: { CloudTuiClientPaths.clientURL() },
-        paths: CloudTuiClientPaths(),
-        sshClipboardWriteTrustStore: sshClipboardWriteTrustStore
-    )
     /// Owns every main-window registration, recovery, and close phase.
     let mainWindowLifecycleCoordinator = MainWindowLifecycleCoordinator()
     /// Owns the process-scoped idle-sleep assertion shared by every local and
@@ -8439,8 +8433,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     private func isLocalWorkspaceForLocalCreation(_ workspace: Workspace) -> Bool {
-        workspace.cloudVMBinding == nil
-            && workspace.remoteConfiguration == nil
+        workspace.remoteConfiguration == nil
             && workspace.deviceMachineForNewWorkspace == nil
     }
 
@@ -9115,11 +9108,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             if workspace.panels.values.contains(where: { $0.panelType == .cloudVMLoading }) {
                 return true
             }
-            // Base opened through the cmux-tui daemon: the pane owns the session, so the
-            // workspace carries a binding instead of a remote configuration.
-            if workspace.cloudVMBinding?.isBase == true {
-                return true
-            }
             guard let remote = workspace.remoteConfiguration else { return false }
             return remote.persistentDaemonSlot == "cmux-default-freestyle-sshd-v1" &&
                 remote.managedCloudVMID?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
@@ -9343,7 +9331,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let candidates = liveWorkspaceIdentityTabManagers(preferredTabManager: tabManager)
             .flatMap(\.tabs)
             .filter { $0.cloudVMID?.lowercased() == target }
-        return candidates.first(where: { $0.cloudVMBinding?.isBase == true }) ?? candidates.first
+        return candidates.first
     }
 
     /// The workspace that currently hosts a surface, across every window.
@@ -12593,11 +12581,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             }
             if startWithHiddenSidebar {
                 context.sidebarState.setVisible(false)
-            }
-            if env["CMUX_UI_TEST_BONSPLIT_CLOUD_WORKSPACE"] == "1" {
-                // Binds the workspace to a Cloud machine without a transport, so the
-                // Cloud pane destinations (CloudSurfaceDropGate) cover its tab strips.
-                workspace.cloudVMBinding = WorkspaceCloudVMBinding(vmID: "ui-test-cloud-vm", isBase: false)
             }
             if showRightSidebar {
                 guard let fileExplorerState = context.fileExplorerState else {

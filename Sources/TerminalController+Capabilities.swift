@@ -263,7 +263,6 @@ extension TerminalController {
             "workspace.last",
             "workspace.equalize_splits",
             "workspace.remote.configure",
-            "workspace.ssh.open",
             "workspace.remote.foreground_auth_ready",
             "workspace.remote.reconnect",
             "workspace.remote.disconnect",

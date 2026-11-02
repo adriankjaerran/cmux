@@ -208,11 +208,7 @@ extension Workspace {
             progress: progressSnapshot,
             gitBranch: gitBranchSnapshot,
             remote: remoteConfiguration?.sessionSnapshot(),
-            cloudVM: cloudVMBinding.map {
-                SessionCloudVMBindingSnapshot(vmID: $0.vmID, isBase: $0.isBase, remoteWorkspaceID: $0.remoteWorkspaceID, teamID: $0.teamID)
-            },
             surfaceProjections: surfaceProjectionRecordsForSession,
-            cloudMachineTeams: cloudMachineTeamsForSession,
             environment: workspaceEnvironment.isEmpty ? nil : workspaceEnvironment
         )
         snapshot.captureTodoState(from: self)
@@ -299,15 +295,6 @@ extension Workspace {
         } else {
             disconnectRemoteConnection(clearConfiguration: true)
         }
-        // The binding survives restore so the machine's workspace is found again; its pane's
-        // link was a process and is not reconnected here (a fresh open re-attaches).
-        // Owning teams go to the registry before any pane restores, so a pane
-        // of a team other than the selected one reconnects with its own team.
-        adoptRestoredCloudMachineTeams(snapshot)
-        // A legacy binding without a team adopts the selected team and is
-        // persisted with it from then on.
-        cloudVMBinding = Self.restoredCloudVMBinding(from: snapshot.cloudVM)?.adoptingOwningTeam()
-
         let normalizedCurrentDirectory = snapshot.currentDirectory.trimmingCharacters(in: .whitespacesAndNewlines)
         if !normalizedCurrentDirectory.isEmpty {
             currentDirectory = normalizedCurrentDirectory
@@ -324,7 +311,7 @@ extension Workspace {
         let cloudProjectionRecordsByPanelID = Dictionary((snapshot.surfaceProjections ?? []).map { ($0.panelID, $0) }, uniquingKeysWith: { first, _ in first })
         let panelSnapshotsById = Dictionary(snapshot.panels.map { panel in
             var panel = panel
-            if cloudVMBinding != nil || cloudProjectedPanelIDs.contains(panel.id) {
+            if cloudProjectedPanelIDs.contains(panel.id) {
                 panel.directoryIsTrustedRemoteReport = false
                 panel.directoryRequiresRemoteTrust = true
             }
@@ -403,7 +390,7 @@ extension Workspace {
             clearProxyOnlyRemoteSidebarArtifacts()
         }
         progress = snapshot.progress.map { SidebarProgressState(value: $0.value, label: $0.label) }
-        let hasCloudProvenance = cloudVMBinding != nil || (snapshot.surfaceProjections ?? []).contains { !$0.resource.machine.isLocal }
+        let hasCloudProvenance = (snapshot.surfaceProjections ?? []).contains { !$0.resource.machine.isLocal }
         gitBranch = hasCloudProvenance
             ? nil
             : snapshot.gitBranch.map { SidebarGitBranchState(branch: $0.branch, isDirty: $0.isDirty) }
@@ -1622,25 +1609,18 @@ extension Workspace {
     ) -> UUID? {
         guard !isRetiredFromOwningTabManager else { return nil }
         var snapshot = Self.repairedLegacyHermesSessionPanelSnapshot(snapshot, workspaceId: snapshotWorkspaceId ?? id)
-        if let resource = cloudProjectionRecord?.resource, !resource.machine.isLocal { snapshot.browser?.cloudResource = resource }
+        // Only a device projection still restores a remote browser resource; Cloud machines are gone.
+        if let resource = cloudProjectionRecord?.resource, resource.machine.isDevice { snapshot.browser?.cloudResource = resource }
         guard acceptsRestoredPanel(snapshot, projection: cloudProjectionRecord) else { return nil }
-        // Another Mac's terminal restores through the device link below, never
-        // through the Cloud VM reservation.
-        if let cloudProjectionRecord, !cloudProjectionRecord.resource.machine.isLocal,
-           !cloudProjectionRecord.resource.machine.isDevice, !restoresDeviceProjection,
-           let restoredCloudPanelID = reserveRestoredCloudTerminalPane(
-               snapshot: snapshot,
-               projection: cloudProjectionRecord,
-               inPane: paneId
-           ) {
-            return restoredCloudPanelID }
-        if usesSSHTui, remoteConfiguration?.preserveAfterTerminalExit == true, snapshot.type == .terminal {
+        // A relay-less SSH recovery descriptor (formerly a cmux-tui carrier) never starts a
+        // replacement workload; its terminals restore as disconnected placeholders.
+        if remoteConfiguration?.isRelaylessSSHRecoveryDescriptor == true, snapshot.type == .terminal {
             return restoreDeviceDisplayPanel(snapshot, in: paneId)
         }
-        let restoresUntrustedSavedDirectory = cloudVMBinding != nil ||
-            (snapshot.directoryIsTrustedRemoteReport != true &&
+        let restoresUntrustedSavedDirectory =
+            snapshot.directoryIsTrustedRemoteReport != true &&
                 (snapshot.directoryRequiresRemoteTrust == true ||
-                    restoresLegacyRemoteDirectoryWithoutProvenance(snapshot)))
+                    restoresLegacyRemoteDirectoryWithoutProvenance(snapshot))
         switch snapshot.type {
         case .terminal:
             if restoresDeviceProjection {
@@ -3329,32 +3309,12 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
             owningTabManager?.workspaceHostLabelDidChange(self)
         }
     }
-    /// The cloud machine whose cmux-tui session runs in this workspace's pane. Unlike
-    /// `remoteConfiguration` (app-managed SSH/websocket transports) the session belongs
-    /// to the pane's own `cmux vm-tui-connect` process, so this binding is what the
-    /// Machines panel, the sidebar cloud button, and `cmux vm desktop` use to find the
-    /// machine's workspace. Set through `workspace.cloud_vm_bind` and persisted in the
-    /// session snapshot (`SessionWorkspaceSnapshot.cloudVM`); the pane's one-shot link is
-    /// not replayed on restore, only the binding is.
+    /// Cloud machine bindings are gone from this fork: always nil, never saved or
+    /// restored. The setter is kept only for the dead Cloud/Surfaces/Devices code
+    /// that still writes it until those folders are deleted.
     var cloudVMBinding: WorkspaceCloudVMBinding? {
-        get { cloudBindingState.binding }
-        set {
-            let previous = cloudBindingState.binding
-            cloudBindingState.binding = newValue
-            guard previous != newValue else { return }
-            (owningTabManager ?? AppDelegate.shared?.tabManagerFor(tabId: id))?
-                .sidebarGitMetadataService
-                .clearWorkspaceGitProbes(workspaceId: id)
-            clearSidebarGitMetadata()
-            // A binding transition invalidates the previous machine's cwd report.
-            // Local PTY state can be used again only after the binding is removed.
-            panelDirectories.removeAll()
-            panelDirectoryDisplayLabels.removeAll()
-            remoteDirectoryReportPanelIds.removeAll()
-            remoteDirectoryTrustRequiredPanelIds.removeAll()
-            notifyPresentedCurrentDirectoryChanged(from: nil, force: true)
-            owningTabManager?.workspaceHostLabelDidChange(self)
-        }
+        get { nil }
+        set {}
     }
     /// The workspace-owned state for the latest failed cloud terminal creation request.
     @MainActor let cloudPaneCreationFailureStore = CloudPaneCreationFailureStore()
@@ -3373,7 +3333,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
     @Published var remoteLastHeartbeatAt: Date?
     @Published var listeningPorts: [Int] = []
     @Published private(set) var activeRemoteTerminalSessionCount: Int = 0
-    var sshTuiConnectionAttemptID: UUID?
     var remoteSessionController: RemoteSessionCoordinator?
     // Retains each detached controller until cleanup finishes or ownership transfers.
     var remoteSessionCleanupControllers: [UUID: (controller: RemoteSessionCoordinator, configuration: WorkspaceRemoteConfiguration)] = [:]
@@ -7240,10 +7199,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
             completion(.failure(ManagedFileTransferPolicy.refusalError()))
             return
         }
-        if usesSSHTui, let configuration = remoteConfiguration {
-            DetectedSSHSession(configuration: configuration).uploadDroppedFiles(fileURLs, operation: operation, completion: completion)
-            return
-        }
         guard let controller = remoteSessionController else {
             completion(.failure(RemoteDropUploadError.unavailable))
             return
@@ -7330,7 +7285,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         )
     }
     func remoteStatusPayload() -> [String: Any] {
-        if usesSSHTui { return tuiSSHStatusPayload() }
         let heartbeatAgeSeconds: Any = {
             guard let last = remoteLastHeartbeatAt else { return NSNull() }
             return max(0, Date().timeIntervalSince(last))
@@ -7406,20 +7360,10 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
             payload["local_proxy_port"] = NSNull()
             payload["persistent_daemon_slot"] = NSNull()
         }
-        // A cmux-tui workspace reports its machine under the same key the managed
-        // transports use, so `cmux vm desktop`/the Machines panel find it either way.
-        if let binding = cloudVMBinding {
-            if remoteConfiguration?.managedCloudVMID?.isEmpty != false {
-                payload["managed_cloud_vm_id"] = binding.vmID
-            }
-            payload["cloud_vm_id"] = binding.vmID
-            payload["cloud_vm_base"] = binding.isBase
-            payload["cloud_vm_transport"] = "cmux-remote"
-        } else {
-            payload["cloud_vm_id"] = NSNull()
-            payload["cloud_vm_base"] = NSNull()
-            payload["cloud_vm_transport"] = NSNull()
-        }
+        // Wire keys kept; there is no cloud machine binding any more.
+        payload["cloud_vm_id"] = NSNull()
+        payload["cloud_vm_base"] = NSNull()
+        payload["cloud_vm_transport"] = NSNull()
         return payload
     }
     @discardableResult
@@ -7433,12 +7377,19 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         // once. Nothing is retained or dialed before the refusal.
         guard !managedDevicePolicy.isEnforced(.disableRemoteConnections) else { return false }
         if let managedCloudVMID = configuration.managedCloudVMID,
-           !managedCloudVMID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-           !CloudMachinesFeature.offMainIsEnabled() {
+           !managedCloudVMID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return suspendCloudRemoteConfiguration(configuration)
         }
-        if configuration.routesThroughSSHTui {
-            return configureSSHTuiConnection(configuration, autoConnect: autoConnect)
+        if configuration.isRelaylessSSHRecoveryDescriptor {
+            // Kept for recovery only (SSH-TUI is gone): show it disconnected, never dial.
+            remoteSessionController?.stop()
+            remoteSessionController = nil
+            activeRemoteSessionControllerID = nil
+            remoteConfiguration = configuration
+            remoteProxyEndpoint = nil
+            remoteDaemonStatus = WorkspaceRemoteDaemonStatus()
+            applyRemoteConnectionStateUpdate(.disconnected, detail: nil, target: configuration.displayTarget)
+            return true
         }
         var configuration = configuration.scopedToOwnerWorkspace(id)
         let foregroundAuthToken =
@@ -7602,7 +7553,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
     }
 
     func disconnectRemoteConnection(clearConfiguration: Bool = false, disconnectedDetail: String? = nil) {
-        AppDelegate.shared?.sshTuiWorkspaceCoordinator.disconnect(workspace: self)
         defer { TerminalController.shared.notifyRemotePTYControllerAvailabilityChanged() }
         let previousPresentedDirectory = presentedCurrentDirectory
         let shouldCleanupControlMaster =
@@ -8028,16 +7978,14 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         cloudVMID != nil
     }
 
-    /// The cloud machine this workspace hosts, through either transport: the legacy
-    /// remote configuration (`managedCloudVMID`) or the cmux-tui binding. Nil for
-    /// workspaces that are not cloud machines.
+    /// The cloud machine this workspace hosts through the legacy remote configuration
+    /// (`managedCloudVMID`). Nil for workspaces that are not cloud machines.
     var cloudVMID: String? {
         if let managedCloudVMID = remoteConfiguration?.managedCloudVMID?
             .trimmingCharacters(in: .whitespacesAndNewlines), !managedCloudVMID.isEmpty {
             return managedCloudVMID
         }
-        guard let binding = cloudVMBinding, !SurfaceMachineID(rawValue: binding.vmID).isSSH else { return nil }
-        return binding.vmID
+        return nil
     }
 
     /// Where this workspace runs, derived from its Cloud machine or SSH
@@ -8167,7 +8115,7 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
 
     func effectiveRemoteTerminalStartupCommand(from configuration: WorkspaceRemoteConfiguration?) -> String? {
         guard let configuration else { return nil }
-        if configuration.routesThroughSSHTui, configuration.preserveAfterTerminalExit { return nil }
+        if configuration.isRelaylessSSHRecoveryDescriptor { return nil }
         if let vmID = defaultFreestyleSSHDVMID(from: configuration) {
             let command = configuration.terminalStartupCommand?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -10190,10 +10138,7 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         let creationPermittedWhileDisabled = creationPolicy.permitsCreationWhenBrowserDisabled
             && !BrowserAvailabilitySettings.isManagedByPolicy
         guard browserEnabled || creationPermittedWhileDisabled else {
-            let hasCloudMachineBinding = cloudVMBinding.map {
-                SurfaceMachineID(rawValue: $0.vmID).cloudMachineID != nil
-            } ?? false
-            if !hasCloudMachineBinding, allowsExternalBrowserFallback,
+            if allowsExternalBrowserFallback,
                let externalURL = externalBrowserFallbackURL(
                 url: url,
                 initialRequest: initialRequest
@@ -10349,10 +10294,7 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         let creationPermittedWhileDisabled = creationPolicy.permitsCreationWhenBrowserDisabled
             && !BrowserAvailabilitySettings.isManagedByPolicy
         guard browserEnabled || creationPermittedWhileDisabled else {
-            let hasCloudMachineBinding = cloudVMBinding.map {
-                SurfaceMachineID(rawValue: $0.vmID).cloudMachineID != nil
-            } ?? false
-            if !hasCloudMachineBinding, allowsExternalBrowserFallback,
+            if allowsExternalBrowserFallback,
                let externalURL = externalBrowserFallbackURL(
                 url: url,
                 initialRequest: initialRequest
@@ -13731,9 +13673,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         fileManager: FileManager = .default,
         temporaryDirectory: URL = FileManager.default.temporaryDirectory
     ) -> AgentConversationForkWorkspaceLaunch? {
-        if machineOwningSurface(panelId)?.isSSH == true {
-            return nativeSSHAgentForkWorkspaceLaunch(fromPanelId: panelId, snapshot: snapshot)
-        }
         let workingDirectory = forkAgentWorkingDirectory(fromPanelId: panelId, snapshot: snapshot)
         let launchSnapshot = snapshot.retargetingForkWorkingDirectory(workingDirectory)
         let remoteStartupCommand = forkAgentRemoteStartupCommand(fromPanelId: panelId)
@@ -13770,13 +13709,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         fileManager: FileManager = .default,
         temporaryDirectory: URL = FileManager.default.temporaryDirectory
     ) -> TerminalPanel? {
-        if machineOwningSurface(panelId)?.isSSH == true {
-            guard let paneID = paneId(forPanelId: panelId) else { return nil }
-            let split: SurfaceSplitDirection = direction.orientation == .horizontal
-                ? (direction.insertFirst ? .left : .right) : (direction.insertFirst ? .up : .down)
-            return forkNativeSSHAgentConversation(fromPanelId: panelId, snapshot: snapshot,
-                destination: .split(workspaceID: id, paneID: paneID.id.uuidString, direction: split))
-        }
         let workingDirectory = forkAgentWorkingDirectory(fromPanelId: panelId, snapshot: snapshot)
         let launchSnapshot = snapshot.retargetingForkWorkingDirectory(workingDirectory)
         let remoteStartupCommand = forkAgentRemoteStartupCommand(fromPanelId: panelId)
@@ -13847,11 +13779,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         fileManager: FileManager = .default,
         temporaryDirectory: URL = FileManager.default.temporaryDirectory
     ) -> TerminalPanel? {
-        if machineOwningSurface(panelId)?.isSSH == true {
-            return forkNativeSSHAgentConversation(fromPanelId: panelId, snapshot: snapshot,
-                destination: .tab(workspaceID: id, paneID: paneId.id.uuidString,
-                                  index: insertionIndexToRight(of: anchorTabId, inPane: paneId)))
-        }
         let workingDirectory = forkAgentWorkingDirectory(fromPanelId: panelId, snapshot: snapshot)
         let launchSnapshot = snapshot.retargetingForkWorkingDirectory(workingDirectory)
         let remoteStartupCommand = forkAgentRemoteStartupCommand(fromPanelId: panelId)

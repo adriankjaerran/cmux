@@ -155,14 +155,8 @@ extension Workspace {
     @discardableResult
     func reconnectRemoteConnection(surfaceId: UUID? = nil) -> Bool {
         guard !managedDevicePolicy.isEnforced(.disableRemoteConnections) else { return false }
-        if isManagedCloudVMWorkspace, !CloudMachinesFeature.offMainIsEnabled() { return false }
+        if isManagedCloudVMWorkspace { return false }
         if let surfaceId, let session = tuiMirrorSession(for: surfaceId) { return session.retryConnection() }
-        if usesSSHTui, let configuration = remoteConfiguration {
-            // A targeted pane reconnect cannot escalate into retrying every SSH viewer.
-            guard surfaceId == nil else { return false }
-            AppDelegate.shared?.sshTuiWorkspaceCoordinator.connect(workspace: self, configuration: configuration)
-            return true
-        }
         // `DisableRemoteConnections` (MDM): a configuration retained from
         // before the policy activated must not redial. New connections are
         // refused by `configureRemoteConnection`, and the enforcement observer
@@ -233,24 +227,8 @@ extension Workspace {
             status.retry()
             return true
         }
-        guard !managedDevicePolicy.isEnforced(.disableRemoteConnections), CloudMachinesFeature.offMainIsEnabled() else { return false }
-        // An optimistic pane whose creation failed replays its own request.
-        if retryReservedCloudTerminalPane(surfaceId: surfaceId) { return true }
-        if let resource = cloudProjectedResource(forPanel: surfaceId),
-           let provider = SurfaceCatalog.shared.provider(for: resource.id.machine) as? CmuxTuiSurfaceProvider {
-            guard let session = provider.manualMirrorSessions[surfaceId] else {
-                clearCloudMaterializationFailure(surfaceID: surfaceId)
-                provider.scheduleRefresh()
-                return true
-            }
-            (panels[surfaceId] as? TerminalPanel)?.requestViewReattach()
-            return session.retryConnection()
-        }
-        guard isManagedCloudVMWorkspace,
-              isRemoteTerminalSurface(surfaceId) || remoteDisconnectPlaceholderPanelIds.contains(surfaceId) else {
-            return false
-        }
-        return reconnectRemoteConnection(surfaceId: surfaceId)
+        // Cloud machines are gone from this fork: only device attachments reconnect here.
+        return false
     }
 
     func suspendCloudRemoteConfiguration(_ configuration: WorkspaceRemoteConfiguration) -> Bool {

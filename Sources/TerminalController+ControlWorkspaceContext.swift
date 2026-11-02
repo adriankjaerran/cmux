@@ -648,8 +648,7 @@ extension TerminalController: ControlWorkspaceContext {
         // `DisableCloud` (MDM): a workspace bound to a Cloud machine is a Cloud
         // attach whichever verb carried it, so pre-minted daemon credentials
         // cannot route around the `vm.*` gate.
-        if let managedCloudVMID, !managedCloudVMID.isEmpty,
-           (ManagedCloudPolicy.isDisabled || !CloudMachinesFeature.offMainIsEnabled()) {
+        if let managedCloudVMID, !managedCloudVMID.isEmpty {
             return .err(code: ManagedCloudPolicy.socketErrorCode, message: CloudMachinesFeature.disabledMessage, data: nil)
         }
         guard let owner = AppDelegate.shared?.tabManagerFor(tabId: workspaceId),

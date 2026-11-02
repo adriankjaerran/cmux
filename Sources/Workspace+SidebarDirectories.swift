@@ -23,7 +23,6 @@ extension Workspace {
         }
         let activeRemotePanelIds = panels.keys.filter {
             isRemoteTerminalSurface($0) ||
-                (cloudVMBinding != nil && terminalPanel(for: $0) != nil) ||
                 cloudBindingState.projectedResources[$0]?.kind == .terminal ||
                 cloudProjectedResource(forPanel: $0)?.kind == .terminal
         }
@@ -45,7 +44,7 @@ extension Workspace {
     /// Directory metadata for a cloud-bound or cloud-projected panel is remote
     /// state, even though its transport is not SSH.
     var usesRemoteDirectoryProvenance: Bool {
-        isRemoteWorkspace || isRemoteTmuxMirror || cloudVMBinding != nil ||
+        isRemoteWorkspace || isRemoteTmuxMirror ||
             panels.keys.contains(where: { cloudDirectoryProvenanceRequired(panelId: $0) })
     }
 
@@ -54,14 +53,14 @@ extension Workspace {
     /// one local surface; a cloud-only projection is not a safe staging target
     /// until it has a local host pane.
     var canHostLocalTerminal: Bool {
-        guard !isRemoteWorkspace, !isRemoteTmuxMirror, cloudVMBinding == nil else { return false }
+        guard !isRemoteWorkspace, !isRemoteTmuxMirror else { return false }
         let hasCloudProjection = panels.keys.contains { cloudDirectoryProvenanceRequired(panelId: $0) }
         return !hasCloudProjection || panels.keys.contains { machineOwningSurface($0)?.isLocal == true }
     }
 
     /// Returns whether a panel's directory belongs to a Cloud machine rather than this Mac.
     func cloudDirectoryProvenanceRequired(panelId: UUID) -> Bool {
-        cloudVMBinding != nil || cloudBindingState.projectedResources[panelId] != nil ||
+        cloudBindingState.projectedResources[panelId] != nil ||
             SurfaceCatalog.shared.hasCloudProjection(panelID: panelId, workspaceID: id)
     }
 
@@ -149,10 +148,9 @@ extension Workspace {
     }
 
     func restoresLegacyRemoteDirectoryWithoutProvenance(_ snapshot: SessionPanelSnapshot) -> Bool {
-        guard remoteConfiguration != nil || cloudVMBinding != nil,
+        guard remoteConfiguration != nil,
               snapshot.directoryIsTrustedRemoteReport == nil,
               snapshot.directoryRequiresRemoteTrust == nil else { return false }
-        if cloudVMBinding != nil { return true }
         if let terminal = snapshot.terminal { return terminal.isRemoteTerminal != false }
         return snapshot.agentSession != nil
     }

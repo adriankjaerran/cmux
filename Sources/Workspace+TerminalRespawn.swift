@@ -23,12 +23,6 @@ extension Workspace {
         allowTextBoxFocusDefault: Bool = true,
         nativeReservation: CloudTerminalPaneReservation? = nil
     ) -> TerminalPanel? {
-        // Native ownership routes through its provider before any local process configuration.
-        if machineOwningSurface(panelId)?.isSSH == true, nativeReservation == nil {
-            return respawnSSHTuiSurface(panelID: panelId, command: command,
-                workingDirectory: workingDirectory, tmuxStartCommand: tmuxStartCommand,
-                focus: focus, allowTextBoxFocusDefault: allowTextBoxFocusDefault)
-        }
         guard !isRetiredFromOwningTabManager,
               let oldPanel = terminalPanel(for: panelId),
               let tabId = surfaceIdFromPanelId(panelId),

@@ -729,7 +729,38 @@ Done (see `git log`, "Phase 9.8"). Built after each group (terminal + image past
   right; a `wait --url-contains` fired right after back/forward timed out once, then worked after it settled),
   `dialog accept` on a `confirm()`, `close-surface`. ⬜ Popup, download: manual.
 
-### ⬜ 9.9 Stub: session restore and workspace cloud binding (M, medium risk)
+### ✅ 9.9 Stub: session restore and workspace cloud binding (M, medium risk)
+
+Done (see `git log`, "Phase 9.9"). Differs from plan:
+- `Workspace.cloudVMBinding` is a stub (`get { nil }`, setter ignored) instead of gone: ~40 writers/readers in
+  `Sources/Cloud`, `Surfaces` and `Devices` still name it (they go in 9.12/9.14). Every local reader (Workspace,
+  sidebar directories, Files root, agent title, git-branch report, AppDelegate Base/new-workspace checks, the
+  `remote.status` payload, which now always reports `cloud_vm_*` as null) dropped it. **Kept for now:**
+  `WorkspaceCloudVMBinding*.swift` (the type) and `WorkspaceCloudBindingState.swift` (lost its `binding`; it
+  still carries the device projection metadata the Surfaces/Devices code writes). The AppKit row's
+  cloud/device badge slot stays until Devices goes (9.14).
+- Session: `cloudVM`, `cloudMachineTeams`, `SessionCloudVMBindingSnapshot`, `restoredCloudVMBinding` gone (also
+  from import trust, closed-history and `DisableCloud` restore policy). `surfaceProjections` **stays** (device
+  projections, 9.14); restore no longer reserves Cloud terminal panes and only re-attaches a browser
+  `cloudResource` for a device machine.
+- `workspace.cloud_vm_open` / `cloud_vm_terminal_ready` / `cloud_vm_bind` always answer with the Cloud-disabled
+  error; `managedCloudVMID` configs always suspend; `reconnectCloudTerminalSurface` only retries device panes.
+- SSH-TUI: deleted `SessionRemoteWorkspaceSnapshot+TuiSSH`, `SSHTuiAgentStatusProjector` (its two statics moved into
+  `RemoteTmuxAgentStatusProjector`), `SSHTuiAttachRetry`, `SSHTuiWorkspaceCoordinator`, `TerminalController+SSHTui`,
+  `+SSHTuiSessions`, `Workspace+SSHTui`, `+SSHTuiStatus` (`tuiMirrorSession` moved to
+  `Surfaces/Workspace+CloudManualMirror.swift`). `DetectedSSHSession+Workspace.swift` and
+  `TerminalController+SSHWorkspaceResolution.swift` moved to `Sources/` (`fileOperationSSHOptions` is plain
+  `sshOptions`). Native-SSH fork/respawn/upload/link/reconnect branches gone; `workspace.ssh.open` removed
+  (dispatch, capabilities, execution policy); `ssh_session_attach.resolve`, `remote.pty_sessions`, `pty_close` use
+  only the plain path. **Still in `RemoteTui/`:** `SSHTuiLinkManager`, `RemoteTuiLinkManaging`, `RemoteTuiMachine`
+  (the Cloud surface provider uses them, 9.12). `CmuxCore` still writes `sshSessionOwner = "cmux-tui"` into saved
+  SSH snapshots (harmless; 9.15+).
+- **`routesThroughSSHTui` trap:** replaced by `WorkspaceRemoteConfiguration.isRelaylessSSHRecoveryDescriptor`
+  (SSH, no relay, no daemon endpoint, `preserveAfterTerminalExit`). Such a config (a saved cmux-tui carrier now
+  restores through the "preserve for recovery" branch) is stored **disconnected and never dials**, gets no
+  startup command, and its terminals restore as placeholders, as before. Relay-less configs without
+  `preserveAfterTerminalExit` now take the legacy `configureRemoteConnection` path (upstream's pre-TUI behaviour).
+  Your session has none of these.
 
 **What it removes:** cloud machine bindings in the saved layout, and (if decided) SSH-TUI.
 
@@ -748,8 +779,10 @@ Done (see `git log`, "Phase 9.8"). Built after each group (terminal + image past
 **Risk:** medium. Your files have none of these fields, so restore is the same. The trap is a restore helper that
 assumes the binding exists; test with `--seed`.
 
-- ⬜ Standard checks with `--seed`. Compare `"$T" --json tree --all` with the baseline: same workspaces, groups, order.
-- ⬜ ⌘Q, edit nothing, reopen twice: still the same.
+- ✅ Standard checks with `--seed` (build, `--version`, `config doctor` same as baseline). `tree --all` +
+  `workspace.group.list`: same names, groups, order and pinned row as Personal's current session (13 workspaces;
+  the baseline's 11 are all there, Personal has gained "Schjødt SWAT alts" and "Presentation" since). ⬜ Agents: manual.
+- ✅ Quit (osascript), edit nothing, reopen with `--no-build` twice: identical each time.
 
 ### ⬜ 9.10 Stub: app composition, auth and URL routing (M–L, high risk)
 

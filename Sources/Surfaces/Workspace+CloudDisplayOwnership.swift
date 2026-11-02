@@ -29,9 +29,9 @@ extension Workspace {
     /// binding. Startup may adopt a saved owner; an already bound workspace may
     /// never be rebound as a side effect of restoring foreign display views.
     func acceptsRestoredSession(_ snapshot: SessionWorkspaceSnapshot) -> Bool {
-        let savedOwner = Self.restoredCloudVMBinding(from: snapshot.cloudVM).map { SurfaceMachineID(rawValue: $0.vmID) }
-        if let owner = surfaceOwnershipPolicy.cloudMachine, savedOwner != owner { return false }
-        let policy = SurfaceOwnershipPolicy(cloudMachine: savedOwner ?? surfaceOwnershipPolicy.cloudMachine)
+        // Cloud machine bindings are no longer saved, so a restored layout has no owner.
+        if surfaceOwnershipPolicy.cloudMachine != nil { return false }
+        let policy = SurfaceOwnershipPolicy(cloudMachine: nil)
         let records = snapshot.surfaceProjections ?? []
         if !records.isEmpty, policy.rejection(for: records.map(\.resource)) != nil { return false }
         let byPanel = Dictionary(records.map { ($0.panelID, $0) }, uniquingKeysWith: { first, _ in first })
