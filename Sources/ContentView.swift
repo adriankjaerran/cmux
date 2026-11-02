@@ -11102,16 +11102,11 @@ struct ContentView: View {
             NSSound.beep()
             return
         }
+        // Always the workspace itself, even a group's anchor: anchors render as
+        // normal rows now, and the group is renamed from its header.
         let target = CommandPaletteRenameTarget(
-            focusedWorkspaceId: workspace.id,
-            focusedWorkspaceName: workspaceDisplayName(workspace),
-            groupAnchors: tabManager.workspaceGroups.map { group in
-                CommandPaletteWorkspaceGroupAnchor(
-                    groupId: group.id,
-                    anchorWorkspaceId: group.anchorWorkspaceId,
-                    name: group.name
-                )
-            }
+            kind: .workspace(workspaceId: workspace.id),
+            currentName: workspaceDisplayName(workspace)
         )
         startRenameFlow(target)
     }
