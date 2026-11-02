@@ -1,5 +1,6 @@
 import CmuxAuthRuntime
 import CmuxControlSocket
+import CmuxSettings
 import Foundation
 
 enum AIAccountsClientError: Error, CustomStringConvertible {

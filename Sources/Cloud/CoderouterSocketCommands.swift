@@ -1,4 +1,5 @@
 import CmuxCloud
+import CmuxSettings
 import Foundation
 
 // `coderouter.*` socket methods behind `cmux coderouter <status|machines|claude>`.

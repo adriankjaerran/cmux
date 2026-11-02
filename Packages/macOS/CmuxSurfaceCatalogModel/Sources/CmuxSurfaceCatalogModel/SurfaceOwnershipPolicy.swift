@@ -1,4 +1,3 @@
-import CmuxSurfaceCatalogModel
 import Foundation
 
 /// A destination's ownership rule, independent of UI, drag payloads, and I/O.

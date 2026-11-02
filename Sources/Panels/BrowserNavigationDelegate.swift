@@ -581,7 +581,7 @@ import WebKit
                 && owner?.isTrustedLocalFileDocument(url) == true
             if !isTrustedInternal,
                !isTrustedDocument,
-               url.scheme?.lowercased() != AuthEnvironment.callbackScheme.lowercased(),
+               url.scheme?.lowercased() != AppURLScheme.callbackScheme.lowercased(),
                !BrowserURLAllowlistPolicy(defaults: .standard).allows(url) {
                 decisionHandler(.cancel)
                 if isMainFrame {

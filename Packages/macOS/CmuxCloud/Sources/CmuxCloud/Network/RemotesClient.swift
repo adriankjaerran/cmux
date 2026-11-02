@@ -1,6 +1,7 @@
 import CMUXMobileCore
 import CmuxMobileHost
 import CmuxAuthRuntime
+import CmuxSettings
 import CryptoKit
 import Foundation
 

@@ -1,5 +1,6 @@
 import CmuxCloud
 import AppKit
+import CmuxSettings
 
 extension GhosttyNSView {
     /// Types an upload's remote path into the surface the upload started on.

@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import CmuxBrowser
 import CmuxCore
@@ -113,7 +112,7 @@ struct BrowserExternalNavigationHandler {
 
     private static func isAppOwnedInternalURL(_ url: URL) -> Bool {
         guard let scheme = url.scheme?.lowercased() else { return false }
-        if scheme == AuthEnvironment.callbackScheme.lowercased() {
+        if scheme == AppURLScheme.callbackScheme.lowercased() {
             return true
         }
         if BrowserURLAllowlistPolicy.trustedInternalSchemes.contains(scheme) {

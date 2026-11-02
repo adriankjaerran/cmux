@@ -1,6 +1,7 @@
 import CmuxCloud
 import AppKit
 import CmuxCloudImagePaste
+import CmuxSettings
 import CmuxTerminal
 
 extension TerminalSurface {

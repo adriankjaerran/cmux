@@ -9416,7 +9416,7 @@ final class BrowserUIDelegate: BrowserPDFPreviewActionUIDelegate {
 
         if let url = navigationAction.request.url,
            navigationAction.targetFrame?.isMainFrame != false,
-           url.scheme?.lowercased() != AuthEnvironment.callbackScheme.lowercased(),
+           url.scheme?.lowercased() != AppURLScheme.callbackScheme.lowercased(),
            !BrowserURLAllowlistPolicy(defaults: .standard).allows(url) {
             return nil
         }

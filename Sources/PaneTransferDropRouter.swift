@@ -1,6 +1,7 @@
 import CmuxCloud
 import AppKit
 import Bonsplit
+import CmuxSurfaceCatalogModel
 
 /// Resolves and performs pane-transfer drops through the target pane's owner.
 @MainActor

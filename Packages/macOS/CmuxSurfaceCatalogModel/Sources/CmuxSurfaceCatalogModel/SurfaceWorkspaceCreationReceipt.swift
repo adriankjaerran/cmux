@@ -1,4 +1,3 @@
-import CmuxSurfaceCatalogModel
 import Foundation
 
 /// A committed workspace and its optional starter, available before a graph refresh.

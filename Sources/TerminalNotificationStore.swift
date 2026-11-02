@@ -2,6 +2,7 @@ import CmuxCloud
 import CmuxFoundation
 import CmuxNotifications
 import AppKit
+import CmuxSurfaceCatalogModel
 import Combine
 import Foundation
 import os

@@ -1,5 +1,6 @@
 import CmuxCloud
 import AppKit
+import CmuxSettings
 import CmuxTerminal
 import CmuxTerminalCore
 import GhosttyKit

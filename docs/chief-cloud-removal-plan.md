@@ -480,7 +480,22 @@ everything in removal-plan.md's command table.
   with `CMUX="$T"` runs without `NOTE: … failed` lines (compare with the baseline).
 - ✅ `"$T" send --paste -- $'a\nb'` into a scratch terminal works.
 
-### ⬜ 9.4 Move the local types out of `CmuxCloud` (M, low–medium risk)
+### ✅ 9.4 Move the local types out of `CmuxCloud` (M, low–medium risk)
+
+Done (see `git log`, "Phase 9.4"). Differs from the plan: `ManagedCapabilityPolicy.swift` keeps `import AppKit`
+(`ManagedFileTransferPolicy.presentRefusal()` uses `NSAlert`); it compiled unchanged in CmuxSettings' Swift 6 mode,
+no concurrency fix needed. `NotificationReadTarget` is its own file in CmuxSurfaceCatalogModel. The package test
+`SurfaceOwnershipPolicyCrossTeamTests.swift` moved with it (not run). `AppURLScheme` also keeps the Debug
+dev-override file read (`~/.config/cmux/dev-profiles/<tag>.env`, `~/.cmux-dev.env`) for `CMUX_AUTH_CALLBACK_SCHEME`,
+so it resolves exactly like `AuthEnvironment.callbackScheme`. Also pointed at it: `BrowserPanel.swift` and
+`BrowserPopupWindowController.swift` (own-scheme allowlist checks); `WorkspaceSurfaceIdentifierClipboardText.swift`
+needed no edit (it uses `CmuxNavigationURLRequest.workspaceLink`'s default). The auth-callback policy inits
+(`BrowserNavigationDelegate`, `BrowserPopupWindowController`) keep `AuthEnvironment` (9.8 work).
+`CmuxSSHURLRequest.swift`, `AppDelegate+CmuxSSHURL.swift`, `BrowserExternalNavigationHandler.swift` no longer
+import `CmuxCloud`. pbxproj: one new app file (`AppURLScheme.swift`).
+Found: the test app opened by `test-app.sh` from a cmux Personal shell inherits `CMUX_TAG=mine` /
+`CMUX_AUTH_CALLBACK_SCHEME=cmux-dev-mine`, so its scheme is `cmux-dev-mine` (it accepted
+`cmux-dev-mine://workspace/<id>` via `open -a`, ignored `cmux-dev-test://…`). Same before this step; a harness issue.
 
 **What it does:** moves code, no behaviour change. After this, the app files in the table above no longer need
 `CmuxCloud` for local work.
@@ -506,9 +521,10 @@ everything in removal-plan.md's command table.
 **Risk:** low–medium. Type name clashes if a file is copied instead of moved. Package tests of `CmuxCloud` may
 break; nothing runs them.
 
-- ⬜ Standard checks.
-- ⬜ Drag a tab to another pane and to another workspace. Drop a file onto a terminal (path is typed).
-- ⬜ "Copy workspace link" gives `cmux-dev-test://…`; paste it in Safari: the test app selects that workspace.
+- ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`, `current.list`; the clicking ones need a manual look).
+- ✅ Tab to another pane and to another workspace via `cmux move-surface` (and back). ⬜ Real drag and file drop: manual.
+- ✅ Workspace link logic: `AppURLScheme` copies `AuthEnvironment.callbackScheme`; `open -a <test app> <scheme>://workspace/<id>`
+  selected the workspace. ⬜ The menu item and Safari paste: manual (and see the scheme note above).
 
 ### ⬜ 9.5 Move the agent transcript registry out of Mobile (M, medium risk)
 

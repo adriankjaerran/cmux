@@ -6,6 +6,7 @@ import CmuxPanes
 import CmuxProductAnalytics
 import CmuxRemoteWorkspace
 import CmuxRemoteSession
+import CmuxSettings
 import CmuxWorkspaces
 import Foundation
 

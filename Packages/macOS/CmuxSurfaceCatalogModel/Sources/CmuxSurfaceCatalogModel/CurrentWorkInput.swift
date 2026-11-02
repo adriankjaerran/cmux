@@ -1,4 +1,3 @@
-import CmuxSurfaceCatalogModel
 import Foundation
 
 /// Immutable capture for the pure current-work reduction; never persisted as a graph.

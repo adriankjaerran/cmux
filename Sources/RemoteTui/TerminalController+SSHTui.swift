@@ -1,6 +1,7 @@
 import CmuxCloud
 import CmuxCore
 import CmuxFoundation
+import CmuxSettings
 import CmuxSurfaceCatalogModel
 import Foundation
 

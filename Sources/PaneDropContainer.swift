@@ -1,6 +1,7 @@
 import CmuxCloud
 import AppKit
 import Bonsplit
+import CmuxSurfaceCatalogModel
 import Foundation
 
 /// The behavior boundary for a pane-level drop target. Main-area panes and Dock

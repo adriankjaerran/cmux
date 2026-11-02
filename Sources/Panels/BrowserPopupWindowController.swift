@@ -526,7 +526,7 @@ private final class PopupUIDelegate: BrowserPDFPreviewActionUIDelegate {
 
         if let url = navigationAction.request.url,
            navigationAction.targetFrame?.isMainFrame != false,
-           url.scheme?.lowercased() != AuthEnvironment.callbackScheme.lowercased(),
+           url.scheme?.lowercased() != AppURLScheme.callbackScheme.lowercased(),
            !BrowserURLAllowlistPolicy(defaults: .standard).allows(url) {
             return nil
         }
@@ -826,7 +826,7 @@ private final class PopupUIDelegate: BrowserPDFPreviewActionUIDelegate {
         }
 
         let isMainFrame = navigationAction.targetFrame?.isMainFrame != false
-        if url.scheme?.lowercased() != AuthEnvironment.callbackScheme.lowercased(),
+        if url.scheme?.lowercased() != AppURLScheme.callbackScheme.lowercased(),
            !BrowserURLAllowlistPolicy(defaults: .standard).allows(url) {
             decisionHandler(.cancel)
             if isMainFrame {

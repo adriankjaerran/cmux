@@ -2,6 +2,7 @@ import CmuxCloud
 import CmuxCore
 import CmuxFoundation
 import AppKit
+import CmuxSettings
 import Combine
 import Foundation
 import QuartzCore

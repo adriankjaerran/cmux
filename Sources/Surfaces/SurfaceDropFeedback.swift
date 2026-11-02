@@ -1,5 +1,6 @@
 import CmuxCloud
 import AppKit
+import CmuxSurfaceCatalogModel
 
 /// Owns a transient warning above AppKit portals without taking keyboard focus.
 @MainActor
