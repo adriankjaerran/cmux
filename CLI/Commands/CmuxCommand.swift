@@ -141,7 +141,6 @@ struct CmuxCommand: AsyncParsableCommand {
             OMXCommand.self,
             OMCCommand.self,
             AgentHibernationCommand.self,
-            CoderouterCommand.self,
             VMAgentShortFormCommand.self,
             CodexTeamsWatchCommand.self,
             CodexTeamsAppServerSupervisorCommand.self,
@@ -229,8 +228,8 @@ struct CmuxCommand: AsyncParsableCommand {
     /// suggestions draw from. The router does not consult it: only
     /// `facadeNativeCommandNames` reach ArgumentParser.
     /// Cached: building this walks every subcommand's `configuration`, which
-    /// evaluates localized abstracts and (for `coderouter`) locates the app
-    /// bundle, so recomputing it on every invocation is measurably slow.
+    /// evaluates localized abstracts, so recomputing it on every invocation is
+    /// measurably slow.
     static let declaredCommandNames: Set<String> = {
         var names: Set<String> = []
         for subcommand in configuration.subcommands {

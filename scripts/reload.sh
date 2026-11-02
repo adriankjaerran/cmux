@@ -2139,10 +2139,6 @@ else
   fi
   "$PWD/scripts/install-cmux-tui-client.sh" "${cmux_tui_install_args[@]}"
 fi
-# Fork: no CodeRouter download. Upstream fetched coderouter-darwin-arm64 from
-# manaflow-ai/coderouter-releases into Resources/bin on every build; nothing here
-# uses it, so `cmux coderouter` / `cmux cr` report that it is not installed.
-# "$PWD/scripts/install-coderouter-client.sh" "$APP_PATH"
 # Fork: Xcode can replace Resources/bin after the build phase that links the
 # SwiftPM resource bundles beside the CLI, leaving the bundled CLI unable to find
 # them (it crashes at launch). Re-link them here, before signing.

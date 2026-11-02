@@ -1796,7 +1796,6 @@ extension CMUXCLI {
 
         Short forms:
           cmux agent <claude|codex|opencode|pi> [vm-agent-options] -- <prompt or args...>
-          cmux coderouter agent <claude|codex|opencode|pi> [vm-agent-options] -- <prompt or args...>
 
         Run a coding agent on a cloud machine. The machine is chosen like `vm run`
         (sticky per directory, then idle pool machine, then a fresh one) unless

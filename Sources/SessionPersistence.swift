@@ -1720,8 +1720,6 @@ struct SessionFilePreviewPanelSnapshot: Codable, Sendable {
 /// Marker for a workspace todo pane; the pane has no content of its own (the checklist
 /// persists on the workspace), so the panel `type` plus this empty marker is enough to restore it.
 struct SessionWorkspaceTodoPanelSnapshot: Codable, Sendable {}
-/// Marker for a CodeRouter guide pane; the guide content is static and needs no payload.
-struct SessionCoderouterGuidePanelSnapshot: Codable, Sendable {}
 /// Marker for the global notifications pane; its feed lives in the notification store.
 struct SessionNotificationsPanelSnapshot: Codable, Sendable {}
 /// A Chief pane: the messages live in Chief's own store, so only the shown conversation is kept.
@@ -1786,7 +1784,6 @@ struct SessionPanelSnapshot: Codable, Sendable {
     var agentSession: SessionAgentSessionPanelSnapshot? = nil
     var project: SessionProjectPanelSnapshot?
     var workspaceTodo: SessionWorkspaceTodoPanelSnapshot? = nil
-    var coderouterGuide: SessionCoderouterGuidePanelSnapshot? = nil
     var notificationsPanel: SessionNotificationsPanelSnapshot? = nil
     var chief: SessionChiefPanelSnapshot? = nil
 }

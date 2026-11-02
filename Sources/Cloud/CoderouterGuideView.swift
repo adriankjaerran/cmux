@@ -176,30 +176,10 @@ extension CloudTreeOutlineView.Coordinator {
         let popover = NSPopover()
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
-            rootView: CoderouterGuideView(onOpenAsPane: { [weak self] in
-                self?.guidePopover?.close()
-                self?.nodeActions.openCoderouterGuidePane()
-            })
+            rootView: CoderouterGuideView()
         )
         // The Cloud panel is the window's trailing sidebar, so open toward the content.
         popover.show(relativeTo: cell.bounds, of: cell, preferredEdge: .minX)
         guidePopover = popover
-    }
-}
-
-/// Renders the CodeRouter guide as a regular workspace surface.
-struct CoderouterGuidePanelView: View {
-    let isFocused: Bool
-    let onRequestPanelFocus: () -> Void
-
-    var body: some View {
-        CoderouterGuideView(isPane: true)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if !isFocused {
-                    onRequestPanelFocus()
-                }
-            }
     }
 }

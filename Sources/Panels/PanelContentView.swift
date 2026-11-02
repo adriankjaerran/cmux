@@ -185,12 +185,8 @@ struct PanelContentView: View {
                 )
             }
         case .coderouterGuide:
-            if panel is CoderouterGuidePanel {
-                CoderouterGuidePanelView(
-                    isFocused: isFocused,
-                    onRequestPanelFocus: onRequestPanelFocus
-                )
-            }
+            // The CodeRouter guide pane was removed from this fork.
+            EmptyView()
         case .notifications:
             if panel is NotificationsPanel {
                 NotificationsPage(

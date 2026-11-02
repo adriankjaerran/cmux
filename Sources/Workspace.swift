@@ -611,7 +611,6 @@ extension Workspace {
         let rightSidebarToolSnapshot: SessionRightSidebarToolPanelSnapshot?; var customSidebarSnapshot: SessionCustomSidebarPanelSnapshot? = nil
         let agentSessionSnapshot: SessionAgentSessionPanelSnapshot?
         let projectSnapshot: SessionProjectPanelSnapshot?; var workspaceTodoSnapshot: SessionWorkspaceTodoPanelSnapshot? = nil
-        var coderouterGuideSnapshot: SessionCoderouterGuidePanelSnapshot? = nil
         var notificationsPanelSnapshot: SessionNotificationsPanelSnapshot? = nil
         var chiefSnapshot: SessionChiefPanelSnapshot? = nil
         switch panel.panelType {
@@ -826,9 +825,8 @@ extension Workspace {
             rightSidebarToolSnapshot = nil; agentSessionSnapshot = nil; projectSnapshot = nil
             workspaceTodoSnapshot = SessionWorkspaceTodoPanelSnapshot()
         case .coderouterGuide:
-            terminalSnapshot = nil; browserSnapshot = nil; markdownSnapshot = nil; filePreviewSnapshot = nil
-            rightSidebarToolSnapshot = nil; agentSessionSnapshot = nil; projectSnapshot = nil
-            coderouterGuideSnapshot = SessionCoderouterGuidePanelSnapshot()
+            // The CodeRouter guide pane was removed from this fork.
+            return nil
         case .notifications:
             terminalSnapshot = nil; browserSnapshot = nil; markdownSnapshot = nil; filePreviewSnapshot = nil
             rightSidebarToolSnapshot = nil; agentSessionSnapshot = nil; projectSnapshot = nil
@@ -880,7 +878,6 @@ extension Workspace {
             agentSession: agentSessionSnapshot,
             project: projectSnapshot,
             workspaceTodo: workspaceTodoSnapshot,
-            coderouterGuide: coderouterGuideSnapshot,
             notificationsPanel: notificationsPanelSnapshot,
             chief: chiefSnapshot
         )
@@ -2412,11 +2409,7 @@ extension Workspace {
             guard let todoPanel = newWorkspaceTodoSurface(inPane: paneId, focus: false) else { return nil }
             applySessionPanelMetadata(snapshot, toPanelId: todoPanel.id)
             return todoPanel.id
-        case .coderouterGuide:
-            guard snapshot.coderouterGuide != nil,
-                  let guidePanel = newCoderouterGuideSurface(inPane: paneId, focus: false) else { return nil }
-            applySessionPanelMetadata(snapshot, toPanelId: guidePanel.id)
-            return guidePanel.id
+        case .coderouterGuide: return nil // CodeRouter guide pane removed from this fork.
         case .notifications:
             guard snapshot.notificationsPanel != nil,
                   let notificationsPanel = newNotificationsSurface(inPane: paneId, focus: false) else { return nil }
