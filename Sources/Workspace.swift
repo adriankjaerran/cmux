@@ -9347,18 +9347,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
             ) ?? false
             return routed ? .routedToRemote : .failed
         }
-        // Cloud ownership precedes option dispatch, including pending panes.
-        // Unsupported launch overrides fail closed instead of spawning a local PTY.
-        if let source = cloudTerminalSourcePlacement(forPanel: panelId) {
-            guard initialCommand == nil, initialInput == nil, tmuxStartCommand == nil,
-                  remotePTYSessionID == nil, workingDirectory == nil, startupEnvironment.isEmpty,
-                  initialDividerPosition == nil, !suppressWorkspaceRemoteStartupCommand else {
-                return rejectCloudTerminalCreation(source: source, panelID: panelId)
-            }
-            return routeCloudPaneTerminalSplit(
-                from: panelId, orientation: orientation, insertFirst: insertFirst, focus: focus
-            ) ? .routedToRemote : .failed
-        }
         // Auto layout re-tiles every pane itself, so only a plain split is
         // checked against the minimum pane size (#15371).
         let spaceVerdict: SplitSpaceVerdict = autoLayout || splitSpaceAdmissionBypassDepth > 0
@@ -9713,21 +9701,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
                     focus: focus ?? (bonsplitController.focusedPaneId == paneId)
                 ) ?? false
             return routed ? .routedToRemote : .failed
-        }
-        // Restore scaffolding has its own persisted identity. Interactive creates
-        // inherit the selected source, even before its remote receipt arrives.
-        if restoredSurfaceId == nil, startupRestoreAgent == nil,
-           let selectedTab = bonsplitController.selectedTab(inPane: paneId),
-           let selectedPanelID = panelIdFromSurfaceId(selectedTab.id),
-           let source = cloudTerminalSourcePlacement(forPanel: selectedPanelID) {
-            guard initialCommand == nil, initialInput == nil, tmuxStartCommand == nil,
-                  remotePTYSessionID == nil, workingDirectory == nil, startupEnvironment.isEmpty,
-                  !suppressWorkspaceRemoteStartupCommand else {
-                return rejectCloudTerminalCreation(source: source, panelID: selectedPanelID)
-            }
-            return routeCloudPaneTerminalTab(
-                inPane: paneId, focus: focus ?? (bonsplitController.focusedPaneId == paneId)
-            ) ? .routedToRemote : .failed
         }
         guard let panel = newTerminalSurfaceLocal(
             inPane: paneId,

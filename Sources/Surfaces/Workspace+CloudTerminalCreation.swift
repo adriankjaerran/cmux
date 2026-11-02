@@ -44,45 +44,8 @@ extension Workspace {
     /// Captures ownership and exact placement in one MainActor turn, including
     /// panes whose create has not returned its catalog projection yet.
     func cloudTerminalSourcePlacement(forPanel panelID: UUID) -> CloudTerminalSourcePlacement? {
-        guard panels[panelID] != nil else { return nil }
-        let catalog = SurfaceCatalog.shared
-        if let projection = catalog.projectionIncludingPendingRestore(forPanel: panelID),
-           !projection.resource.machine.isLocal {
-            guard projection.workspaceID == id else { return nil }
-            let resource = catalog.resources[projection.resource]
-            let remoteWorkspaceID = projection.remoteWorkspaceID ?? resource.flatMap {
-                catalog.cloudPlacementCoordinator.creationWorkspaceID(in: id, near: $0)
-            }
-            return CloudTerminalSourcePlacement(
-                machine: projection.resource.machine, resource: resource,
-                remoteWorkspaceID: remoteWorkspaceID, remoteTabID: projection.remoteTabID
-            )
-        }
-        if let reservation = cloudPendingCreations[panelID] {
-            return CloudTerminalSourcePlacement(
-                machine: reservation.machine, remoteWorkspaceID: reservation.remoteWorkspaceID,
-                pendingCreation: reservation.creationReceipt
-            )
-        }
-        // A disconnected provider may remove its graph while the native remote
-        // transport remains. Absence of graph metadata is not local ownership.
-        if let machineID = (panels[panelID] as? TerminalPanel)?.cloudAttachment?.machineID {
-            return CloudTerminalSourcePlacement(machine: SurfaceMachineID(rawValue: machineID))
-        }
-        // Legacy managed-Cloud SSH and transferred panels can be Cloud-owned
-        // without a catalog projection or manual-mirror attachment. Reuse the
-        // same owner resolver used by drag rejection; if its workspace binding
-        // is missing, the create route fails closed instead of repairing locally.
-        if let machine = machineOwningSurface(panelID), !machine.isLocal {
-            let remoteWorkspaceID = cloudVMBinding?.vmID == machine.tuiMachineID
-                ? cloudVMBinding?.remoteWorkspaceID
-                : nil
-            return CloudTerminalSourcePlacement(
-                machine: machine,
-                remoteWorkspaceID: remoteWorkspaceID
-            )
-        }
-        return nil
+        // Cloud is gone from this fork: no pane is ever Cloud-owned.
+        nil
     }
 
     func rejectCloudTerminalCreation(source: CloudTerminalSourcePlacement, panelID: UUID) -> TerminalPanelCreationOutcome {

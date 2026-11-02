@@ -655,7 +655,39 @@ unavailable.
   files/find/vault/dock` open those modes (`right-sidebar mode`); `right-sidebar machines`/`cloud` → unknown command,
   and the app's `right_sidebar set machines`/`cloud` → "Unknown right sidebar mode". ⬜ Tab shortcuts: manual.
 
-### ⬜ 9.8 Stub: terminal, image paste, file explorer, browser (M, high risk)
+### ✅ 9.8 Stub: terminal, image paste, file explorer, browser (M, high risk)
+
+Done (see `git log`, "Phase 9.8"). Built after each group (terminal + image paste, file explorer, browser).
+- Terminal: `cloudTerminalSourcePlacement` → `nil`; both Cloud branches in `Workspace.swift` gone. Kept
+  `cloudPaneCreationFailureStore` and `rejectCloudTerminalCreation`/`routeCloudPane*` (still called from
+  `Sources/Cloud`, `RemoteTui`, `Devices` and `Surfaces/*Cloud*`; they go with those folders).
+- `GhosttyTerminalView`: no `CmuxCloud`/`CmuxCloudBannerCore` import, no `.pasteCloudImages`, no reconnect overlay
+  (hit test, frame, observer, presentation; `synchronizeCloudTerminalReconnectOverlay()` is a no-op kept for the
+  `Sources/Cloud` callers; `TerminalPortalReconciliation` no longer anchors it). `let cloudTerminalOverlay` stays as
+  the Cloud TUI mirror session holder until `Sources/Cloud` goes. `MobileHostDiagnostics.log` → a new app-local ring
+  `TerminalWorkDiagnosticLog.log` (in `TerminalGeometryDiagnostics.swift`; a `Logger` cannot feed
+  `TerminalSurfaceWorkDiagnostics`); only `iroh_diag`/mobile export read the old ring.
+- Image paste: `.cloud` target and `.pasteCloudImages` plan gone everywhere (planner, executor, prepared transfer,
+  runtime clipboard read, composer paste, `TextBoxInput` cloud dispatch events and command-template guard).
+  Deleted the three files. `attachFileURLs` (local + SSH composer attach) moved to `TextBoxInputContainer+Paste.swift`.
+- File explorer: `FileExplorerWorkspaceRoot.remoteCloud` gone; a Cloud binding or projection resolves to `.none`
+  (the legacy `ssh:` binding still gives `.remoteSSH`); `FileSearchScope.remoteCloud` gone; header retry is nil.
+  Deleted the 9 cloud files. **Plan was wrong:** `CloudFilePreviewCache`/`CloudFilePreviewLease` also serve SSH
+  file previews, so they stay (only the cloud-only capacity check went).
+- Browser: `BrowserPanel` no longer uses `CloudBrowserRouting`/`CloudDesktopConnectionObserver` (proxy config,
+  favicon, replacement web view, desktop observer script), no SSH-TUI loopback routing (`navigate`, resume, nav
+  delegate), no `rebindCloudRouteIfNeeded`/`privateAddressRouteProvider`; profile switch/restore no longer configure a
+  Cloud browser. No trusted sign-in origin: `BrowserAuthCallbackNavigationPolicy(trustedSourcePageOrigin: nil)` (all
+  callbacks blocked), the four `BrowserAppLinkOpenRequest` split-open branches gone, `isNativeAppSessionSurface` →
+  false. `+AppPricingRestore.swift` deleted. **Kept, differs from plan:** `BrowserPanel+CloudConnection.swift`
+  (trimmed to the glue `Sources/Cloud`/`CmuxTuiSurfaceProvider` call; `preferredURLStringForSessionSnapshot` moved to
+  `+PageRestoration`), `cloudAccess` (model always nil), `+MobileBrowserStreaming.swift` and `MobileBrowser*.swift`
+  (their callers are in `Sources/Mobile`, 9.14), and `+MobileBrowserDialogs.swift`, which is **local**: it is the JS
+  dialog broker behind `cmux browser dialog accept|dismiss` and the native alerts. Session restore of a saved
+  `cloudResource` left for 9.9.
+- Not done (left for 9.12): `TerminalPanel.cloudAttachment`, `CloudPaneCreationFailureView`,
+  `MachineCreateLoadingContent`, `CloudVMLoadingPanel*`. Every `.cloudVMLoading` creator is a Cloud flow that no
+  longer runs, and restore already returns `nil`; deleting them now would cascade into `Sources/Cloud`/`Surfaces`.
 
 **What it removes:** the cloud branches inside the local terminal, paste, file explorer and browser code.
 
@@ -684,11 +716,18 @@ unavailable.
 
 **Risk:** high. This is the code every terminal runs. Change only cloud branches; build after each file group.
 
-- ⬜ Standard checks.
-- ⬜ New tab (⌘T) and new split in a local workspace. In a remote tmux workspace if you have one.
-- ⬜ Paste a screenshot into a terminal running `claude` (image path appears). Drag a file in. Paste plain text.
-- ⬜ File explorer (right sidebar Files) shows the workspace folder; Find works; opening a file previews it.
-- ⬜ `open https://example.com` from a terminal opens in cmux's browser. Browser back/forward, a popup, a download.
+- ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`). ⬜ ⌘Q/reopen, agents: manual.
+- ✅ New tab (`new-surface`) and new split (`new-split right|down`) in a scratch workspace; `send` + `read-screen`
+  round-trips in each. ⬜ ⌘T by keyboard and a remote tmux workspace: manual.
+- ✅ Drop by socket (`debug.terminal.simulate_file_drop`): file URL on the text-destination and terminal routes
+  inserts the escaped path; image data inserts a temp PNG path. ⬜ Screenshot paste into `claude`, real drag, plain
+  text paste: manual.
+- ✅ `right-sidebar files` opens Files. ⬜ Its content, Find, file preview: manual (no socket method shows them;
+  screenshots fail from the worker).
+- ✅ `open https://example.com` from a test-app terminal opens a cmux browser split. ✅ `browser open
+  https://example.com`, `get url`/`get title`/`snapshot`/`eval`, `goto` another page, `back`/`forward` (URLs
+  right; a `wait --url-contains` fired right after back/forward timed out once, then worked after it settled),
+  `dialog accept` on a `confirm()`, `close-surface`. ⬜ Popup, download: manual.
 
 ### ⬜ 9.9 Stub: session restore and workspace cloud binding (M, medium risk)
 

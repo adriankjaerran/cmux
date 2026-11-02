@@ -434,47 +434,6 @@ import WebKit
             return
         }
 
-        // A link, redirect or script navigation to loopback in a managed SSH
-        // workspace goes to the SSH host, never this Mac's same-port service.
-        if navigationAction.targetFrame?.isMainFrame == true,
-           let url = navigationAction.request.url,
-           let owner, owner.owningWorkspaceRoutesThroughSSHTui,
-           let model = owner.cloudAccess.model,
-           model.route == .loopback,
-           BrowserURLAllowlistPolicy(defaults: .standard).allows(url),
-           let serviceURL = owner.sshLoopbackServiceURL(for: url),
-           owner.cloudAccess.owns(serviceURL),
-           let listenerURL = model.url(for: url),
-           listenerURL != url {
-            // A service may redirect back to its canonical localhost origin.
-            // Once this pane owns a live forward, rewrite that request to the
-            // existing listener instead of reconfiguring the route and
-            // reloading the forward indefinitely. Keep the original method,
-            // headers, and body intact. Preserve the service Host as well: a
-            // number of dev servers redirect a loopback listener back to
-            // localhost when the forwarded request presents the listener's
-            // ephemeral host, which would otherwise repeat this interception.
-            var request = navigationAction.request
-            request.url = listenerURL
-            if let host = serviceURL.host {
-                let hostValue = host.contains(":") ? "[\(host)]" : host
-                let port = serviceURL.port.map { ":\($0)" } ?? ""
-                request.setValue(hostValue + port, forHTTPHeaderField: "Host")
-            }
-            decisionHandler(.cancel)
-            requestNavigation?(request, navigationIntent, nil)
-            return
-        }
-
-        if navigationAction.targetFrame?.isMainFrame == true,
-           let url = navigationAction.request.url,
-           let owner, owner.owningWorkspaceRoutesThroughSSHTui,
-           owner.sshLoopbackServiceURL(for: url) != nil {
-            decisionHandler(.cancel)
-            requestNavigation?(navigationAction.request, navigationIntent, nil)
-            return
-        }
-
         if navigationAction.targetFrame?.isMainFrame == true,
            let url = navigationAction.request.url,
            BrowserURLAllowlistPolicy(defaults: .standard).allows(url),
@@ -494,35 +453,6 @@ import WebKit
             return
         }
 
-        // Authenticated cmux app links carry an in-process handoff action.
-        // Consume them before generic URL rules so a broad external pattern
-        // cannot divert the signed-in split placement to LaunchServices.
-        // In a tab a browser REPL session drives, only the user's own click
-        // opens the split; any other activation loads the link in the tab.
-        if navigationAction.navigationType == .linkActivated,
-           navigationAction.targetFrame?.isMainFrame != false,
-           let url = navigationAction.request.url,
-           let appLink = BrowserAppLinkOpenRequest(
-               url: url,
-               webOrigin: AuthEnvironment.appSessionHandoffOrigin
-           ),
-           BrowserReplNavigationGuard.shared.allowsExternal(panelID: owner?.id, action: navigationAction, target: .appLink),
-           openAppLinkInBrowserSplit?(appLink.destinationURL) == true {
-            clearAttemptedRequest(discardPendingBypasses: true)
-            let reportTerminalCancellation: @MainActor () -> Void = terminalPolicyCancellationReporter?(
-                navigationAction,
-                webView
-            ) ?? {}
-            reportTerminalCancellation()
-#if DEBUG
-            cmuxDebugLog(
-                "browser.nav.decidePolicy.action kind=openAppLinkInBrowserSplit " +
-                "url=\(browserNavigationDebugURL(appLink.destinationURL))"
-            )
-#endif
-            decisionHandler(.cancel)
-            return
-        }
 
         // A tab a browser REPL session drives hands a link to the external
         // browser only when the user activated it there: an agent's click
@@ -857,8 +787,10 @@ import WebKit
         decisionHandler(.allow)
     }
 
+    // No trusted sign-in origin: Cloud sign-in is gone, so every
+    // auth-callback-shaped navigation is blocked.
     let authCallbackNavigationPolicy = BrowserAuthCallbackNavigationPolicy(
-        trustedSourcePageOrigin: AuthEnvironment.appSessionHandoffOrigin,
+        trustedSourcePageOrigin: nil,
         callbackScheme: AuthEnvironment.callbackScheme
     )
 

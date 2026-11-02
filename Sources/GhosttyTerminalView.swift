@@ -1,6 +1,4 @@
 import CmuxSSHClipboardTrust
-import CmuxCloudBannerCore
-import CmuxCloud
 import Foundation
 import CmuxAppKitSupportUI
 import CmuxTerminal
@@ -345,7 +343,7 @@ class GhosttyApp {
         globalFontMagnificationPercent: {
             GhosttyApp.shared.appliedGlobalFontMagnificationPercent
         },
-        terminalWork: TerminalSurfaceWorkDiagnostics(log: MobileHostDiagnostics.log) { workspaceID in
+        terminalWork: TerminalSurfaceWorkDiagnostics(log: TerminalWorkDiagnosticLog.log) { workspaceID in
             TerminalGeometryDiagnostics().context(workspaceID: workspaceID, transition: .unknown)
         }
     )
@@ -10334,7 +10332,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
             return .insertText(segments.joined())
         case .uploadFiles(let fileURLs, _):
             return .uploadFiles(fileURLs)
-        case .reject, .pasteCloudImages:
+        case .reject:
             return .reject
         }
     }
@@ -10401,42 +10399,6 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         onTextCompletion: @escaping () -> Void = {}
     ) -> Bool {
         guard plan != .reject else { return false }
-        if case .pasteCloudImages(let urls) = plan {
-            MainActor.assumeIsolated {
-                guard let terminalSurface else {
-                    GhosttyApp.terminalPasteboard.cleanupTransferredTemporaryImageFiles(urls)
-                    return
-                }
-                let operation = operation ?? TerminalImageTransferOperation()
-                let lease = CloudImagePasteInputLease(view: self, operation: operation)
-                terminalSurface.hostedView.beginImageTransferIndicator(
-                    for: operation,
-                    onCancel: {
-                        lease.finish()
-                        onCancel()
-                    }
-                )
-                let task = Task { @MainActor in
-                    defer {
-                        lease.finish()
-                        terminalSurface.hostedView.endImageTransferIndicator(for: operation)
-                        onTextCompletion()
-                    }
-                    do {
-                        try await terminalSurface.pasteCloudImages(
-                            urls,
-                            operation: operation
-                        )
-                    } catch is CancellationError {
-                        _ = operation.cancel()
-                    } catch {
-                        _ = operation.finish()
-                    }
-                }
-                operation.installCancellationHandler { task.cancel() }
-            }
-            return true
-        }
         let operation = operation ?? {
             if case .uploadFiles = plan {
                 return TerminalImageTransferOperation()
@@ -10773,8 +10735,9 @@ final class GhosttySurfaceScrollView: NSView {
     private let notificationRingLayer: CAShapeLayer
     private let flashOverlayView: GhosttyFlashOverlayView
     private let flashLayer: CAShapeLayer
+    /// Holds the Cloud TUI mirror session binding for `Sources/Cloud` until that
+    /// folder is deleted; the reconnect overlay it used to drive is gone.
     let cloudTerminalOverlay = CloudTerminalOverlayCoordinator()
-    private var cloudTerminalReconnectOverlayView: CloudTerminalReconnectOverlayView? { cloudTerminalOverlay.overlay }
     var hasVisibilityRevealRefreshScheduled = false
     var pendingVisibilityRefreshTransition: TerminalWorkContext.Transition = .unknown
     /// Active reconciliation origin; asynchronous refreshes capture it before return.
@@ -11348,13 +11311,6 @@ final class GhosttySurfaceScrollView: NSView {
             self.scheduleAutomaticFirstResponderApply(reason: "surfaceDidBecomeReady")
         })
         observers.append(NotificationCenter.default.addObserver(
-            forName: .workspaceRemoteConnectionPresentationDidChange,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            self?.handleWorkspaceRemoteConnectionPresentationDidChange(notification)
-        })
-        observers.append(NotificationCenter.default.addObserver(
             forName: .ghosttyDidReceiveWheelScroll,
             object: surfaceView,
             // Every producer is ``GhosttyNSView.scrollWheel`` on the main
@@ -11455,15 +11411,6 @@ final class GhosttySurfaceScrollView: NSView {
     }
 
     override var safeAreaInsets: NSEdgeInsets { NSEdgeInsetsZero }
-
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        if let overlay = cloudTerminalReconnectOverlayView,
-           overlay.superview === self,
-           let hit = overlay.hitTest(convert(point, to: overlay)) {
-            return hit
-        }
-        return super.hitTest(point)
-    }
 
     // Avoid stealing focus on scroll; focus is managed explicitly by the surface view.
     override var acceptsFirstResponder: Bool { false }
@@ -11603,8 +11550,6 @@ final class GhosttySurfaceScrollView: NSView {
         _ = setFrameIfNeeded(flashOverlayView, to: bounds)
         _ = setFrameIfNeeded(linkHoverIndicatorView, to: contentFrame)
         _ = setFrameIfNeeded(passwordInputIndicatorView, to: contentFrame)
-        if let cloudTerminalReconnectOverlayView { _ = setFrameIfNeeded(cloudTerminalReconnectOverlayView, to: contentFrame) }
-        synchronizeCloudTerminalReconnectOverlay()
         if let overlay = searchOverlayHostingView {
             _ = setFrameIfNeeded(overlay, to: contentFrame)
         }
@@ -11670,45 +11615,9 @@ final class GhosttySurfaceScrollView: NSView {
         return true
     }
 
-    private func handleWorkspaceRemoteConnectionPresentationDidChange(_ notification: Notification) {
-        guard let terminalSurface = surfaceView.terminalSurface else {
-            synchronizeCloudTerminalReconnectOverlay()
-            return
-        }
-        if let workspace = notification.object as? Workspace,
-           workspace.id != terminalSurface.tabId {
-            return
-        }
-        synchronizeCloudTerminalReconnectOverlay()
-    }
-
-    private func currentCloudTerminalReconnectPresentation() -> CloudTerminalReconnectOverlayPolicy.Presentation? {
-        guard let terminalSurface = surfaceView.terminalSurface,
-              let workspace = terminalSurface.owningWorkspace() else {
-            return nil
-        }
-        return workspace.cloudTerminalReconnectOverlayPresentation(forSurfaceId: terminalSurface.id)
-    }
-
-    func synchronizeCloudTerminalReconnectOverlay() {
-        let legacyPresentation = cloudTerminalOverlay.session == nil ? currentCloudTerminalReconnectPresentation() : nil
-        guard cloudTerminalOverlay.session != nil || cloudTerminalOverlay.endedPresentation != nil
-            || legacyPresentation != nil || cloudTerminalOverlay.overlay != nil else { return }
-        cloudTerminalOverlay.synchronize(
-            hostedView: self,
-            contentFrame: sessionContentFrame,
-            legacyPresentation: legacyPresentation,
-            onReconnect: { [weak self] in
-                guard let terminalSurface = self?.surfaceView.terminalSurface,
-                      let workspace = terminalSurface.owningWorkspace() else { return }
-                _ = workspace.reconnectCloudTerminalSurface(surfaceId: terminalSurface.id)
-            }
-        )
-        if let overlay = cloudTerminalReconnectOverlayView, overlay.superview === self {
-            updateKeyboardCopyModeBadgeZOrder(relativeTo: overlay)
-            updateImageTransferIndicatorZOrder(relativeTo: overlay)
-        }
-    }
+    /// No-op: the Cloud reconnect overlay is gone. Kept for the `Sources/Cloud`
+    /// callers until that folder is deleted.
+    func synchronizeCloudTerminalReconnectOverlay() {}
 
     private func sizeApproximatelyEqual(_ lhs: CGSize, _ rhs: CGSize, epsilon: CGFloat = 0.0001) -> Bool {
         abs(lhs.width - rhs.width) <= epsilon && abs(lhs.height - rhs.height) <= epsilon
@@ -11891,7 +11800,6 @@ final class GhosttySurfaceScrollView: NSView {
         // has produced a real host size instead of a transient 1x1 placeholder.
         guard bounds.width > 1, bounds.height > 1 else { return }
         _ = synchronizeGeometryAndContent()
-        synchronizeCloudTerminalReconnectOverlay()
     }
 
     func setFocusHandler(_ handler: (() -> Void)?) {
@@ -12609,7 +12517,6 @@ final class GhosttySurfaceScrollView: NSView {
         surfaceView.setVisibleInUI(visible)
         isHidden = !visible
         surfaceView.terminalSurface?.setRendererPortalVisible(visible)
-        synchronizeCloudTerminalReconnectOverlay()
         if wasVisible != visible, lastRequestedPortalOcclusionVisible != visible {
             lastRequestedPortalOcclusionVisible = visible
             // A portal reveal inside a hidden window (agent/socket-driven

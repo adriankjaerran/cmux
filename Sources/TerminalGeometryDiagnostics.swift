@@ -2,12 +2,21 @@ import AppKit
 import CMUXMobileCore
 import CmuxTerminal
 
+/// The app's bounded ring for terminal work phases (layout, resize, renderer
+/// refresh). It used to share the mobile host's ring; it is local now.
+enum TerminalWorkDiagnosticLog {
+    nonisolated static let log = DiagnosticLog(
+        buildStamp: DiagnosticReport.buildStamp(infoDictionary: Bundle.main.infoDictionary),
+        role: .macHost
+    )
+}
+
 /// App boundary for privacy-safe snapshots; it never reads terminal contents.
 @MainActor
 struct TerminalGeometryDiagnostics {
     let log: DiagnosticLog
 
-    init(log: DiagnosticLog = MobileHostDiagnostics.log) { self.log = log }
+    init(log: DiagnosticLog = TerminalWorkDiagnosticLog.log) { self.log = log }
 
     func context(
         workspaceID: UUID?,

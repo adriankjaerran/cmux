@@ -497,15 +497,6 @@ private final class PopupUIDelegate: BrowserPDFPreviewActionUIDelegate {
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
         if let url = navigationAction.request.url {
-            if navigationAction.navigationType == .linkActivated,
-               navigationAction.targetFrame?.isMainFrame != false,
-               let appLink = BrowserAppLinkOpenRequest(
-                   url: url,
-                   webOrigin: AuthEnvironment.appSessionHandoffOrigin
-               ),
-               openAppLinkInBrowserSplit?(appLink.destinationURL) == true {
-                return nil
-            }
             switch externalNavigationHandler.openConfiguredExternallyResult(
                 url,
                 navigationType: navigationAction.navigationType,
@@ -690,8 +681,9 @@ private final class PopupUIDelegate: BrowserPDFPreviewActionUIDelegate {
     private let externalNavigationHandler: BrowserExternalNavigationHandler
     var openAppLinkInBrowserSplit: ((URL) -> Bool)?
     var downloadDelegate: WKDownloadDelegate?
+    // No trusted sign-in origin: every auth-callback navigation is blocked.
     private let authCallbackNavigationPolicy = BrowserAuthCallbackNavigationPolicy(
-        trustedSourcePageOrigin: AuthEnvironment.appSessionHandoffOrigin,
+        trustedSourcePageOrigin: nil,
         callbackScheme: AuthEnvironment.callbackScheme
     )
     private let subframeDownloadIntents = BrowserSubframeDownloadIntentTracker()
@@ -788,17 +780,6 @@ private final class PopupUIDelegate: BrowserPDFPreviewActionUIDelegate {
 
         guard let url = navigationAction.request.url else {
             decisionHandler(.allow)
-            return
-        }
-
-        if navigationAction.navigationType == .linkActivated,
-           navigationAction.targetFrame?.isMainFrame != false,
-           let appLink = BrowserAppLinkOpenRequest(
-               url: url,
-               webOrigin: AuthEnvironment.appSessionHandoffOrigin
-           ),
-           openAppLinkInBrowserSplit?(appLink.destinationURL) == true {
-            decisionHandler(.cancel)
             return
         }
 

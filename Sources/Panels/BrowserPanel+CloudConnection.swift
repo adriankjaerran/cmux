@@ -4,6 +4,8 @@ import CmuxSurfaceCatalogModel
 import Foundation
 import WebKit
 
+/// Cloud browser glue. Only `Sources/Cloud` and `CmuxTuiSurfaceProvider` call
+/// it, and Cloud never starts in this fork; it goes with those in 9.12.
 extension BrowserPanel {
     /// Keeps the browser-owned readiness callback installed while a committed
     /// WebKit document is rebound to a new same-VM route.
@@ -220,105 +222,6 @@ extension BrowserPanel {
         )
     }
 
-    /// The provider whose machine serves `url` at its private address.
-    ///
-    /// SSH machines all use this Mac's loopback as their private address, so
-    /// a loopback URL routes only to the machine that owns this browser.
-    func privateAddressRouteProvider(for url: URL) -> CmuxTuiSurfaceProvider? {
-        let catalog = SurfaceCatalog.shared
-        if let resource = cloudResourceForDuplication,
-           resource.machine.cloudMachineID != nil,
-           resource.kind == .browser, !resource.key.hasPrefix("port:") {
-            return catalog.provider(for: resource.machine) as? CmuxTuiSurfaceProvider
-        }
-        if RemoteLoopbackProxyAlias.isLoopbackHost(url.host ?? ""),
-           let owner = privateAddressRouteOwner, owner.cloudMachineID != nil {
-            return catalog.provider(for: owner) as? CmuxTuiSurfaceProvider
-        }
-        let addresses = catalog.machines.compactMapValues(\.privateAddress)
-        let machine = PrivateAddressRouteSelector<SurfaceMachineID>().machine(
-            forHost: Self.privateAddressRouteHost(url.host),
-            owner: privateAddressRouteOwner,
-            addresses: addresses
-        )
-        return machine.flatMap { catalog.provider(for: $0) as? CmuxTuiSurfaceProvider }
-    }
-
-    /// SSH machines advertise `127.0.0.1`, so every loopback spelling
-    /// (`localhost`, `::1`, `0.0.0.0`) names that same private address.
-    nonisolated static func privateAddressRouteHost(_ host: String?) -> String? {
-        guard let host, PrivateNetworkHostPolicy().isLoopback(host: host) else { return host }
-        return "127.0.0.1"
-    }
-
-    /// Managed SSH workspaces have no workspace-wide browser proxy.
-    var owningWorkspaceRoutesThroughSSHTui: Bool {
-        AppDelegate.shared?.tabManagerFor(tabId: workspaceId)?.tabs
-            .first { $0.id == workspaceId }?
-            .usesSSHTui ?? false
-    }
-
-    /// The SSH service a loopback URL in a managed SSH workspace names, or `nil`
-    /// when the URL loads from this Mac as is: a non-loopback page, or this
-    /// pane's own forward listener. A listener URL copied from another pane
-    /// maps back to the service it forwards.
-    func sshLoopbackServiceURL(for url: URL) -> URL? {
-        guard PrivateNetworkHostPolicy().isLoopback(host: url.host ?? "") else { return nil }
-        if let listenerPort = cloudAccess.model?.localAddress
-            .flatMap({ Int($0.split(separator: ":").last ?? "") }),
-           url.scheme?.lowercased() == "http",
-           url.port == listenerPort { return nil }
-        if let serviceURL = privateAddressRouteProvider(for: url)?.sshServiceURL(forForwardListener: url) {
-            return serviceURL
-        }
-        if let remoteURL = cloudAccess.remoteURL,
-           cloudAccess.model?.route == .loopback,
-           var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) {
-            if cloudAccess.isRetiredListener(url) {
-                // A forward restart leaves WebKit history and in-flight
-                // commits pointing at the retired listener. Resolve only that
-                // known stale port against the stable service identity.
-                parts.scheme = remoteURL.scheme
-                parts.host = remoteURL.host
-                parts.port = remoteURL.port
-            } else {
-                // A different loopback port can be another SSH service. Keep
-                // its port while using this machine's private service host.
-                parts.scheme = remoteURL.scheme
-                parts.host = remoteURL.host
-            }
-            return parts.url
-        }
-        return url
-    }
-
-    /// The machine this browser belongs to: its current cloud route, or the
-    /// machine that owns its workspace.
-    private var privateAddressRouteOwner: SurfaceMachineID? {
-        if let machine = cloudResourceForDuplication?.machine { return machine }
-        if let machineID = cloudBrowserMachineID { return SurfaceMachineID(rawValue: machineID) }
-        return AppDelegate.shared?.tabManagerFor(tabId: workspaceId)?.tabs
-            .first { $0.id == workspaceId }?
-            .surfaceOwnershipPolicy.cloudMachine
-    }
-
-    @discardableResult
-    func rebindCloudRouteIfNeeded(to url: URL) -> Bool {
-        guard let provider = privateAddressRouteProvider(for: url) else {
-            return false
-        }
-        // A loopback URL that commits before the navigation delegate can
-        // intercept it has already loaded this Mac's service. Reconfigure the
-        // SSH route so the browser follows its listener instead of preserving
-        // the wrong local document. Same-VM non-loopback redirects can retain
-        // their committed document safely.
-        if owningWorkspaceRoutesThroughSSHTui,
-           let serviceURL = sshLoopbackServiceURL(for: url) {
-            return provider.configureBrowser(self, url: serviceURL)
-        }
-        return provider.configureBrowser(self, url: url, preserveCurrentNavigation: true)
-    }
-
     /// Cloud panes use their own persistent data store so configuring one VM cannot reroute another.
     func prepareCloudBrowserStore(machineID: String) {
         let identifier = CloudBrowserRouting.storeID(panelID: id, profileID: profileID, machineID: machineID)
@@ -344,29 +247,5 @@ extension BrowserPanel {
             replaceWebViewPreservingState(from: webView, websiteDataStore: websiteDataStore,
                                          reason: "cloud_browser_route", restoreAfterReplacement: false)
         }
-    }
-
-    func installCloudDesktopConnectionObserver(on webView: WKWebView) {
-        let isCurrent = webViewObservationValidator(for: webView)
-        CloudDesktopConnectionObserver.install(on: webView, onConnecting: { [weak self] url in
-            guard let self, isCurrent() else { return }
-            self.cloudAccess.desktopConnectionIsConnecting(url: url)
-        }) { [weak self] url, isConnected in
-            guard let self, isCurrent() else { return }
-            self.cloudAccess.desktopConnectionDidChange(url: url, isConnected: isConnected)
-        }
-    }
-
-    func preferredURLStringForSessionSnapshot() -> String? {
-        if let serviceURL = cloudAccess.sessionURL(currentURL: currentURL) { return serviceURL.absoluteString }
-        if let displayURL = restorableDisplayURLForCurrentErrorPage(liveURL: webView.url),
-           let value = Self.serializableSessionHistoryURLString(displayURL) {
-            return value
-        }
-        if let currentURL,
-           let value = Self.serializableSessionHistoryURLString(currentURL) {
-            return value
-        }
-        return nil
     }
 }

@@ -405,3 +405,17 @@ private struct BrowserSnapshotEncodingSource: @unchecked Sendable {
         )
     }
 }
+
+extension BrowserPanel {
+    func preferredURLStringForSessionSnapshot() -> String? {
+        if let displayURL = restorableDisplayURLForCurrentErrorPage(liveURL: webView.url),
+           let value = Self.serializableSessionHistoryURLString(displayURL) {
+            return value
+        }
+        if let currentURL,
+           let value = Self.serializableSessionHistoryURLString(currentURL) {
+            return value
+        }
+        return nil
+    }
+}

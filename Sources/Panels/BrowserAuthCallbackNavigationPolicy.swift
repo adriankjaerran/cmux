@@ -46,11 +46,13 @@ struct BrowserAuthCallbackNavigationPolicy {
     // comparison rules are identical to the WebAuthn caller-origin check).
     private let trustedSourceOrigin: BrowserWebAuthnSecurityOrigin?
 
+    /// - Parameter trustedSourcePageOrigin: The page allowed to hand a callback
+    ///   to the app; `nil` (the fork's default, sign-in is gone) trusts none.
     init(
-        trustedSourcePageOrigin: URL = AuthEnvironment.appWebOrigin,
+        trustedSourcePageOrigin: URL? = nil,
         callbackScheme: String = AuthEnvironment.callbackScheme
     ) {
-        trustedSourceOrigin = BrowserWebAuthnSecurityOrigin(url: trustedSourcePageOrigin)
+        trustedSourceOrigin = trustedSourcePageOrigin.flatMap { BrowserWebAuthnSecurityOrigin(url: $0) }
         ownCallbackScheme = callbackScheme.lowercased()
         router = AuthCallbackRouter(extraAllowedScheme: callbackScheme)
     }

@@ -18,9 +18,5 @@ extension FileExplorerStore {
             observation.refresh(force: true)
         }
         if !rootPath.isEmpty { reload() }
-        if let target = (provider as? CloudVMFileExplorerProvider)?.target, !target.isCurrent() {
-            setRootStatusMessage(String(localized: "fileExplorer.status.cloudDisconnected",
-                defaultValue: "Cloud machine is not connected"))
-        }
     }
 }

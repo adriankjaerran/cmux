@@ -52,9 +52,6 @@ actor CloudFilePreviewCache {
         guard !ManagedFileTransferPolicy.isDisabled else {
             throw ManagedFileTransferPolicy.refusalError()
         }
-        if provider is CloudVMFileExplorerProvider, entries.count >= maximumEntries {
-            throw FileExplorerError.previewCapacity
-        }
         let directory = root.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let filename = (path as NSString).lastPathComponent
         guard !filename.isEmpty, filename != ".", filename != ".." else { throw FileExplorerError.providerUnavailable }

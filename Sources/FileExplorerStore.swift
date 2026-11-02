@@ -409,15 +409,6 @@ enum FileExplorerWorkspaceRoot: Equatable {
         isAvailable: Bool,
         unavailableDetail: String?
     )
-    case remoteCloud(
-        workspaceId: UUID,
-        vmID: String,
-        displayTarget: String,
-        rootPath: String?,
-        isAvailable: Bool,
-        unavailableDetail: String?,
-        target: CloudFileExplorerTarget?
-    )
 }
 
 // MARK: - Local Provider
@@ -1217,9 +1208,6 @@ final class FileExplorerStore: ObservableObject {
     }
 
     var displayRootPath: String {
-        if rootPath.isEmpty, let cloudProvider = provider as? CloudVMFileExplorerProvider {
-            return cloudProvider.displayTarget
-        }
         if let sshProvider = provider as? SSHFileExplorerProvider {
             guard !rootPath.isEmpty else {
                 return "ssh://\(sshProvider.displayTarget)"
@@ -1257,15 +1245,6 @@ final class FileExplorerStore: ObservableObject {
                 isAvailable: isAvailable,
                 unavailableDetail: unavailableDetail,
                 sshTransport: sshTransport
-            )
-        case .remoteCloud(let workspaceId, let vmID, let displayTarget, let rootPath, let isAvailable, let unavailableDetail, let target):
-            applyRemoteCloudWorkspaceRoot(
-                workspaceId: workspaceId,
-                vmID: vmID,
-                displayTarget: displayTarget,
-                rootPath: rootPath,
-                isAvailable: isAvailable,
-                unavailableDetail: unavailableDetail, target: target
             )
         }
     }

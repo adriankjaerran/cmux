@@ -3428,9 +3428,7 @@ final class BrowserPanel: Panel, ObservableObject {
                         && !self.cloudAccess.owns($0)
                 } == true
             if leavingCloudRoute {
-                if let url = webView.url, self.rebindCloudRouteIfNeeded(to: url) == false {
-                    self.leaveCloudResourceForLocalNavigation()
-                }
+                self.leaveCloudResourceForLocalNavigation()
             } else {
                 self.cloudAccess.didCommit(url: webView.url, navigationID: navigation.map(ObjectIdentifier.init))
             }
@@ -4315,13 +4313,6 @@ final class BrowserPanel: Panel, ObservableObject {
         // given; once the session ends the store is the browser's again.
         if BrowserReplProxyStores.shared.owns(webView.configuration.websiteDataStore) { return }
 
-        if cloudBrowserMachineID != nil {
-            if let endpoint = cloudBrowserProxyEndpoint, let address = cloudAccess.model?.target.host {
-                webView.configuration.websiteDataStore.proxyConfigurations = [CloudBrowserRouting.configuration(endpoint: endpoint, address: address, remoteNetwork: cloudAccess.model?.usesRemoteNetwork == true)]
-            }
-            return
-        }
-
         let store = webView.configuration.websiteDataStore
         guard let endpoint = remoteProxyEndpoint else {
             // Local panes mirror an active system proxy with loopback excluded
@@ -4585,9 +4576,7 @@ final class BrowserPanel: Panel, ObservableObject {
         historyStore = BrowserProfileStore.shared.historyStore(for: resolvedProfileID)
         BrowserProfileStore.shared.noteUsed(resolvedProfileID)
 
-        if let machineID = cloudBrowserMachineID {
-            prepareCloudBrowserStore(machineID: machineID)
-        } else if !usesRemoteWorkspaceProxy {
+        if !usesRemoteWorkspaceProxy {
             websiteDataStore = BrowserProfileStore.shared.websiteDataStore(for: resolvedProfileID)
         }
 
@@ -4617,11 +4606,7 @@ final class BrowserPanel: Panel, ObservableObject {
             )
         }
 
-        if let model = cloudAccess.model,
-           let cloudURL = restoreURL ?? cloudAccess.remoteURL,
-           cloudAccess.owns(cloudURL) {
-            configureCloudBrowser(model: model, url: cloudURL)
-        } else if shouldRestoreURL, let restoreURL {
+        if shouldRestoreURL, let restoreURL {
             navigateWithoutInsecureHTTPPrompt(
                 to: restoreURL,
                 recordTypedNavigation: false,
@@ -4734,7 +4719,7 @@ final class BrowserPanel: Panel, ObservableObject {
             return
         }
 
-        let restoredURL = Self.remappedAppPricingSessionRestoreURL(Self.sanitizedSessionHistoryURL(snapshot.urlString))
+        let restoredURL = Self.sanitizedSessionHistoryURL(snapshot.urlString)
         let shouldRenderRestoredWebView = snapshot.shouldRenderWebView && BrowserAvailabilitySettings.isEnabled()
         hiddenWebViewDiscardManager.updateRestoredSessionRenderIntent(snapshot.shouldRenderWebView)
         setMuted(snapshot.isMuted)
@@ -4834,7 +4819,6 @@ final class BrowserPanel: Panel, ObservableObject {
     /// speaker/mic/camera glyph; the next `setupObservers` re-seeds the flags
     /// from the fresh web view.
     func detachWebViewObservers() {
-        webView.configuration.userContentController.removeScriptMessageHandler(forName: CloudDesktopConnectionObserver.name, contentWorld: CloudDesktopConnectionObserver.contentWorld)
         webViewObservationGeneration &+= 1
         webViewObservers.removeAll()
         webView.configuration.userContentController.removeScriptMessageHandler(
@@ -4858,7 +4842,6 @@ final class BrowserPanel: Panel, ObservableObject {
             )
         }
 
-        installCloudDesktopConnectionObserver(on: webView)
         // URL changes
         let urlObserver = webView.observe(\.url, options: [.new]) { [weak self] webView, change in
             let observedURL = change.newValue ?? webView.url
@@ -5452,33 +5435,28 @@ final class BrowserPanel: Panel, ObservableObject {
             let data: Data
             let response: URLResponse
             do {
-                let cloudIconURL = cloudAccess.rewrittenLoopbackURL(iconURL) ?? iconURL
-                if cloudAccess.model?.usesBrowserProxy == true, cloudAccess.owns(cloudIconURL) {
-                    (data, response) = try await CloudBrowserRouting.favicon(url: cloudIconURL, webView: webView)
+                let remoteSession = remoteProxyURLSession()
+                defer { remoteSession?.finishTasksAndInvalidate() }
+                if let remoteSession {
+#if DEBUG
+                    cmuxDebugLog(
+                        "browser.favicon.fetch " +
+                        "panel=\(id.uuidString.prefix(5)) " +
+                        "via=proxy " +
+                        "url=\(effectiveRequest.url?.absoluteString ?? "<nil>")"
+                    )
+#endif
+                    (data, response) = try await remoteSession.data(for: effectiveRequest)
                 } else {
-                    let remoteSession = remoteProxyURLSession()
-                    defer { remoteSession?.finishTasksAndInvalidate() }
-                    if let remoteSession {
 #if DEBUG
-                        cmuxDebugLog(
-                            "browser.favicon.fetch " +
-                            "panel=\(id.uuidString.prefix(5)) " +
-                            "via=proxy " +
-                            "url=\(effectiveRequest.url?.absoluteString ?? "<nil>")"
-                        )
+                    cmuxDebugLog(
+                        "browser.favicon.fetch " +
+                        "panel=\(id.uuidString.prefix(5)) " +
+                        "via=direct " +
+                        "url=\(effectiveRequest.url?.absoluteString ?? "<nil>")"
+                    )
 #endif
-                        (data, response) = try await remoteSession.data(for: effectiveRequest)
-                    } else {
-#if DEBUG
-                        cmuxDebugLog(
-                            "browser.favicon.fetch " +
-                            "panel=\(id.uuidString.prefix(5)) " +
-                            "via=direct " +
-                            "url=\(effectiveRequest.url?.absoluteString ?? "<nil>")"
-                        )
-#endif
-                        (data, response) = try await URLSession.shared.data(for: effectiveRequest)
-                    }
+                    (data, response) = try await URLSession.shared.data(for: effectiveRequest)
                 }
             } catch {
 #if DEBUG
@@ -5679,24 +5657,7 @@ final class BrowserPanel: Panel, ObservableObject {
         fileReadAccessURL: URL? = nil,
         onNavigationStarted: ((WKNavigation?) -> Void)? = nil
     ) -> WKNavigation? {
-        var url = url
-        var leaveCloudRouteAfterValidation = false
-        if let model = cloudAccess.model, cloudAccess.owns(url) {
-            if !model.isReady { return nil }
-            prepareCloudBrowserNavigation()
-            // A forwarded route serves the remote service on a local listener.
-            // Never load the remote address itself: on SSH it is this Mac's loopback.
-            if model.route == .loopback {
-                guard let forwarded = model.url(for: url) else { return nil }
-                url = forwarded
-            }
-        } else if ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
-                  let provider = privateAddressRouteProvider(for: url) {
-            provider.configureBrowser(self, url: provider.sshServiceURL(forForwardListener: url) ?? url)
-            return nil
-        } else {
-            leaveCloudRouteAfterValidation = retainsCloudResourceForDuplication
-        }
+        let leaveCloudRouteAfterValidation = retainsCloudResourceForDuplication
         let request = URLRequest(url: url)
         let policy = BrowserURLAllowlistPolicy(defaults: .standard)
         (webView as? CmuxWebView)?.clearTrustedInternalNavigationGrants()
@@ -5778,30 +5739,7 @@ final class BrowserPanel: Panel, ObservableObject {
                 clearTrustedLocalFileDocumentIfNeeded(for: url)
             }
         }
-        let routesThroughSSHTui = owningWorkspaceRoutesThroughSSHTui
-        if routesThroughSSHTui, let serviceURL = sshLoopbackServiceURL(for: url) {
-            // A pinned file load is granted its read access now or not at
-            // all: a later load would not be under the session's check.
-            if fileReadAccessURL != nil {
-                onNavigationStarted?(nil)
-                return nil
-            }
-            // Every entry point (history, restore, heal, page links) lands here.
-            // A loopback URL belongs to the SSH host: hand it to that machine's
-            // forward, or wait for the machine, never this Mac's same-port service.
-            if let provider = privateAddressRouteProvider(for: serviceURL) {
-                onNavigationStarted?(nil)
-                provider.configureBrowser(self, url: serviceURL, request: request)
-            } else {
-                var serviceRequest = request
-                serviceRequest.url = serviceURL
-                queueRemoteNavigation(serviceRequest, recordTypedNavigation: recordTypedNavigation,
-                                      preserveRestoredSessionHistory: preserveRestoredSessionHistory,
-                                      onNavigationStarted: onNavigationStarted)
-            }
-            return nil
-        }
-        if cloudBrowserMachineID == nil, usesRemoteWorkspaceProxy, remoteProxyEndpoint == nil, !routesThroughSSHTui {
+        if usesRemoteWorkspaceProxy, remoteProxyEndpoint == nil {
             // A pinned file load is granted its read access now or not at
             // all: a later load would not be under the session's check.
             if fileReadAccessURL != nil {
@@ -5847,16 +5785,7 @@ final class BrowserPanel: Panel, ObservableObject {
         // Resume on endpoint arrival, or directly once the pane turned local
         // (a stranded queue pins the hidden pane as non-discardable forever).
         guard let navigation = pendingRemoteNavigation else { return }
-        if remoteProxyEndpoint == nil, usesRemoteWorkspaceProxy {
-            // Managed SSH has no workspace proxy: a waiting loopback URL resumes
-            // on its machine's forward once that machine is registered.
-            guard let url = navigation.request.url, owningWorkspaceRoutesThroughSSHTui,
-                  let provider = privateAddressRouteProvider(for: url) else { return }
-            pendingRemoteNavigation = nil
-            navigation.onNavigationStarted?(nil)
-            provider.configureBrowser(self, url: url, request: navigation.request)
-            return
-        }
+        if remoteProxyEndpoint == nil, usesRemoteWorkspaceProxy { return }
         guard let originalURL = navigation.request.url else {
             navigation.onNavigationStarted?(nil)
             pendingRemoteNavigation = nil
@@ -6070,11 +5999,9 @@ final class BrowserPanel: Panel, ObservableObject {
         AppDelegate.shared?.auth?.browserAppSession.register(self)
     }
 
+    /// No trusted app-session origin in this fork (sign-in is gone).
     static func isNativeAppSessionSurface(_ url: URL?) -> Bool {
-        BrowserAppTheme.supportsAppSurface(
-            url: url,
-            trustedOrigin: AuthEnvironment.appSessionHandoffOrigin
-        )
+        false
     }
 
     /// A page prewarmed in the profile store has no session cookies, so a
@@ -9384,16 +9311,6 @@ final class BrowserUIDelegate: BrowserPDFPreviewActionUIDelegate {
         // Every external side effect below asks the same decision.
         let replGuard = BrowserReplNavigationGuard.shared
         if let url = navigationAction.request.url {
-            if navigationAction.navigationType == .linkActivated,
-               navigationAction.targetFrame?.isMainFrame != false,
-               let appLink = BrowserAppLinkOpenRequest(
-                   url: url,
-                   webOrigin: AuthEnvironment.appSessionHandoffOrigin
-               ),
-               replGuard.allowsExternal(panelID: owner?.id, action: navigationAction, target: .appLink),
-               openAppLinkInBrowserSplit?(appLink.destinationURL) == true {
-                return nil
-            }
             let replAllowsExternalOpen = replGuard.allowsExternal(panelID: owner?.id, action: navigationAction, target: .configuredBrowser)
             switch replAllowsExternalOpen ? externalNavigationHandler.openConfiguredExternallyResult(
                 url,

@@ -22,29 +22,7 @@ struct FileExplorerPreviewCoordinator {
             guard let workspace else { return }
             do {
                 guard isCurrent(), store.resourceContextID == context else { return }
-                if let cloud = provider as? CloudVMFileExplorerProvider {
-                    guard let target = cloud.target else { throw FileExplorerError.providerUnavailable }
-                    try target.validate(vmID: cloud.vmID)
-                    if try await Self.refreshExistingRemotePreview(
-                        path: path, providerIdentity: providerIdentity, workspace: workspace, pane: pane,
-                        store: store, context: context, isCurrent: isCurrent,
-                        validate: { try target.validate(vmID: cloud.vmID) }, provider: cloud
-                    ) { return }
-                    let lease = try await store.cloudPreviewCache.materialize(path: path, provider: cloud)
-                    guard isCurrent(), store.resourceContextID == context else { return }
-                    try target.validate(vmID: cloud.vmID)
-                    // Markdown also uses the read-only file preview: its links must
-                    // never resolve relative remote paths through the Mac browser.
-                    if let panel = workspace.openFilePreviewSurfaces(inPane: pane, filePaths: [lease.url.path],
-                        focus: true, reuseExisting: false).first {
-                        panel.cloudPreviewLease = lease
-                        Self.installRemotePreviewRefresh(
-                            on: panel, workspace: workspace,
-                            isCurrent: isCurrent, provider: cloud, vmID: cloud.vmID, target: target
-                        )
-                        workspace.handKeyboardFocusFromRightSidebarAfterFileOpen(to: panel)
-                    }
-                } else if let remote = provider as? any RemoteFileExplorerProvider {
+                if let remote = provider as? any RemoteFileExplorerProvider {
                     if try await Self.refreshExistingRemotePreview(
                         path: path, providerIdentity: providerIdentity, workspace: workspace, pane: pane,
                         store: store, context: context, isCurrent: isCurrent,
@@ -57,7 +35,7 @@ struct FileExplorerPreviewCoordinator {
                         panel.cloudPreviewLease = lease
                         Self.installRemotePreviewRefresh(
                             on: panel, workspace: workspace,
-                            isCurrent: isCurrent, provider: remote, vmID: nil, target: nil
+                            isCurrent: isCurrent, provider: remote
                         )
                         workspace.handKeyboardFocusFromRightSidebarAfterFileOpen(to: panel)
                     }
@@ -107,20 +85,16 @@ struct FileExplorerPreviewCoordinator {
         on panel: FilePreviewPanel,
         workspace: Workspace,
         isCurrent: @escaping @MainActor () -> Bool,
-        provider: any RemoteFileExplorerProvider,
-        vmID: String?,
-        target: CloudFileExplorerTarget?
+        provider: any RemoteFileExplorerProvider
     ) {
         panel.remotePreviewRefresh = { [weak panel, weak workspace] in
             Task { @MainActor [weak panel, weak workspace] in
                 guard let panel, let workspace, let lease = panel.cloudPreviewLease,
                       !panel.isClosed, isCurrent() else { return }
                 do {
-                    if let target, let vmID { try target.validate(vmID: vmID) }
                     try await lease.refresh(using: provider)
                     guard isCurrent(),
                           !panel.isClosed, workspace.panels[panel.id] != nil else { return }
-                    if let target, let vmID { try target.validate(vmID: vmID) }
                     _ = panel.reloadFromDisk()
                 } catch is CancellationError {
                     return
