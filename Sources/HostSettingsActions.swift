@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import CMUXMobileCore
 import CmuxWorkspaces
@@ -14,7 +13,6 @@ nonisolated private let hostSettingsLogger = Logger(subsystem: "com.cmuxterm.app
 @MainActor
 final class HostSettingsActions: SettingsHostActions {
     let computersActions: ComputersSettingsActions
-    var cloudActivationCoordinator: CloudActivationCoordinator?
     private let configFileURL: URL
     private let browserDataImportCoordinator: BrowserDataImportCoordinator
     private let automationConfigStore: AutomationConfigStore
@@ -69,11 +67,9 @@ final class HostSettingsActions: SettingsHostActions {
             )
             alert.runModal()
         },
-        computersActions: ComputersSettingsActions? = nil,
-        cloudActivationCoordinator: CloudActivationCoordinator? = nil
+        computersActions: ComputersSettingsActions? = nil
     ) {
         self.computersActions = computersActions ?? ComputersSettingsActions()
-        self.cloudActivationCoordinator = cloudActivationCoordinator
         self.configFileURL = configFileURL
         self.automationConfigStore = automationConfigStore
         self.openAutomationRulesFile = openAutomationRulesFile
@@ -124,7 +120,6 @@ final class HostSettingsActions: SettingsHostActions {
         LanguageSettingsStore(defaults: .standard, domainName: ProcessDefaultsDomain.name).applyLanguageOverride(.system)
         PaneChromeSettings.notifyDidChange()
         TerminalAdaptiveDefaultThemeSettings.notifyDidChange()
-        PhonePushClient.shared.reloadConfigurationFromDefaults()
         AppDelegate.shared?.reconcileSocketListenerConfiguration(source: "settings.reset_all")
     }
 

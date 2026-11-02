@@ -16,10 +16,6 @@ extension Workspace {
         propagateToCloud: Bool = true
     ) -> Bool {
         guard panels[panelId] != nil else { return false }
-        if propagateToCloud, source != .remote,
-           let submitted = SurfaceCatalog.shared.submitCloudPanelRename(
-               workspace: self, panelID: panelId, title: title, source: source
-           ) { return submitted }
         let previousWorkspaceTitle = self.title
         defer {
             if self.title != previousWorkspaceTitle {
@@ -29,7 +25,7 @@ extension Workspace {
         let trimmed = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let previous = panelCustomTitles[panelId]
         if source == .auto {
-            guard !trimmed.isEmpty, cloudProjectedResource(forPanel: panelId) == nil else { return false }
+            guard !trimmed.isEmpty else { return false }
             if previous != nil, (panelCustomTitleSources[panelId] ?? .user) != .auto { return false }
         }
         var sameText = false

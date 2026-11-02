@@ -21,8 +21,6 @@ extension DockSplitStore {
     ) -> SurfaceTransferRejection? {
         let ownershipPolicy = policy ?? surfaceOwnershipPolicy
         switch source {
-        case .surfaceResources(let group):
-            return SurfaceCatalog.shared.ownershipRejection(for: group.resources, policy: ownershipPolicy)
         case .surface:
             guard transfer.isFromCurrentProcess else { return ownershipPolicy.rejection(for: nil) }
             // A Dock surface split or reordered within this Dock stays on its machine.

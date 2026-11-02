@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxFoundation
 import CmuxNotifications
 import AppKit
@@ -203,10 +202,6 @@ final class TerminalNotificationStore: ObservableObject {
     private func emitNotificationsDismissed(ids: [String]) {
         guard !ids.isEmpty else { return }
         recordDismissTombstones(ids: ids.compactMap { UUID(uuidString: $0) })
-        let unreadCount = indexes.unreadCount
-        // Cold lane: mirror the dismiss through APNs for every registered
-        // device, attached or not (no-op unless phone forwarding is on).
-        PhonePushClient.shared.forwardDismissed(ids: ids, badgeCount: unreadCount)
     }
 
     /// A user-driven dismiss emit that also carries any stale superseded-banner
@@ -1750,22 +1745,6 @@ final class TerminalNotificationStore: ObservableObject {
             tabId: notification.tabId,
             surfaceId: notification.surfaceId
         )
-        // `suppressWhenAppFocused` only withholds the desktop banner: the Mac
-        // may be frontmost with nobody at it, so phone forwarding keeps the
-        // exact focused-surface gate.
-        let shouldAttemptPhone = !isFocusedSurfaceArrival
-            && Self.shouldAttemptPhoneForward(
-                effects: effects,
-                phoneForwardingEnabled: PhonePushClient.shared
-                    .configuration().forwardingEnabled,
-                categoryAllowsDelivery: true
-            )
-        if shouldAttemptPhone {
-            PhonePushClient.shared.forward(
-                notification,
-                badgeCount: indexes.unreadCount
-            )
-        }
         let superseded = supersededPhoneDismissBuffer.flush(forKey: key)
         if !superseded.isEmpty {
             // The replacement enqueue above and this dismissal enter the same

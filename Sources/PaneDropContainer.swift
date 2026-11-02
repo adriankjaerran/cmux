@@ -48,12 +48,6 @@ protocol PaneDropContainer: AnyObject {
         destination: BonsplitController.ExternalTabDropRequest.Destination
     ) -> Bool
 
-    /// Projects a Cloud tree row (one resource, or a workspace's collection) at this destination.
-    func performPortalSurfaceResourceDrop(
-        group: SurfaceResourceGroup,
-        destination: BonsplitController.ExternalTabDropRequest.Destination
-    ) -> Bool
-
     /// Whether a sidebar workspace row may merge its tabs into this container.
     func canPerformWorkspaceMergeDrop(_ sourceWorkspaceId: UUID) -> Bool
     /// Moves every tab of the dragged workspace to `destination`.
@@ -149,8 +143,6 @@ extension PaneDropContainer {
                     destination: request.destination
                 )
             )
-        case .surfaceResources(let group):
-            handled = performPortalSurfaceResourceDrop(group: group, destination: request.destination)
         case .workspaceMerge(let workspaceId):
             handled = canPerformWorkspaceMergeDrop(workspaceId)
                 && performWorkspaceMergeDrop(workspaceId, destination: request.destination)
@@ -173,7 +165,7 @@ extension PaneDropContainer {
         guard acceptsPaneTransfers,
               surfaceDropRejection(transfer, source: source) == nil else { return false }
         switch source {
-        case .vaultSession, .filePreview, .surfaceResources:
+        case .vaultSession, .filePreview:
             return true
         case .workspaceMerge(let workspaceId):
             return canPerformWorkspaceMergeDrop(workspaceId)
@@ -212,8 +204,6 @@ extension PaneDropContainer {
                 urls: [URL(fileURLWithPath: entry.filePath)],
                 destination: destination
             ))
-        case .surfaceResources(let group):
-            return performPortalSurfaceResourceDrop(group: group, destination: destination)
         case .workspaceMerge(let workspaceId):
             return performWorkspaceMergeDrop(workspaceId, destination: destination)
         case .rightSidebarTool(let mode):
@@ -234,14 +224,6 @@ extension PaneDropContainer {
         panelId _: UUID
     ) -> NSDragOperation? {
         nil
-    }
-
-    /// Declines Cloud rows for containers that cannot host a projected surface (the Dock).
-    func performPortalSurfaceResourceDrop(
-        group _: SurfaceResourceGroup,
-        destination _: BonsplitController.ExternalTabDropRequest.Destination
-    ) -> Bool {
-        false
     }
 
     /// Declines simulator handling for containers without simulator panels.
@@ -362,14 +344,6 @@ extension Workspace: PaneDropContainer {
         destination: BonsplitController.ExternalTabDropRequest.Destination
     ) -> Bool {
         handleSessionDrop(entry: entry, destination: destination)
-    }
-
-    /// Projects a dragged Cloud row through the surface catalog.
-    func performPortalSurfaceResourceDrop(
-        group: SurfaceResourceGroup,
-        destination: BonsplitController.ExternalTabDropRequest.Destination
-    ) -> Bool {
-        handleSurfaceResourceDrop(group: group, destination: destination)
     }
 
     /// Another workspace's row: its tabs merge here; this workspace's own row never does.

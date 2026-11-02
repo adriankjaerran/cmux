@@ -42,7 +42,7 @@ extension Workspace {
     }
 
     var surfaceOwnershipPolicy: SurfaceOwnershipPolicy {
-        SurfaceOwnershipPolicy(cloudMachine: cloudVMBinding.map { SurfaceMachineID(rawValue: $0.vmID) } ?? cloudVMID.map(SurfaceMachineID.cloud))
+        SurfaceOwnershipPolicy(cloudMachine: cloudVMID.map(SurfaceMachineID.cloud))
     }
 
     /// A pane's projection or remote transport owns its machine, never its title
@@ -52,7 +52,6 @@ extension Workspace {
         guard panels[panelID] != nil else { return nil }
         if let machine = catalog.machineOwningPanel(panelID), !machine.isLocal { return machine }
         if let resource = (panels[panelID] as? DeferredBrowserPanel)?.sessionPanelSnapshot.browser?.cloudResource { return resource.machine }
-        if let reservation = cloudPendingCreations[panelID] { return reservation.machine }
         if activeRemoteTerminalSurfaceIds.contains(panelID),
            let machine = remoteConfiguration?.managedCloudVMID {
             return .cloud(machine)
@@ -75,23 +74,6 @@ extension Workspace {
             return machine
         }
 
-        // Optimistic SSH cmux-tui panes are owned before their catalog
-        // projection/provider session exists. Preserve that exact reservation
-        // identity even when they are inserted into another remote workspace.
-        if let reservation = cloudPendingCreations[panelID] {
-            return reservation.machine
-        }
-
-        // A live cmux-tui session can briefly outlive its catalog projection
-        // while a restored or moved pane is being attached. Use the provider's
-        // machine identity only for that live session; an arbitrary manual
-        // mirror must not inherit the workspace's SSH configuration.
-        if let session = tuiMirrorSession(for: panelID) {
-            let machine = SurfaceMachineID(rawValue: session.machineID)
-            if machine.isSSH {
-                return machine
-            }
-        }
 
         // A window container remains an owner even when its terminal panel
         // has retired. Catalog ownership above takes precedence over its host.
@@ -151,8 +133,6 @@ extension Workspace {
     ) -> SurfaceTransferRejection? {
         guard surfaceOwnershipPolicy.cloudMachine != nil else { return nil }
         switch source {
-        case .surfaceResources(let group):
-            return SurfaceCatalog.shared.ownershipRejection(for: group.resources, policy: surfaceOwnershipPolicy)
         case .surface:
             guard transfer.isFromCurrentProcess else { return surfaceOwnershipPolicy.rejection(for: nil) }
             // A surface already in this workspace crosses no machine boundary when

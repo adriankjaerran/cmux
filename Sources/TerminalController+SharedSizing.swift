@@ -51,15 +51,6 @@ extension TerminalController {
         immediate: Bool = false,
         reason: String
     ) -> (columns: Int, rows: Int)? {
-        if let relay = cloudSizingRelaysBySurfaceID[surfaceID]?.value, relay.relaysPhones {
-            // The cmux-tui daemon decides a Cloud terminal's grid; the local
-            // mirror follows the remote grid it reports back.
-            relay.relayPhones(phoneParticipants(reports: reports, surfaceID: surfaceID))
-            if let countsOverride {
-                relay.relayPhoneCountsOverride(clientID: countsOverride.clientID, value: countsOverride.value)
-            }
-            return currentMobileViewportGrid(surfaceID: surfaceID)
-        }
         guard var host = localSizingHost(surfaceID: surfaceID, create: !reports.isEmpty) else {
             return legacyMinimumSizing(surfaceID: surfaceID, reports: reports, immediate: immediate, reason: reason)
         }
@@ -220,10 +211,6 @@ extension TerminalController {
     /// RPC input and the independent Iroh input lane both call this seam so
     /// `latest` ownership cannot depend on which transport delivered the key.
     func noteMobileSizingActivity(surfaceID: UUID, clientID: String) {
-        if let relay = cloudSizingRelaysBySurfaceID[surfaceID]?.value, relay.relaysPhones {
-            relay.relayPhoneActivity(clientID: clientID)
-            return
-        }
         guard var host = localSizingHostsBySurfaceID[surfaceID] else { return }
         let previous = host.state
         guard host.noteActivity(LocalTerminalSizingHost.phoneParticipantID(clientID: clientID)) else { return }
@@ -363,11 +350,6 @@ extension TerminalController {
     /// Adds `size_state` and `self_participant_id` to a replay answer.
     func addSharedSizingReplayFields(to payload: inout [String: Any], surfaceID: UUID, clientID: String?) {
         let coder = TerminalSizingWireCoder()
-        if let relay = cloudSizingRelaysBySurfaceID[surfaceID]?.value, relay.relaysPhones {
-            if let state = relay.relayedSizeState { payload["size_state"] = coder.jsonObject(state) }
-            payload["self_participant_id"] = clientID.flatMap { relay.relayHostParticipantID(clientID: $0) } ?? NSNull()
-            return
-        }
         guard let host = localSizingHost(surfaceID: surfaceID, create: clientID != nil) else { return }
         payload["size_state"] = coder.jsonObject(host.state)
         let selfID = clientID.map { LocalTerminalSizingHost.phoneParticipantID(clientID: $0) }
@@ -415,7 +397,7 @@ extension TerminalController {
         }
         guard let clientID = v2String(params, "client_id") else { return nil }
         let needsGate = hasDetachedMobileClients
-        guard needsGate || (isInput && (!localSizingHostsBySurfaceID.isEmpty || !cloudSizingRelaysBySurfaceID.isEmpty)) else {
+        guard needsGate || (isInput && !localSizingHostsBySurfaceID.isEmpty) else {
             return nil
         }
         guard let surfaceID = mobileCanonicalTerminalTarget(params: params)?.surfaceID else { return nil }
@@ -498,22 +480,6 @@ extension TerminalController {
         localSizingHostsBySurfaceID[surfaceID] = host
         applyLocalSizing(surfaceID: surfaceID, previous: previous, immediate: true, reason: "terminal.participant.reattach.mac")
         return true
-    }
-
-    // MARK: - Cloud relay registration
-
-    func registerCloudSizingRelay(_ relay: any CloudSizingPhoneRelaying, surfaceID: UUID) {
-        ensureTerminalSharingPresentation()
-        cloudSizingRelaysBySurfaceID[surfaceID] = CloudSizingRelayReference(value: relay)
-        // Phones may already be viewing this mirror: forward them now.
-        if let reports = mobileViewportReportsBySurfaceID[surfaceID], !reports.isEmpty {
-            relay.relayPhones(phoneParticipants(reports: reports, surfaceID: surfaceID))
-        }
-    }
-
-    func unregisterCloudSizingRelay(_ relay: any CloudSizingPhoneRelaying, surfaceID: UUID) {
-        guard cloudSizingRelaysBySurfaceID[surfaceID]?.value === relay else { return }
-        cloudSizingRelaysBySurfaceID[surfaceID] = nil
     }
 
     /// The Cloud host detached one phone behind this Mac.

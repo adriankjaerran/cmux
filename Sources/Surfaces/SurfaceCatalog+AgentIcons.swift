@@ -14,7 +14,7 @@ extension SurfaceCatalog {
 
     func syncCloudTerminalTabIcon(_ projection: SurfaceProjection) {
         guard !projection.resource.machine.isLocal, projection.resource.kind == .terminal,
-              let workspace = cloudWorkspaceRenameService.environment.workspace(projection.workspaceID),
+              let workspace = catalogWorkspace(projection.workspaceID),
               workspace.panels[projection.panelID] is TerminalPanel,
               let tabID = workspace.surfaceIdFromPanelId(projection.panelID),
               let tab = workspace.bonsplitController.tab(tabID) else { return }

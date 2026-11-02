@@ -156,7 +156,6 @@ extension Workspace {
     func reconnectRemoteConnection(surfaceId: UUID? = nil) -> Bool {
         guard !managedDevicePolicy.isEnforced(.disableRemoteConnections) else { return false }
         if isManagedCloudVMWorkspace { return false }
-        if let surfaceId, let session = tuiMirrorSession(for: surfaceId) { return session.retryConnection() }
         // `DisableRemoteConnections` (MDM): a configuration retained from
         // before the policy activated must not redial. New connections are
         // refused by `configureRemoteConnection`, and the enforcement observer
@@ -232,7 +231,7 @@ extension Workspace {
     }
 
     func suspendCloudRemoteConfiguration(_ configuration: WorkspaceRemoteConfiguration) -> Bool {
-        disconnectRemoteConnection(clearConfiguration: false, disconnectedDetail: CloudMachinesFeature.disabledMessage)
+        disconnectRemoteConnection(clearConfiguration: false, disconnectedDetail: CloudUnavailableMessage.text)
         remoteConfiguration = configuration.scopedToOwnerWorkspace(id)
         remoteControllerConnectionState = .disconnected
         remoteConnectionState = .disconnected

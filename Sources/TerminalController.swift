@@ -117,10 +117,6 @@ class TerminalController {
         case failed
         case busy
     }
-    /// The app-managed Cloud tunnel, set by the AppDelegate composition root
-    /// next to `VMClient.bootstrap`. Nil only before startup finishes; the
-    /// `vm.tunnel_*` socket verbs report browser access as unavailable until then.
-    var cloudTunnel: CloudTunnelCoordinator?
 #if DEBUG
     nonisolated let windowScreenshotCaptureCoordinator =
         WindowScreenshotCaptureCoordinator()
@@ -275,8 +271,6 @@ class TerminalController {
     var localSizingControllersBySurfaceID: [UUID: LocalTerminalSharingController] = [:]
     /// Phones someone disconnected from a Cloud terminal, by surface then client id.
     var cloudDetachedPhonesBySurfaceID: [UUID: [String: TerminalSharingDetachment]] = [:]
-    /// Cloud mirrors that relay phones to a cmux-tui host, by surface id.
-    var cloudSizingRelaysBySurfaceID: [UUID: CloudSizingRelayReference] = [:]
     /// The single owner of shared-terminal size state and actions.
     let terminalSharing = TerminalSharingStore()
     /// The one size panel popover, anchored at a terminal's tab.
@@ -386,10 +380,9 @@ class TerminalController {
         "browser.tab.switch",
         "notification.open",
         "notification.jump_to_unread",
-        "debug.command_palette.toggle", "debug.pro_welcome_checklist.show",
-        "debug.native_pricing.show",
+        "debug.command_palette.toggle",
         "debug.notification.focus",
-        "debug.app.activate", "debug.cloudtree.spacing",
+        "debug.app.activate",
         "debug.right_sidebar.focus",
         "feed.jump"
     ]
@@ -1818,31 +1811,6 @@ class TerminalController {
 #if DEBUG
         case "debug.sidebar.simulate_drag":
             return v2Result(id: request.id, v2DebugSidebarSimulateDrag(params: request.params))
-        case "debug.cloudtree.gallery":
-            // `{style?: id, show?: bool}`: optionally select a Cloud tree style
-            // preset, then (by default) present the side-by-side gallery window.
-            let requestedStyle = (request.params["style"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let requestedStyle, !requestedStyle.isEmpty, CloudTreeStyle.preset(id: requestedStyle) == nil {
-                return v2Error(
-                    id: request.id,
-                    code: "invalid_params",
-                    message: "unknown style '\(requestedStyle)'; expected one of \(CloudTreeStyle.presets.map(\.id).joined(separator: ", "))"
-                )
-            }
-            let show = Self.surfaceBool(request.params["show"]) ?? true
-            let selected: String = v2MainSync {
-                if let requestedStyle, let style = CloudTreeStyle.preset(id: requestedStyle) {
-                    CloudTreeStyleStore.current = style
-                }
-                if show {
-                    CloudTreeStyleGalleryWindowController.shared.show()
-                }
-                return CloudTreeStyleStore.current.id
-            }
-            return v2Ok(id: request.id, result: [
-                "styles": CloudTreeStyle.presets.map(\.id),
-                "selected": selected,
-            ])
         case "debug.window_hints":
             // Hint mode's labels while they show (`active`, what is typed, each label's target).
             let payload: [String: Any] = v2MainSync {
@@ -1914,7 +1882,6 @@ class TerminalController {
             if request.method == "debug.sidebar.simulate_drag"
                 || request.method == "debug.global_search.query"
                 || request.method == "debug.window.screenshot"
-                || request.method == "debug.cloudtree.gallery"
                 || request.method == "debug.window_hints" {
                 return v2Error(id: request.id, code: "method_not_found", message: "Unknown method")
             }
@@ -2918,20 +2885,6 @@ class TerminalController {
         case "agent.resolve_delivery_target": return v2Result(id: id, self.v2AgentResolveDeliveryTarget(params: params))
         case "agent.hibernation.session_end": return v2Result(id: id, self.v2AgentHibernationSessionEnd(params: params))
         #if DEBUG
-        case "debug.cloudtree.rows":
-            // The Cloud sidebar's rows from the same builder the sidebar uses, so
-            // dogfood can assert what is listed (duplicate rows were invisible to
-            // `cloud tree --json`, which reports catalog state, not rows).
-            let rows = CloudTreeNodeBuilder.flattened(SurfaceCatalog.shared.sidebarNodes()).map { node -> [String: Any] in
-                var row: [String: Any] = ["id": node.id, "kind": node.structureTag]
-                if case .display(let resource, _, _) = node.kind { row["resource"] = resource.id.rawValue; row["title"] = resource.title }
-                return row
-            }
-            return v2Ok(id: id, result: ["rows": rows])
-        case "debug.cloudtree.spacing":
-            // Explicit window presentation needs AppKit; the socket awaits the main-actor lane.
-            AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
-            return v2Ok(id: id, result: ["window": "cmux.cloudSidebarDebugLab"])
         case "debug.notification.status":
             return v2Ok(id: id, result: notificationDebugStatus())
         case "debug.notification.mode":
@@ -3823,8 +3776,8 @@ class TerminalController {
             case .unknownResource, .noProvider, .ambiguousRemotePlacement:
                 // These messages are app-owned copy with routing identifiers,
                 // not provider-supplied failure diagnostics.
-                let safe = CloudVMActionLauncher.sanitizedCloudVMStartOutput(catalogError.localizedDescription)
-                return safe.isEmpty || safe == CloudVMActionLauncher.hiddenOutputPlaceholder ? fallback : safe
+                let safe = SocketErrorTextSanitizer.sanitized(catalogError.localizedDescription)
+                return safe.isEmpty || safe == SocketErrorTextSanitizer.hiddenOutputPlaceholder ? fallback : safe
             default:
                 break
             }
@@ -3841,8 +3794,8 @@ class TerminalController {
         }
         guard case let VMClientError.httpStatus(status, body) = error else {
             guard let vmError = error as? VMClientError else { return fallback }
-            let safe = CloudVMActionLauncher.sanitizedCloudVMStartOutput(String(describing: vmError))
-            return safe.isEmpty || safe == CloudVMActionLauncher.hiddenOutputPlaceholder ? fallback : safe
+            let safe = SocketErrorTextSanitizer.sanitized(String(describing: vmError))
+            return safe.isEmpty || safe == SocketErrorTextSanitizer.hiddenOutputPlaceholder ? fallback : safe
         }
         guard let data = body.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
@@ -3868,10 +3821,10 @@ class TerminalController {
         }
         guard let publicData = try? JSONSerialization.data(withJSONObject: publicObject),
               let publicBody = String(data: publicData, encoding: .utf8) else { return fallback }
-        let safe = CloudVMActionLauncher.sanitizedCloudVMStartOutput(
+        let safe = SocketErrorTextSanitizer.sanitized(
             formattedCloudVMHTTPError(status: status, body: publicBody)
         )
-        return safe.isEmpty || safe == CloudVMActionLauncher.hiddenOutputPlaceholder ? fallback : safe
+        return safe.isEmpty || safe == SocketErrorTextSanitizer.hiddenOutputPlaceholder ? fallback : safe
     }
 
     private nonisolated static func isCloudVMAuthenticationError(_ error: VMClientError) -> Bool {

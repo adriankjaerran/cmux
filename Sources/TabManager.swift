@@ -225,9 +225,6 @@ class TabManager: ObservableObject {
         (windowDockTitleRoutingStores.objectEnumerator()?.allObjects as? [DockSplitStore]) ?? []
     }
     let workspaceSwitchCoordinator = WorkspaceSwitchCoordinator()
-    /// Shared by the inline Cloud sidebar and any Cloud tool pane in this
-    /// window so CodeRouter reads and removals never overlap.
-    let coderouterAccountStore = CoderouterAccountStore()
 
     var tabs: [Workspace] {
         get { workspaces.tabs }
@@ -2647,7 +2644,6 @@ class TabManager: ObservableObject {
         // manager may close its own live workspaces; stale or foreign objects must
         // never tear down terminals or publish a second close.
         guard tabs.contains(where: { $0.id == workspace.id }) else { return }
-        MachineCreateCoordinator.shared.cancelOperations(forPresentationWorkspace: workspace.id)
         panelTitleUpdateCoalescer.flushNow()
         sentryBreadcrumb("workspace.close", data: ["tabCount": tabs.count - 1])
         // Closing a mirrored remote tmux workspace DETACHES from the remote session,
@@ -2741,7 +2737,6 @@ class TabManager: ObservableObject {
         panelTitleUpdateCoalescer.flushNow()
         sidebarGitMetadataService.resetAllWorkspaceGitProbeTracking()
 
-        MachineCreateCoordinator.shared.cancelOperations(forPresentationWorkspaces: Set(closingWorkspaces.map(\.id)))
         for workspace in closingWorkspaces {
             finalizeWorkspaceForRemoval(workspace, clearsWorkspaceGitProbes: false)
         }

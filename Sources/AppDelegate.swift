@@ -56,10 +56,6 @@ struct WorkspaceGroupNewWorkspaceTarget {
 @MainActor
 final class CmuxDebugWindowsCoordinator {
     private let aboutTitlebarCoordinator: DebugWindowsCoordinator
-#if DEBUG
-    let cloudSidebarDebugSettings = CloudSidebarDebugSettings(defaults: .standard)
-    lazy var cloudSidebarDebugLabController = CloudSidebarDebugLabWindowController(settings: cloudSidebarDebugSettings)
-#endif
     private weak var decorator: (any WindowDecorating)?
 
     init(decorator: (any WindowDecorating)?) {
@@ -601,8 +597,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         Self.cachedIsRunningUnderXCTest
     }
     private let cmuxThemePreviewReloadScheduler = MainActorDeferredActionScheduler()
-    private let connectivityInvalidationSubscriberCoordinator = ConnectivityInvalidationSubscriberCoordinator()
-    let workspacePresenceController = WorkspacePresenceController()
     private let sudoApprovalCoordinator: SudoApprovalCoordinator?
 
     @MainActor
@@ -823,14 +817,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     // left unwired (wiring it would double-record). The recorder-FREE members of the open/click
     // cluster did move into the package this wave: the reveal-in-Finder side effect now lives in `NotificationClickPerformer` (behind `FinderRevealing`), and the entire focused-mark state
     // machine lives in `FocusedNotificationMarker` (behind `FocusedNotificationResolving`).
-    /// Explicit Cloud machine pins and stable fleet order, built by the composition root.
-    private(set) var cloudMachinePinStore: CloudMachinePinStore?
-    /// "Introducing cmux cloud", shown once from the first main window.
-    private(set) lazy var cloudWelcomeWindowController = CloudWelcomeWindowController()
-    private(set) lazy var cloudActivationCoordinator = CloudActivationCoordinator(prepare: { throw CancellationError() }, cleanup: {}, analytics: .app)
-    var cloudWorkspaceCoordinator: CloudWorkspaceCoordinator?
-    var cloudWorkspaceOperationController: CloudWorkspaceOperationController?
-    var newMachineSheetPresenter: (any NewMachineSheetPresenting)?
     /// Strongly-held observers for every active TabManager. Each observer owns
     /// Combine subscriptions that publish workspace.updated to mobile clients.
     private let agentChatTranscriptService = AgentChatTranscriptService()
@@ -853,13 +839,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// Applies MDM managed-policy transitions (browser/remote-control) while
     /// the app runs. Installed once from `installManagedPolicyEnforcement()`.
     var managedPolicyEnforcementObserver: ManagedPolicyEnforcementObserver?
-    /// Suspends already-open Cloud attachments when the remote Cloud flag
-    /// changes, while retaining their configurations for a later re-enable.
-    var cloudFeatureFlagObserver: CloudFeatureAvailabilityObserver?
-    /// Serializes `DisableCloud` transitions. A lift chains behind the
-    /// teardown it follows, so an in-flight disable can never land after
-    /// discovery has restarted (see `applyManagedCloudPolicy`).
-    var managedCloudPolicyTask: Task<Void, Never>?
     private var reloadConfigurationMenuItemRefreshScheduled = false
     /// Orchestrates per-window cmux config-store reloads + window-title refresh.
     /// Holds `self` weakly through the environment seam to avoid a retain cycle.
@@ -1195,15 +1174,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         set { mainWindowLifecycleCoordinator.replaceRegisteredContextLookups(newValue) }
     }
     var saveWorkspaceActionTasks: [UUID: Task<Void, Never>] = [:]
-    /// The app-managed Cloud tunnel (see `AppDelegate+CloudTunnel.swift`).
-    var cloudTunnelCoordinator: CloudTunnelCoordinator?
-    var cloudOperations: CloudOperationRecorder?
-    var cloudDiagnosticsWindowController: NSWindowController?
-    /// The in-flight sign-out teardown of that tunnel, so a second sign-out
-    /// replaces rather than stacks it.
-    var cloudTunnelTeardownTask: Task<Void, Never>?
-    /// Brings the tunnel down when Cloud Machines is turned off at runtime.
-    var cloudTunnelActivationObserver: CloudTunnelActivationObserver?
     private var mainWindowControllers: [MainWindowController] = []
 
     /// Tracks the cascade point for new windows, matching Ghostty's upstream algorithm.
@@ -1585,25 +1555,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // menu mounts: it is lazy, and its consumers only observe its
         // notification, so nothing else would bring it up (#10866).
         BrowserAvailabilityMonitor.shared.activate()
-        // Composition root for surfaces: this Mac's panes and every cloud machine's
-        // cmux-tui session feed one catalog, and the sidebar, drag/drop, socket and CLI all
-        // open through `SurfaceCatalog.project`.
-        // Inject the live workspace registry into the catalog-owned rename service before
-        // any restore or provider callbacks can reconcile a cloud binding.
-        let cloudRenameEnvironment = CloudWorkspaceRenameEnvironment(
-            workspace: { [weak self] workspaceID in
-                self?.workspaceFor(tabId: workspaceID)
-            },
-            tabManager: { [weak self] workspaceID in
-                self?.tabManagerFor(tabId: workspaceID)
-            },
-            workspaces: { [weak self] in
-                self?.surfaceCatalogWorkspaces() ?? []
-            }
-        )
-        SurfaceCatalog.shared.installCloudWorkspaceRenameService(
-            CloudWorkspaceRenameService(environment: cloudRenameEnvironment)
-        )
+        // Composition root for surfaces: this Mac's panes feed one catalog, and the
+        // sidebar, drag/drop, socket and CLI all open through `SurfaceCatalog.project`.
         TerminalPredictionCenter.shared.bindEnabledSetting(
             userDefaultsKey: SettingCatalog().terminal.predictiveLocalEcho.userDefaultsKey,
             defaultValue: SettingCatalog().terminal.predictiveLocalEcho.defaultValue
@@ -5269,24 +5222,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
 
         attemptStartupSessionRestoreAndSaveIfNeeded(primaryWindow: window)
-        presentCloudWelcomeIfNeeded(over: window)
-    }
-
-    /// In release builds, once per Mac after the first main window is up. Tests
-    /// never see it; debug builds can open it from Help when needed.
-    private func presentCloudWelcomeIfNeeded(over window: NSWindow) {
-#if DEBUG
-        // Keep the first-run welcome available from Help while iterating on the
-        // app, but do not interrupt every development launch with it.
-        return
-#else
-        let env = ProcessInfo.processInfo.environment
-        guard !isRunningUnderXCTestCached, !isRunningUnderXCTest(env), env["CMUX_UI_TEST_MODE"] != "1" else { return }
-        // Next turn of the main loop, so the window is on screen to place it over.
-        DispatchQueue.main.async { [weak self, weak window] in
-            self?.cloudWelcomeWindowController.presentIfNeeded(over: window)
-        }
-#endif
     }
 
 #if DEBUG
@@ -7841,14 +7776,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             CommandPaletteContextKeys.workspaceIsCloud,
             workspace.isManagedCloudVMWorkspace || workspace.cloudVMID != nil
         )
-        // Cloud machine capabilities came from the cmux-tui provider (gone in Phase 9.12 (E)).
-        let cloudCapabilities: VMCapabilities? = nil
-        snapshot.setBool(CommandPaletteContextKeys.cloudVMCapabilitiesKnown, cloudCapabilities != nil)
-        snapshot.setBool(CommandPaletteContextKeys.cloudVMSupportsFork, cloudCapabilities?.canFork ?? true)
-        snapshot.setBool(CommandPaletteContextKeys.cloudVMSupportsSnapshot, cloudCapabilities?.snapshot ?? true)
-        snapshot.setBool(CommandPaletteContextKeys.cloudVMSupportsRestore, cloudCapabilities?.restore ?? true)
-        snapshot.setBool(CommandPaletteContextKeys.cloudVMSupportsPorts, cloudCapabilities?.ports ?? true)
-        snapshot.setBool(CommandPaletteContextKeys.cloudVMSupportsExec, cloudCapabilities?.exec ?? true)
+        snapshot.setBool(CommandPaletteContextKeys.cloudVMCapabilitiesKnown, false)
+        for key in [
+            CommandPaletteContextKeys.cloudVMSupportsFork, CommandPaletteContextKeys.cloudVMSupportsSnapshot,
+            CommandPaletteContextKeys.cloudVMSupportsRestore, CommandPaletteContextKeys.cloudVMSupportsPorts,
+            CommandPaletteContextKeys.cloudVMSupportsExec,
+        ] { snapshot.setBool(key, true) }
         return CommandPaletteCloudCapabilityPolicy().allows(
             commandId: commandId,
             context: snapshot
@@ -8171,13 +8104,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let context = preferredTabManager.flatMap { mainWindowContext(for: $0) }
             ?? preferredMainWindowContextForWorkspaceCreation(event: event, debugSource: debugSource)
         let manager = context?.tabManager ?? preferredTabManager
-        if !staysLocal, let manager,
-           let vmID = manager.selectedWorkspace?.cloudVMID,
-           !vmID.isEmpty {
-            // Once this intent targets a VM, an unavailable or pending cloud
-            // operation must never fall through and create a local workspace.
-            return performNewCloudWorkspaceOnCurrentMachineAction(tabManager: manager, vmID: vmID)
-        }
         return performNewWorkspaceCreationAction(
             initialSurface: .terminal,
             preferredTabManager: preferredTabManager,
@@ -8303,41 +8229,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         )
     }
 
-    @discardableResult
-    func performProUpgradeWorkspaceAction(
-        title: String,
-        url: URL,
-        tabManager preferredTabManager: TabManager? = nil,
-        event: NSEvent? = nil,
-        debugSource: String = "proUpgradeWorkspace"
-    ) -> Workspace? {
-        guard BrowserAvailabilitySettings.isEnabled() else {
-#if DEBUG
-            cmuxDebugLog("proUpgradeWorkspace.blocked_browser_disabled source=\(debugSource)")
-#endif
-            return nil
-        }
-        var createdWorkspace: Workspace?
-        let didCreate = performNewWorkspaceCreationAction(
-            initialSurface: .browser,
-            preferredTabManager: preferredTabManager,
-            event: event,
-            debugSource: debugSource,
-            title: title,
-            initialBrowserURL: url,
-            initialBrowserOmnibarVisible: false,
-            initialBrowserTransparentBackground: true,
-            applyCreationTitleAsCustomTitle: false,
-            focusInitialBrowserAddressBarOnCreate: false,
-            createdWorkspaceHandler: { workspace in
-                createdWorkspace = workspace
-            }
-        )
-        guard didCreate, let createdWorkspace else { return nil }
-        focusInitialBrowserWebView(in: createdWorkspace)
-        return createdWorkspace
-    }
-
     /// Mobile pairing went with `Sources/Mobile` (Phase 9.14): every entry
     /// point (Settings, palette, menu, `workspace.action mobile_connect`)
     /// answers unavailable.
@@ -8354,36 +8245,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         cmuxDebugLog("mobileConnect.unavailable source=\(debugSource)")
 #endif
         return nil
-    }
-
-    func proUpgradeWorkspaceExists(workspaceId: UUID) -> Bool {
-        mainWindowContexts.values.contains { context in
-            context.tabManager.tabs.contains { $0.id == workspaceId }
-        } || (tabManager?.tabs.contains { $0.id == workspaceId } == true)
-    }
-
-    @discardableResult
-    func focusProUpgradeWorkspace(workspaceId: UUID, url: URL) -> Bool {
-        guard BrowserAvailabilitySettings.isEnabled() else { return false }
-        guard let (context, workspace) = proUpgradeWorkspaceContext(workspaceId: workspaceId) else {
-            return false
-        }
-        guard let window = resolvedWindow(for: context) else {
-            return false
-        }
-        guard focusWindowForAppActivation(window, reason: .workspaceCreation) else {
-            return false
-        }
-        context.tabManager.selectedTabId = workspace.id
-        guard let browserPanel = workspace.focusedSurfaceId.flatMap({ workspace.browserPanel(for: $0) })
-            ?? workspace.panels.values.compactMap({ $0 as? BrowserPanel }).first else {
-            return false
-        }
-        workspace.focusPanel(browserPanel.id)
-        browserPanel.navigate(to: url)
-        browserPanel.requestExplicitWebViewFocus()
-        context.tabManager.rememberFocusedSurface(tabId: workspace.id, surfaceId: browserPanel.id)
-        return true
     }
 
     private func performNewWorkspaceCreationAction(
@@ -8620,20 +8481,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return true
     }
 
-    private func proUpgradeWorkspaceContext(workspaceId: UUID) -> (MainWindowContext, Workspace)? {
-        for context in mainWindowContexts.values {
-            if let workspace = context.tabManager.tabs.first(where: { $0.id == workspaceId }) {
-                return (context, workspace)
-            }
-        }
-        if let tabManager,
-           let workspace = tabManager.tabs.first(where: { $0.id == workspaceId }),
-           let context = mainWindowContexts.values.first(where: { $0.tabManager === tabManager }) {
-            return (context, workspace)
-        }
-        return nil
-    }
-
     /// Routes first focus of a freshly created browser-initial workspace into
     /// the address bar so the user can type a URL immediately.
     private func focusInitialBrowserAddressBar(in workspace: Workspace) {
@@ -8655,413 +8502,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         workspace.owningTabManager?.rememberFocusedSurface(tabId: workspace.id, surfaceId: browserPanel.id)
     }
 
-    @discardableResult
-    func performCloudVMAction(
-        tabManager preferredTabManager: TabManager? = nil,
-        preferredWindow: NSWindow? = nil,
-        debugSource: String = "cloudVM",
-        onCompletion: ((CloudVMActionLauncher.Completion) -> Void)? = nil
-    ) -> Bool {
-        // `DisableCloud` (MDM): the shared chokepoint for every Cloud entry —
-        // the surface tab bar button, `cmux.json` actions, the plus and
-        // workspace-group menus, the Base pane's Retry, and
-        // `workspace.cloud_vm_open` — mirroring the mobile-connect twin.
-        // Refusing here leaves no pinned loading workspace and no failure
-        // dialog behind.
-        guard ManagedCloudPolicy.isEnabled, CloudMachinesFeature.isEnabled else {
-#if DEBUG
-            cmuxDebugLog("cloudVM.blocked_managed_policy source=\(debugSource)")
-#endif
-            NSSound.beep()
-            return false
-        }
-        let authState = CloudVMPanelAuthState.resolve(
-            isAuthenticated: false,
-            isWorkingOnAuth: false
-        )
-        guard authState.allowsAuthenticatedOperation else {
-            return false
-        }
-        let context = preferredTabManager.flatMap { mainWindowContext(for: $0) }
-            ?? preferredWindow.flatMap { contextForMainWindow($0) }
-            ?? preferredMainWindowContextForWorkspaceCreation(event: nil, debugSource: debugSource)
-        guard let context else {
-            NSSound.beep()
-            return false
-        }
-        let socketPath = TerminalController.shared.activeSocketPath(
-            preferredPath: SocketControlSettings.socketPath()
-        )
-        let workspaceTitle = String(localized: "workspace.cloudVM.defaultTitle", defaultValue: "Cloud VM")
-        let existingWorkspace = existingCloudVMWorkspace(in: context.tabManager)
-        let workspace: Workspace
-        if let existingWorkspace {
-            workspace = existingWorkspace
-            context.tabManager.selectedTabId = workspace.id
-            context.tabManager.setPinned(workspace, pinned: true)
-            if let loadingPanel = workspace.panels.values.first(where: { $0.panelType == .cloudVMLoading }) as? CloudVMLoadingPanel {
-                if !loadingPanel.hasFailed {
-                    onCompletion?(CloudVMActionLauncher.Completion(terminationStatus: 0, output: "", workspaceId: workspace.id))
-                    return true
-                }
-            } else {
-                onCompletion?(CloudVMActionLauncher.Completion(terminationStatus: 0, output: "", workspaceId: workspace.id))
-                return true
-            }
-        } else {
-            guard let createdWorkspace = context.tabManager.addWorkspaceIfActive(
-                title: workspaceTitle,
-                titleSource: .auto,
-                initialSurface: .cloudVMLoading,
-                inheritWorkingDirectory: false,
-                select: true,
-                autoWelcomeIfNeeded: false
-            ) else { return false }
-            workspace = createdWorkspace
-            context.tabManager.setPinned(workspace, pinned: true)
-            // First Base is a real choice (screen or shell-only), so ask before
-            // provisioning. Once Base exists the open reuses it and no sheet
-            // appears; if the fleet can't be read, open directly and let the
-            // CLI report the real error in the loading panel.
-            let launchWindow = resolvedWindow(for: context) ?? preferredWindow
-            let tabManager = context.tabManager
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                let page = await Self.cloudVMFleetPage()
-                // A Base whose delete is in flight is gone to the person: offer a new one.
-                let deleting = MachineDeleteCoordinator.shared.hiddenMachineIDs
-                if page?.vms.contains(where: { $0.base != nil && !deleting.contains($0.id) }) != false {
-                    _ = self.launchCloudVMBaseOpen(
-                        workspace: workspace,
-                        socketPath: socketPath,
-                        preferredWindow: launchWindow,
-                        arguments: ["vm", "base", "open", "--workspace", workspace.id.uuidString],
-                        onCompletion: onCompletion
-                    )
-                    return
-                }
-                // Create hands the request to the shared create coordinator and the sheet
-                // closes at once: the placeholder workspace's loading pane and the Machines
-                // panel's pending row show Base coming up while the person keeps working (#11397).
-                let model = NewMachineModel(
-                    mode: .base(workspaceID: workspace.id),
-                    plan: MachineSnapshotBuilder.planSnapshot(activeCount: page?.activeMachineCount ?? 0, limits: page?.limits),
-                    memoryOptionsMb: page?.limits?.memoryOptionsMb ?? [],
-                    lockedMemoryOptionsMb: page?.limits?.lockedMemoryOptionsMb,
-                    memoryUpgradePlanId: page?.limits?.memoryUpgradePlanId,
-                    memoryUpgradePlansByMb: page?.limits?.memoryUpgradePlansByMb,
-                    submit: { [weak self] request in
-                        guard let self else { return false }
-                        return MachineCreateCoordinator.shared.start(request, cancellableLaunch: { [weak self] _, arguments, progress, completion in
-                            guard let self else { return nil }
-                            var cancellation: CloudVMActionLauncher.CancellationHandle?
-                            let didStart = self.launchCloudVMBaseOpen(
-                                workspace: workspace,
-                                socketPath: socketPath,
-                                preferredWindow: launchWindow,
-                                arguments: arguments,
-                                onProgress: progress,
-                                onCancellationReady: { cancellation = $0 },
-                                onCompletion: { result in
-                                    completion(result)
-                                    onCompletion?(result)
-                                }
-                            )
-                            return didStart ? cancellation : nil
-                        })
-                    }
-                )
-                model.onFinished = { outcome in
-                    guard outcome == .cancelled else { return }
-                    // Nothing was provisioned: take the placeholder workspace back down.
-                    tabManager.closeWorkspace(workspace, recordHistory: false)
-                    onCompletion?(CloudVMActionLauncher.Completion(terminationStatus: 1, output: "", workspaceId: nil))
-                }
-                NewMachineSheetPresenter.shared.present(model: model, preferredWindow: launchWindow)
-            }
-            return true
-        }
-        return launchCloudVMBaseOpen(
-            workspace: workspace,
-            socketPath: socketPath,
-            preferredWindow: resolvedWindow(for: context) ?? preferredWindow,
-            arguments: ["vm", "base", "open", "--workspace", workspace.id.uuidString],
-            onCompletion: onCompletion
-        )
-    }
-
-    /// The fleet as `GET /api/vm` reports it; nil when signed out or unreachable.
-    private static func cloudVMFleetPage() async -> VMListPage? {
-        guard let client = VMClient.shared else { return nil }
-        return try? await client.listPage()
-    }
-
-    /// Runs `cmux vm base open …` against `workspace`'s loading panel: the one
-    /// place the Base open CLI is launched, whether the sheet or a plain open
-    /// triggered it. Failures land in the loading panel and in `onCompletion`.
-    @discardableResult
-    private func launchCloudVMBaseOpen(
-        workspace: Workspace,
-        socketPath: String,
-        preferredWindow: NSWindow?,
-        arguments: [String],
-        onProgress: (@MainActor (String) -> Void)? = nil,
-        onCancellationReady: ((CloudVMActionLauncher.CancellationHandle) -> Void)? = nil,
-        onCompletion: ((CloudVMActionLauncher.Completion) -> Void)?
-    ) -> Bool {
-        if let loadingPanel = workspace.panels.values.first(where: { $0.panelType == .cloudVMLoading }) as? CloudVMLoadingPanel {
-            loadingPanel.resetLoading()
-        }
-        let didStart = CloudVMActionLauncher.shared.start(
-            socketPath: socketPath,
-            preferredWindow: preferredWindow,
-            arguments: arguments,
-            presentsFailureAlert: false,
-            environmentOverrides: [
-                "CMUX_CLOUD_ATTACH_RETRY_LIMIT": "12",
-                "CMUX_CLOUD_ATTACH_RETRY_DELAY_SECONDS": "2",
-            ],
-            onCancellationReady: onCancellationReady,
-            onOutput: onProgress,
-            onCompletion: { completion in
-                if !completion.succeeded,
-                   let loadingPanel = workspace.panels.values.first(where: { $0.panelType == .cloudVMLoading }) as? CloudVMLoadingPanel {
-                    loadingPanel.showFailure(completion.output)
-                }
-                onCompletion?(completion)
-            }
-        )
-        if !didStart,
-           let loadingPanel = workspace.panels.values.first(where: { $0.panelType == .cloudVMLoading }) as? CloudVMLoadingPanel {
-            loadingPanel.showFailure(String(
-                localized: "panel.cloudVM.loading.failed.launch",
-                defaultValue: "Cloud VM command could not be launched."
-            ))
-        }
-        return didStart
-    }
-
-    private func existingCloudVMWorkspace(in tabManager: TabManager) -> Workspace? {
-        tabManager.tabs.first { workspace in
-            if workspace.panels.values.contains(where: { $0.panelType == .cloudVMLoading }) {
-                return true
-            }
-            guard let remote = workspace.remoteConfiguration else { return false }
-            return remote.persistentDaemonSlot == "cmux-default-freestyle-sshd-v1" &&
-                remote.managedCloudVMID?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-        }
-    }
-
-    @discardableResult
-    func performCurrentCloudVMCommand(
-        _ command: CurrentCloudVMCommand,
-        tabManager preferredTabManager: TabManager? = nil,
-        preferredWindow: NSWindow? = nil,
-        debugSource: String = "cloudVM.current"
-    ) -> Bool {
-        guard CloudMachinesFeature.isEnabled else { return false }
-        let authState = CloudVMPanelAuthState.resolve(
-            isAuthenticated: false,
-            isWorkingOnAuth: false
-        )
-        guard authState.allowsAuthenticatedOperation else {
-            return false
-        }
-        let context = contextForCloudVMCommand(
-            preferredTabManager: preferredTabManager,
-            preferredWindow: preferredWindow,
-            debugSource: debugSource
-        )
-        guard let context else {
-            NSSound.beep()
-            return false
-        }
-        guard commandPaletteCloudCapabilityAllows(
-            commandId: command.commandPaletteID,
-            tabManager: context.tabManager,
-            preferredWindow: resolvedWindow(for: context) ?? preferredWindow
-        ) else {
-            NSSound.beep()
-            return false
-        }
-        guard let vmId = currentCloudVMId(tabManager: context.tabManager) else {
-            presentCloudVMNotice(
-                title: String(localized: "command.cloudVM.current.missing.title", defaultValue: "No Cloud VM Selected"),
-                message: String(localized: "command.cloudVM.current.missing.message", defaultValue: "Select a Cloud VM workspace first, then retry this command."),
-                preferredWindow: resolvedWindow(for: context) ?? preferredWindow
-            )
-            return false
-        }
-        if case .fork = command {
-            // Same pending "Fork of …" row and reserved workspace as the sidebar's Fork.
-            return NewMachineSheetPresenter.shared.startFork(
-                sourceMachineID: vmId,
-                sourceName: nil,
-                preferredWindow: resolvedWindow(for: context) ?? preferredWindow
-            )
-        }
-        let socketPath = TerminalController.shared.activeSocketPath(
-            preferredPath: SocketControlSettings.socketPath()
-        )
-        return CloudVMActionLauncher.shared.start(
-            socketPath: socketPath,
-            preferredWindow: resolvedWindow(for: context) ?? preferredWindow,
-            arguments: command.arguments(vmId: vmId),
-            successTitle: command.successTitle,
-            presentOutputOnSuccess: command.presentOutputOnSuccess
-        )
-    }
-
-    @discardableResult
-    func performCloudVMRestoreCommand(
-        tabManager preferredTabManager: TabManager? = nil,
-        preferredWindow: NSWindow? = nil,
-        debugSource: String = "cloudVM.restore"
-    ) -> Bool {
-        guard CloudMachinesFeature.isEnabled else { return false }
-        let authState = CloudVMPanelAuthState.resolve(
-            isAuthenticated: false,
-            isWorkingOnAuth: false
-        )
-        guard authState.allowsAuthenticatedOperation else {
-            return false
-        }
-        let context = contextForCloudVMCommand(
-            preferredTabManager: preferredTabManager,
-            preferredWindow: preferredWindow,
-            debugSource: debugSource
-        )
-        guard let context else {
-            NSSound.beep()
-            return false
-        }
-        let window = resolvedWindow(for: context) ?? preferredWindow
-        guard commandPaletteCloudCapabilityAllows(
-            commandId: ContentView.commandPaletteCloudRestoreCommandId,
-            tabManager: context.tabManager,
-            preferredWindow: window
-        ) else {
-            NSSound.beep()
-            return false
-        }
-        guard let snapshotId = promptForCloudVMSnapshotId(preferredWindow: window) else {
-            return false
-        }
-        let socketPath = TerminalController.shared.activeSocketPath(
-            preferredPath: SocketControlSettings.socketPath()
-        )
-        return CloudVMActionLauncher.shared.start(
-            socketPath: socketPath,
-            preferredWindow: window,
-            arguments: ["vm", "restore", snapshotId],
-            successTitle: String(localized: "command.cloudVM.restore.result.title", defaultValue: "Cloud VM Restored"),
-            presentOutputOnSuccess: true
-        )
-    }
-
-    /// Resolves a Cloud palette action to the window that opened the palette.
-    /// The tab manager takes precedence so a secondary window cannot fall back
-    /// to another window's selected workspace.
-    func contextForCloudVMCommand(
-        preferredTabManager: TabManager?,
-        preferredWindow: NSWindow?,
-        debugSource: String
-    ) -> MainWindowContext? {
-        preferredTabManager.flatMap { mainWindowContext(for: $0) }
-            ?? preferredWindow.flatMap { contextForMainWindow($0) }
-            ?? preferredMainWindowContextForWorkspaceCreation(event: nil, debugSource: debugSource)
-    }
-
-    enum CurrentCloudVMCommand {
-        case status
-        case fork
-        case snapshot
-        case ports
-        case tools
-        case handoff
-        case promoteTemplate
-
-        var successTitle: String {
-            switch self {
-            case .status:
-                return String(localized: "command.cloudVM.status.result.title", defaultValue: "Cloud VM Status")
-            case .fork:
-                return String(localized: "command.cloudVM.fork.result.title", defaultValue: "Cloud VM Forked")
-            case .snapshot:
-                return String(localized: "command.cloudVM.snapshot.result.title", defaultValue: "Cloud VM Checkpoint")
-            case .ports:
-                return String(localized: "command.cloudVM.ports.result.title", defaultValue: "Cloud VM Ports")
-            case .tools:
-                return String(localized: "command.cloudVM.tools.result.title", defaultValue: "Cloud VM Tools")
-            case .handoff:
-                return String(localized: "command.cloudVM.handoff.result.title", defaultValue: "Cloud VM Handoff")
-            case .promoteTemplate:
-                return String(localized: "command.cloudVM.template.result.title", defaultValue: "Cloud VM Template")
-            }
-        }
-
-        var presentOutputOnSuccess: Bool {
-            switch self {
-            case .fork:
-                return false
-            case .status, .snapshot, .ports, .tools, .handoff, .promoteTemplate:
-                return true
-            }
-        }
-
-        @MainActor var commandPaletteID: String {
-            switch self {
-            case .fork: return ContentView.commandPaletteCloudForkCommandId
-            case .snapshot: return ContentView.commandPaletteCloudSnapshotCommandId
-            case .ports: return ContentView.commandPaletteCloudPortsCommandId
-            case .tools: return ContentView.commandPaletteCloudToolsCommandId
-            case .handoff: return ContentView.commandPaletteCloudHandoffCommandId
-            case .promoteTemplate: return ContentView.commandPaletteCloudPromoteTemplateCommandId
-            case .status: return ContentView.commandPaletteCloudStatusCommandId
-            }
-        }
-
-        func arguments(vmId: String) -> [String] {
-            switch self {
-            case .status:
-                return ["vm", "status", vmId]
-            case .fork:
-                return ["vm", "fork", vmId]
-            case .snapshot:
-                return ["vm", "snapshot", vmId]
-            case .ports:
-                return ["vm", "ports", vmId]
-            case .tools:
-                return ["vm", "tools", vmId]
-            case .handoff:
-                return ["vm", "handoff", vmId]
-            case .promoteTemplate:
-                return ["vm", "promote-template", vmId]
-            }
-        }
-    }
-
-    /// Closes every workspace attached to a Cloud VM that no longer exists.
-    /// Deleting a machine from the Cloud panel otherwise leaves a "Connected"
-    /// workspace behind that can never reconnect.
-    func closeWorkspaces(forManagedCloudVMID vmID: String) {
-        let target = vmID.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !target.isEmpty else { return }
-        closeLocalWorkspaces(forCloudVMID: target)
-    }
-
-    /// The local workspace attached to a cloud machine, through either transport: the
-    /// legacy remote configuration or the cmux-tui binding. Base wins over other
-    /// workspaces of the same machine.
-    func workspace(forCloudVMID vmID: String) -> Workspace? {
-        let target = vmID.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !target.isEmpty else { return nil }
-        let candidates = liveWorkspaceIdentityTabManagers(preferredTabManager: tabManager)
-            .flatMap(\.tabs)
-            .filter { $0.cloudVMID?.lowercased() == target }
-        return candidates.first
-    }
-
     /// The workspace that currently hosts a surface, across every window.
     func workspace(containingSurfaceID surfaceID: UUID) -> Workspace? {
         for manager in liveWorkspaceIdentityTabManagers(preferredTabManager: tabManager) {
@@ -9070,115 +8510,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             }
         }
         return nil
-    }
-
-    /// Why this Mac may no longer use Cloud; selects the detail shown on the
-    /// panes that get disconnected.
-    enum CloudVMAccessEndReason {
-        case signOut
-        case managedPolicy
-    }
-
-    /// Tear down every local Cloud VM attachment before the auth session is
-    /// cleared. The VMs remain durable server-side, but no remote socket,
-    /// reconnect command, closed-history entry, or in-flight CLI child may
-    /// survive a signed-out account transition.
-    func prepareCloudVMAccessForSignOut() {
-        endCloudVMAccess(reason: .signOut)
-    }
-
-    /// The one teardown path for "this Mac may no longer use Cloud". Sign-out
-    /// and the `DisableCloud` managed policy share it so neither can leave an
-    /// attach entrypoint, closed-history record, launcher child, or managed
-    /// VPN configuration behind.
-    func endCloudVMAccess(reason: CloudVMAccessEndReason) {
-        SurfaceCatalog.shared.cloudWorkspaceCreationCoordinator.cancelAll()
-        CloudVMActionLauncher.shared.cancelAllForAuthTransition()
-        let disconnectedDetail: String
-        switch reason {
-        case .signOut:
-            disconnectedDetail = String(
-                localized: "machines.signOut.disconnectedDetail",
-                defaultValue: "Cloud VM access ended because cmux signed out."
-            )
-        case .managedPolicy:
-            disconnectedDetail = String(
-                localized: "machines.managedPolicy.disconnectedDetail",
-                defaultValue: "Cloud VM access ended because your organization disabled cmux Cloud."
-            )
-        }
-
-        for manager in liveWorkspaceIdentityTabManagers() {
-            let cloudWorkspaces = manager.tabs.filter { workspace in
-                workspace.isManagedCloudVMWorkspace ||
-                    workspace.panels.values.contains { $0.panelType == .cloudVMLoading }
-            }
-            for workspace in cloudWorkspaces {
-                // Clear the configuration first even when this is the only tab
-                // in a manager (closeWorkspace intentionally refuses to remove
-                // the final tab). This stops reconnect and proxy work immediately.
-                workspace.disconnectRemoteConnection(
-                    clearConfiguration: true,
-                    disconnectedDetail: disconnectedDetail
-                )
-                if manager.tabs.count > 1 {
-                    manager.closeWorkspace(workspace, recordHistory: false)
-                } else {
-                    workspace.withClosedPanelHistorySuppressed {
-                        workspace.teardownAllPanels()
-                    }
-                }
-            }
-        }
-
-        // A manually reopened closed-workspace snapshot is another attach
-        // entrypoint; remove only Cloud VM records while preserving local tab
-        // history for the next account/session.
-        ClosedItemHistoryStore.shared.removeManagedCloudVMRecords()
-        cloudWorkspaceOperationController?.cancelAll()
-        cloudTunnelAccessDidEnd()
-        NotificationCenter.default.post(name: .cmuxCloudVMAccessDidEnd, object: self)
-        _ = saveSessionSnapshotUsingCachedProcessDetectedIndexes(
-            includeScrollback: false,
-            removeWhenEmpty: false
-        )
-    }
-
-    private func currentCloudVMId(tabManager: TabManager) -> String? {
-        guard let workspaceId = tabManager.selectedTabId,
-              let workspace = tabManager.tabs.first(where: { $0.id == workspaceId }) else {
-            return nil
-        }
-        return workspace.cloudVMID
-    }
-
-    private func promptForCloudVMSnapshotId(preferredWindow: NSWindow?) -> String? {
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = String(localized: "command.cloudVM.restore.prompt.title", defaultValue: "Restore Cloud VM")
-        alert.informativeText = String(localized: "command.cloudVM.restore.prompt.message", defaultValue: "Paste a checkpoint or snapshot id to restore.")
-        alert.addButton(withTitle: String(localized: "common.restore", defaultValue: "Restore"))
-        alert.addButton(withTitle: String(localized: "common.cancel", defaultValue: "Cancel"))
-        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24))
-        field.placeholderString = String(localized: "command.cloudVM.restore.prompt.placeholder", defaultValue: "snapshot-id")
-        alert.accessoryView = field
-        let response = alert.runModal()
-        guard response == .alertFirstButtonReturn else { return nil }
-        let snapshotId = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        return snapshotId.isEmpty ? nil : snapshotId
-    }
-
-    private func presentCloudVMNotice(title: String, message: String, preferredWindow: NSWindow?) {
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = title
-        alert.informativeText = message
-        alert.addButton(withTitle: String(localized: "common.ok", defaultValue: "OK"))
-        if let preferredWindow {
-            alert.beginSheetModal(for: preferredWindow, completionHandler: nil)
-        } else {
-            _ = alert.runModal()
-        }
     }
 
     func mainWindowContext(for tabManager: TabManager) -> MainWindowContext? {
@@ -9269,27 +8600,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 )
             }
         }
-        let onCloudVMCompletion: ((CloudVMActionLauncher.Completion) -> Void)? = workspaceGroupTarget == nil ? nil : { [weak context] completion in
-            guard let context, let asyncObserverId else { return }
-            ConfiguredGroupActionAsyncWorkspaceObserver.finishPending(
-                tabManager: context.tabManager,
-                observerId: asyncObserverId,
-                workspaceId: completion.succeeded ? completion.workspaceId : nil
-            )
-        }
         return executeConfiguredCmuxAction(
             action,
             context: context,
             preferredWindow: window,
-            onExecuted: onExecuted,
-            onCloudVMCompletion: onCloudVMCompletion,
-            destination: CloudWorkspaceGroupDestination(
-                tabManager: context.tabManager,
-                groupId: workspaceGroupTarget?.groupId,
-                placement: workspaceGroupTarget?.placement ?? .end,
-                referenceWorkspaceId: workspaceGroupTarget?.referenceWorkspaceId,
-                initialWorkspaceId: initialWorkspaceId
-            )
+            onExecuted: onExecuted
         )
     }
 
@@ -10634,11 +9949,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             },
             onQuitApp: {
                 AppDelegate.requestApplicationTermination()
-            },
-            // Cloud is being removed in this fork: the status item has no Cloud section.
-            cloudMenuEntries: { [] },
-            onCloudMenuWillOpen: {
-                CloudMenuModel.shared.menuWillOpen()
             }
         )
     }
@@ -17648,27 +16958,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 tabManager.selectedTabId = previousSelectedId
             }
         }
-        let onCloudVMCompletion: (CloudVMActionLauncher.Completion) -> Void = { [weak tabManager] completion in
-            guard let tabManager, let asyncObserverId else { return }
-            ConfiguredGroupActionAsyncWorkspaceObserver.finishPending(
-                tabManager: tabManager,
-                observerId: asyncObserverId,
-                workspaceId: completion.succeeded ? completion.workspaceId : nil
-            )
-        }
         let didRun = executeConfiguredCmuxAction(
             action,
             context: context,
             preferredWindow: resolvedWindow(for: context),
-            onExecuted: onExecuted,
-            onCloudVMCompletion: onCloudVMCompletion,
-            destination: CloudWorkspaceGroupDestination(
-                tabManager: tabManager,
-                groupId: groupId,
-                placement: groupPlacement,
-                referenceWorkspaceId: anchorId,
-                initialWorkspaceId: nil
-            )
+            onExecuted: onExecuted
         )
         // executeConfiguredCmuxAction returns false when the action couldn't
         // start at all (unresolved action ref, missing target terminal, etc.).
@@ -17690,21 +16984,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         _ action: CmuxResolvedConfigAction,
         context: MainWindowContext,
         preferredWindow: NSWindow? = nil,
-        onExecuted: (() -> Void)? = nil,
-        onCloudVMCompletion: ((CloudVMActionLauncher.Completion) -> Void)? = nil,
-        destination: CloudWorkspaceGroupDestination? = nil
+        onExecuted: (() -> Void)? = nil
     ) -> Bool {
         switch action.action {
         case .builtIn(let builtIn):
             switch builtIn {
             case .newWorkspace:
-                if let vmID = context.tabManager.selectedWorkspace?.cloudVMID, !vmID.isEmpty {
-                    let didStart = performNewCloudWorkspaceOnCurrentMachineAction(
-                        tabManager: context.tabManager, vmID: vmID, destination: destination
-                    )
-                    if didStart { onExecuted?() }
-                    return didStart
-                }
                 // Same routing as Cmd+N: on an active mirror workspace the
                 // built-in action creates a session on that mirror's host.
                 if remoteTmuxController.handleNewWorkspaceRequested(
@@ -17718,14 +17003,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 return true
             case .newAgentChat: return performConfiguredNewAgentChatAction(context: context, preferredWindow: preferredWindow, onExecuted: onExecuted)
             case .cloudVM:
-                let didStart = performCloudVMAction(
-                    tabManager: context.tabManager,
-                    preferredWindow: resolvedWindow(for: context) ?? preferredWindow,
-                    debugSource: "configured.cmux.cloudvm",
-                    onCompletion: onCloudVMCompletion
-                )
-                if didStart { onExecuted?() }
-                return didStart
+                // Cloud VMs are gone in this fork.
+                return false
             case .mobileConnect:
                 let workspace = performMobileConnectWorkspaceAction(
                     tabManager: context.tabManager,

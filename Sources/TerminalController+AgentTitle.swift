@@ -66,10 +66,7 @@ extension TerminalController {
                 : workspace.panelIdFromSurfaceId(TabID(uuid: panelId))
             guard let resolvedPanelId else { return }
             found = true
-            applied = SurfaceCatalog.shared.submitCloudPanelRename(
-                workspace: workspace, panelID: resolvedPanelId, title: title, source: .auto,
-                context: CloudAgentNameContext(wire: params["cloud_name_context"])
-            ) ?? tabManager.updatePanelTitle(tabId: workspaceId, panelId: resolvedPanelId, title: title)
+            applied = tabManager.updatePanelTitle(tabId: workspaceId, panelId: resolvedPanelId, title: title)
         }
 
         guard found else {
@@ -170,10 +167,7 @@ extension TerminalController {
                     : workspace.panelIdFromSurfaceId(TabID(uuid: panelId))
                 if let resolvedPanelId,
                    !(panelOnlyIfMultiple && workspace.panels.count < 2) {
-                    panelApplied = SurfaceCatalog.shared.submitCloudPanelRename(
-                        workspace: workspace, panelID: resolvedPanelId, title: title, source: .auto,
-                        context: CloudAgentNameContext(wire: params["cloud_name_context"])
-                    ) ?? workspace.setPanelCustomTitle(panelId: resolvedPanelId, title: title, source: .auto)
+                    panelApplied = workspace.setPanelCustomTitle(panelId: resolvedPanelId, title: title, source: .auto)
                 }
             }
         }
@@ -205,9 +199,9 @@ extension TerminalController {
     @MainActor
     private func cloudNameProbe(workspaceId: UUID, panelId: UUID, manager: TabManager) -> V2CallResult {
         guard let workspace = manager.workspacesById[workspaceId],
-              let resolved = workspace.panels[panelId] != nil ? panelId : workspace.panelIdFromSurfaceId(TabID(uuid: panelId))
+              workspace.panels[panelId] != nil || workspace.panelIdFromSurfaceId(TabID(uuid: panelId)) != nil
         else { return .ok([:]) }
-        let context = SurfaceCatalog.shared.cloudAgentNameContext(workspaceID: workspaceId, panelID: resolved)
-        return .ok(["cloud_name_context": v2OrNull(context?.wire)])
+        // Cloud names are gone: a local pane never has a Cloud name context.
+        return .ok(["cloud_name_context": NSNull()])
     }
 }

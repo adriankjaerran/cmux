@@ -7,9 +7,6 @@ struct PaneTransferSourceResolver {
     enum Source: Equatable {
         case vaultSession(SessionEntry)
         case filePreview(FilePreviewDragEntry)
-        /// A Cloud tree row: catalog resources (terminals, screens, browsers) on this Mac or a
-        /// machine — one, or a whole workspace's worth.
-        case surfaceResources(SurfaceResourceGroup)
         /// A sidebar workspace row: dropping it on a pane merges its tabs there.
         case workspaceMerge(UUID)
         case rightSidebarTool(RightSidebarMode)
@@ -19,14 +16,12 @@ struct PaneTransferSourceResolver {
     typealias VaultSessionRegistry = @MainActor () -> SessionDragRegistry?
     typealias TabTransferRegistry = @MainActor () -> TabDragTransferRegistry?
     typealias FilePreviewLookup = @MainActor (UUID) -> FilePreviewDragEntry?
-    typealias SurfaceResourceLookup = @MainActor (UUID) -> SurfaceResourceGroup?
     typealias LivenessLookup = @MainActor (UUID) -> Bool
     typealias WorkspaceMergeLookup = @MainActor (UUID) -> UUID?
 
     private let vaultSessionRegistry: VaultSessionRegistry
     private let tabTransferRegistry: TabTransferRegistry
     private let filePreview: FilePreviewLookup
-    private let surfaceResource: SurfaceResourceLookup
     private let surfaceIsLive: LivenessLookup
     private let workspaceMerge: WorkspaceMergeLookup
 
@@ -40,9 +35,6 @@ struct PaneTransferSourceResolver {
         filePreview: @escaping FilePreviewLookup = { id in
             FilePreviewDragRegistry.shared.entry(id: id)
         },
-        surfaceResource: @escaping SurfaceResourceLookup = { id in
-            SurfaceResourceDragRegistry.shared.group(id: id)
-        },
         surfaceIsLive: @escaping LivenessLookup = { id in
             AppDelegate.shared?.locateContainerSurface(tabId: id) != nil
         },
@@ -53,7 +45,6 @@ struct PaneTransferSourceResolver {
         self.vaultSessionRegistry = vaultSessionRegistry
         self.tabTransferRegistry = tabTransferRegistry
         self.filePreview = filePreview
-        self.surfaceResource = surfaceResource
         self.surfaceIsLive = surfaceIsLive
         self.workspaceMerge = workspaceMerge
     }
@@ -102,7 +93,6 @@ struct PaneTransferSourceResolver {
             return .vaultSession(entry)
         }
         if let entry = filePreview(id) { return .filePreview(entry) }
-        if let group = surfaceResource(id) { return .surfaceResources(group) }
         if let workspaceId = workspaceMerge(id) { return .workspaceMerge(workspaceId) }
         return nil
     }
@@ -115,8 +105,6 @@ struct PaneTransferSourceResolver {
             vaultSessionRegistry()?.discard(id: id)
         case .filePreview:
             FilePreviewDragRegistry.shared.discard(id: id)
-        case .surfaceResources:
-            SurfaceResourceDragRegistry.shared.discard(id: id)
         case .workspaceMerge:
             WorkspaceMergeDragRegistry.shared.discard(id: id)
         case .surface, .rightSidebarTool:
@@ -137,7 +125,7 @@ struct PaneTransferSourceResolver {
         switch source {
         case .surface, .rightSidebarTool:
             tabTransferRegistry()?.finish(from: pasteboard)
-        case .vaultSession, .filePreview, .surfaceResources, .workspaceMerge:
+        case .vaultSession, .filePreview, .workspaceMerge:
             finish(source, id: id)
         }
     }

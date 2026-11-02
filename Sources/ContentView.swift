@@ -1029,10 +1029,6 @@ struct ContentView: View {
     @State private var commandPaletteSearchCorpus: [CommandPaletteSearchCorpusEntry<String>] = []
     @State private var commandPaletteSearchCorpusByID: [String: CommandPaletteSearchCorpusEntry<String>] = [:]
     @State private var commandPaletteSearchCommandsByID: [String: CommandPaletteCommand] = [:]
-    @State private var commandPaletteCloudWorkspaceTargetsCache: [CommandPaletteCloudWorkspaceTarget] = []
-    @State private var commandPaletteCloudWorkspaceTargetsFingerprint: Int?
-    @State private var commandPaletteCloudWorkspaceTargetsCacheRevision: UInt64 = 0
-    @State private var commandPaletteCloudWorkspaceTargetsCachedRevision: UInt64?
 
     private var isCommandPalettePresented: Bool {
         commandPaletteOverlayState.isCommandPalettePresented
@@ -2696,17 +2692,6 @@ struct ContentView: View {
                     ])
                 }
             }
-        })
-
-        view = AnyView(view.onReceive(
-            NotificationCenter.default.publisher(for: SurfaceCatalog.didChangeNotification, object: SurfaceCatalog.shared)
-        ) { _ in
-            invalidateCommandPaletteCloudWorkspaceTargets()
-        })
-        view = AnyView(view.onReceive(
-            NotificationCenter.default.publisher(for: CloudSidebarOrganizationStore.didChangeNotification, object: SurfaceCatalog.shared.sidebarOrganization)
-        ) { _ in
-            invalidateCommandPaletteCloudWorkspaceTargets()
         })
 
         view = AnyView(view.onChange(of: tabManager.selectedTabId) { newValue in
@@ -5093,8 +5078,7 @@ struct ContentView: View {
         return commandPaletteEntriesFingerprint(
             for: scope,
             includeSurfaces: commandPaletteSwitcherIncludesSurfaceEntries,
-            commandsContext: scope == .commands ? commandPaletteCachedCommandsContext() : nil,
-            cloudWorkspaceTargets: nil
+            commandsContext: scope == .commands ? commandPaletteCachedCommandsContext() : nil
         )
     }
 
@@ -5202,24 +5186,21 @@ struct ContentView: View {
     private func commandPaletteEntries(for scope: CommandPaletteListScope) -> [CommandPaletteCommand] {
         commandPaletteEntries(
             for: scope,
-            includeSurfaces: commandPaletteSwitcherIncludesSurfaceEntries,
-            cloudWorkspaceTargets: scope == .switcher ? commandPaletteCloudWorkspaceTargets() : nil
+            includeSurfaces: commandPaletteSwitcherIncludesSurfaceEntries
         )
     }
 
     private func commandPaletteEntries(
         for scope: CommandPaletteListScope,
         includeSurfaces: Bool,
-        commandsContext: CommandPaletteCommandsContext? = nil,
-        cloudWorkspaceTargets: [CommandPaletteCloudWorkspaceTarget]? = nil
+        commandsContext: CommandPaletteCommandsContext? = nil
     ) -> [CommandPaletteCommand] {
         switch scope {
         case .commands:
             return commandPaletteCommands(commandsContext: commandsContext ?? commandPaletteCachedCommandsContext())
         case .switcher:
             return commandPaletteSwitcherEntries(
-                includeSurfaces: includeSurfaces,
-                cloudWorkspaceTargets: cloudWorkspaceTargets
+                includeSurfaces: includeSurfaces
             )
         }
     }
@@ -5256,14 +5237,10 @@ struct ContentView: View {
         let commandsContext = scope == .commands
             ? commandPaletteCommandsContext(terminalOpenTargets: terminalOpenTargets)
             : nil
-        let cloudWorkspaceTargets = scope == .switcher
-            ? commandPaletteCloudWorkspaceTargets()
-            : nil
         let fingerprint = commandPaletteEntriesFingerprint(
             for: scope,
             includeSurfaces: includeSurfaces,
-            commandsContext: commandsContext,
-            cloudWorkspaceTargets: cloudWorkspaceTargets
+            commandsContext: commandsContext
         )
         guard force || cachedCommandPaletteScope != scope || cachedCommandPaletteFingerprint != fingerprint else {
             return
@@ -5272,8 +5249,7 @@ struct ContentView: View {
         let entries = commandPaletteEntries(
             for: scope,
             includeSurfaces: includeSurfaces,
-            commandsContext: commandsContext,
-            cloudWorkspaceTargets: cloudWorkspaceTargets
+            commandsContext: commandsContext
         )
         commandPaletteSearchCommandsByID = CommandPaletteSearchOrchestrator.firstValueDictionary(
             entries,
@@ -5648,8 +5624,7 @@ struct ContentView: View {
     private func commandPaletteEntriesFingerprint(
         for scope: CommandPaletteListScope,
         includeSurfaces: Bool,
-        commandsContext: CommandPaletteCommandsContext? = nil,
-        cloudWorkspaceTargets: [CommandPaletteCloudWorkspaceTarget]? = nil
+        commandsContext: CommandPaletteCommandsContext? = nil
     ) -> Int {
         switch scope {
         case .commands:
@@ -5658,8 +5633,7 @@ struct ContentView: View {
             )
         case .switcher:
             return commandPaletteSwitcherEntriesFingerprint(
-                includeSurfaces: includeSurfaces,
-                cloudWorkspaceTargets: cloudWorkspaceTargets
+                includeSurfaces: includeSurfaces
             )
         }
     }
@@ -5672,8 +5646,7 @@ struct ContentView: View {
     }
 
     private func commandPaletteSwitcherEntriesFingerprint(
-        includeSurfaces: Bool,
-        cloudWorkspaceTargets: [CommandPaletteCloudWorkspaceTarget]? = nil
+        includeSurfaces: Bool
     ) -> Int {
         if commandPaletteCurrentWorkSnapshot != nil {
             var hasher = Hasher()
@@ -5730,7 +5703,6 @@ struct ContentView: View {
                 fingerprint = fingerprint &* 31 &+ Int(truncatingIfNeeded: context.tabManager.focusHistoryRevision)
             }
         }
-        fingerprint = fingerprint &* 31 &+ (commandPaletteCloudWorkspaceTargetsFingerprint ?? 0)
         return fingerprint
     }
 
@@ -5828,110 +5800,9 @@ struct ContentView: View {
         }
     }
 
-    private struct CommandPaletteCloudWorkspaceTarget {
-        let machine: SurfaceMachineID
-        let workspace: SurfaceRemoteWorkspace
-        let group: SurfaceResourceGroup
-    }
-
-    private func commandPaletteCloudWorkspaceTargets() -> [CommandPaletteCloudWorkspaceTarget] {
-        guard CloudMachinesFeature.isEnabled else { return [] }
-        if commandPaletteCloudWorkspaceTargetsCachedRevision == commandPaletteCloudWorkspaceTargetsCacheRevision {
-            return commandPaletteCloudWorkspaceTargetsCache
-        }
-        let catalog = SurfaceCatalog.shared
-        let snapshot = catalog.snapshot
-        let allNodes = CloudTreeNodeBuilder.nodes(
-            machines: [],
-            snapshot: snapshot,
-            localWorkspaces: [],
-            includeLocalMachine: false
-        )
-        let sidebarNodes = CloudSidebarOrganizationTree(nodes: allNodes).arrange(
-            using: catalog.sidebarOrganization.state
-        )
-        let sidebarWorkspaceIDs = Set(
-            CloudTreeNodeBuilder.flattened(sidebarNodes).compactMap { node -> String? in
-                guard case .workspace(let machine, let workspace, _, _, _) = node.kind else { return nil }
-                return "\(machine.rawValue):\(workspace.id)"
-            }
-        )
-
-        let orderedNodes = CloudTreeNodeBuilder.flattened(sidebarNodes) +
-            CloudTreeNodeBuilder.flattened(allNodes).filter { node in
-                guard case .workspace(let machine, let workspace, _, _, _) = node.kind else { return false }
-                return !sidebarWorkspaceIDs.contains("\(machine.rawValue):\(workspace.id)")
-            }
-
-        var seen = Set<String>()
-        let targets: [CommandPaletteCloudWorkspaceTarget] = orderedNodes.compactMap { node in
-            guard case .workspace(let machine, let workspace, _, _, _) = node.kind,
-                  let group = node.dragGroup,
-                  seen.insert("\(machine.rawValue):\(workspace.id)").inserted else { return nil }
-            return CommandPaletteCloudWorkspaceTarget(machine: machine, workspace: workspace, group: group)
-        }
-        var fingerprintHasher = Hasher()
-        for target in targets {
-            fingerprintHasher.combine(target.machine.rawValue)
-            let machineName = catalog.machineInfo(for: target.machine)?.name ?? target.machine.rawValue
-            fingerprintHasher.combine(machineName)
-            fingerprintHasher.combine(target.workspace.id)
-            fingerprintHasher.combine(target.workspace.name)
-            fingerprintHasher.combine(target.group)
-        }
-        commandPaletteCloudWorkspaceTargetsFingerprint = fingerprintHasher.finalize()
-        commandPaletteCloudWorkspaceTargetsCache = targets
-        commandPaletteCloudWorkspaceTargetsCachedRevision = commandPaletteCloudWorkspaceTargetsCacheRevision
-        return targets
-    }
-
-    private func openCommandPaletteCloudWorkspace(_ target: CommandPaletteCloudWorkspaceTarget) {
-        // Already open in any window: go there instead of opening a second copy here (#19967).
-        if let shownIn = SurfaceCatalog.shared.localWorkspaceShowing(
-            remoteWorkspaceID: target.workspace.id,
-            placements: target.group.placements
-        ) {
-            switch AppDelegate.shared?.selectCloudTreeLocalWorkspace(shownIn, from: tabManager) {
-            case .selected:
-                return
-            case .openInUnfocusableWindow:
-                NSSound.beep()
-                return
-            case .notOpen, nil:
-                break
-            }
-        }
-        let actions = CloudTreeNodeActions.bound(
-            navigationHost: AppDelegate.makeCloudTerminalNavigationHost(),
-            catalog: { SurfaceCatalog.shared },
-            selectedWorkspaceID: { self.tabManager.selectedTabId },
-            selectLocalWorkspace: { workspaceID in
-                AppDelegate.shared?.selectCloudTreeLocalWorkspace(workspaceID, from: self.tabManager)
-            },
-            onDidMutate: {},
-            onFailure: { _ in NSSound.beep() },
-            refresh: {},
-            workspaceCreationHost: { CloudWorkspaceCreationHost(manager: self.tabManager) }
-        )
-        actions.openWorkspace(target.machine, target.workspace, target.group)
-    }
-
-    private func invalidateCommandPaletteCloudWorkspaceTargets() {
-        commandPaletteCloudWorkspaceTargetsCacheRevision &+= 1
-        commandPaletteCloudWorkspaceTargetsCachedRevision = nil
-        commandPaletteCloudWorkspaceTargetsCache = []
-        commandPaletteCloudWorkspaceTargetsFingerprint = nil
-        guard isCommandPalettePresented,
-              commandPaletteListScope == .switcher else { return }
-        scheduleCommandPaletteResultsRefresh(
-            query: commandPaletteQuery,
-            forceSearchCorpusRefresh: true
-        )
-    }
 
     private func commandPaletteSwitcherEntries(
-        includeSurfaces: Bool,
-        cloudWorkspaceTargets: [CommandPaletteCloudWorkspaceTarget]? = nil
+        includeSurfaces: Bool
     ) -> [CommandPaletteCommand] {
         if let snapshot = commandPaletteCurrentWorkSnapshot {
             return commandPaletteCurrentWorkEntries(snapshot: snapshot)
@@ -6046,37 +5917,6 @@ struct ContentView: View {
                     nextRank += 1
                 }
             }
-        }
-
-        let cloudWorkspaceKind = String(localized: "commandPalette.kind.cloudWorkspace", defaultValue: "Cloud Workspace")
-        for target in cloudWorkspaceTargets ?? commandPaletteCloudWorkspaceTargets() {
-            let machineName = SurfaceCatalog.shared.machineInfo(for: target.machine)?.name ?? target.machine.rawValue
-            let title = target.workspace.name
-            let commandID = "switcher.cloudWorkspace.\(target.machine.rawValue).\(target.workspace.id)"
-            let keywords = CommandPaletteSwitcherSearchIndexer(
-                baseKeywords: [
-                    "cloud", "workspace", "remote", "vm", "open", "go", "switch", title, machineName
-                ],
-                metadata: CommandPaletteSwitcherSearchMetadata(),
-                detail: .workspace
-            ).keywords
-            entries.append(
-                CommandPaletteCommand(
-                    id: commandID,
-                    rank: nextRank,
-                    title: title,
-                    subtitle: Self.commandPaletteSwitcherSubtitle(base: cloudWorkspaceKind + " • " + machineName, windowLabel: nil),
-                    shortcutHint: nil,
-                    kindLabel: cloudWorkspaceKind,
-                    keywords: keywords,
-                    dismissOnRun: true,
-                    leadingLabel: "",
-                    action: {
-                        self.openCommandPaletteCloudWorkspace(target)
-                    }
-                )
-            )
-            nextRank += 1
         }
 
         return entries
@@ -7410,10 +7250,8 @@ struct ContentView: View {
         snapshot.setBool(CommandPaletteContextKeys.browserManagedByPolicy, BrowserAvailabilitySettings.isManagedByPolicy)
         snapshot.setBool(CommandPaletteContextKeys.mobileRemoteControlManagedByPolicy, ManagedDevicePolicy().isEnforced(.disableRemoteControl) || ManagedDevicePolicy().isIncomingDeviceAccessDisabled)
         snapshot.setBool(CommandPaletteContextKeys.computerUseUXEnabled, featureFlags.isComputerUseUXEnabled)
-        snapshot.setString(
-            CommandPaletteContextKeys.accountUpgradeOffer,
-            Self.commandPaletteUpgradeOfferValue(ProUpgradePresenter.currentUpgradeOffer)
-        )
+        // No pricing in this fork: never an upgrade offer.
+        snapshot.setString(CommandPaletteContextKeys.accountUpgradeOffer, "none")
 
         let focusedDock = AppDelegate.shared?.focusedDockStoreForShortcut(
             preferredWindow: observedWindow ?? NSApp.keyWindow ?? NSApp.mainWindow
@@ -7437,35 +7275,13 @@ struct ContentView: View {
                 CommandPaletteContextKeys.workspaceIsCloud,
                 workspace.isManagedCloudVMWorkspace || workspace.cloudVMID != nil
             )
-            // Cloud machine capabilities came from the cmux-tui provider (gone in Phase 9.12 (E)).
-            let cloudCapabilities: VMCapabilities? = nil
-            snapshot.setBool(
-                CommandPaletteContextKeys.cloudVMCapabilitiesKnown,
-                cloudCapabilities != nil
-            )
-            // Legacy managed workspaces can predate the surface provider's capability
-            // snapshot. Preserve their existing command visibility until the provider
-            // publishes authoritative server capabilities.
-            snapshot.setBool(
-                CommandPaletteContextKeys.cloudVMSupportsFork,
-                cloudCapabilities?.canFork ?? true
-            )
-            snapshot.setBool(
-                CommandPaletteContextKeys.cloudVMSupportsSnapshot,
-                cloudCapabilities?.snapshot ?? true
-            )
-            snapshot.setBool(
-                CommandPaletteContextKeys.cloudVMSupportsRestore,
-                cloudCapabilities?.restore ?? true
-            )
-            snapshot.setBool(
-                CommandPaletteContextKeys.cloudVMSupportsPorts,
-                cloudCapabilities?.ports ?? true
-            )
-            snapshot.setBool(
+            // No Cloud machine capabilities since Phase 9.12: unknown, legacy visibility kept.
+            snapshot.setBool(CommandPaletteContextKeys.cloudVMCapabilitiesKnown, false)
+            for key in [
+                CommandPaletteContextKeys.cloudVMSupportsFork, CommandPaletteContextKeys.cloudVMSupportsSnapshot,
+                CommandPaletteContextKeys.cloudVMSupportsRestore, CommandPaletteContextKeys.cloudVMSupportsPorts,
                 CommandPaletteContextKeys.cloudVMSupportsExec,
-                cloudCapabilities?.exec ?? true
-            )
+            ] { snapshot.setBool(key, true) }
             snapshot.setString(CommandPaletteContextKeys.workspaceName, workspaceDisplayName(workspace))
             snapshot.setBool(CommandPaletteContextKeys.workspaceHasCustomName, workspace.customTitle != nil)
             snapshot.setBool(CommandPaletteContextKeys.workspaceHasCustomDescription, workspace.hasCustomDescription)
@@ -7701,8 +7517,6 @@ struct ContentView: View {
         }
 
         var contributions: [CommandPaletteCommandContribution] = [Self.commandPaletteFindWorkContribution()]
-        contributions.append(contentsOf: Self.commandPaletteCloudCommandContributions())
-        contributions.append(Self.commandPaletteCloudAvailabilityInfoContribution())
         contributions.append(contentsOf: Self.commandPaletteComputerUseContributions())
 
         contributions.append(
@@ -9194,7 +9008,6 @@ struct ContentView: View {
         }
         registerViewCommandHandlers(&registry)
         registerCanvasCommandHandlers(&registry)
-        registerCloudCommandHandlers(&registry)
         registerComputerUseCommandPaletteHandlers(&registry)
         registerSavedLayoutCommandHandlers(&registry)
         registerKeymapPresetCommandHandlers(&registry)
@@ -9250,7 +9063,6 @@ struct ContentView: View {
                 debugSource: "palette.mobileConnect"
             )
         }
-        registerProCommandHandlers(&registry)
         registry.register(commandId: "palette.makeDefaultTerminal") {
             DefaultTerminalUserAction.setAsDefault(debugSource: "palette.makeDefaultTerminal")
         }
@@ -10234,7 +10046,6 @@ struct ContentView: View {
     }
 
     private func openCommandPaletteSwitcher(includeCollapsedFolders: Bool = false) {
-        invalidateCommandPaletteCloudWorkspaceTargets()
         // Switching between ⌘P and ⌘⇧P while open swaps the list instead of closing.
         let modeChanged = isCommandPalettePresented
             && commandPaletteSwitcherIncludesCollapsedFolders != includeCollapsedFolders
@@ -12951,7 +12762,7 @@ struct VerticalTabsSidebar: View, Equatable {
 
     private func extensionSidebarScrollArea(renderContext: WorkspaceListRenderContext) -> some View {
         extensionSidebarScrollAreaContent(renderContext: renderContext)
-            .sidebarCloudBindingObservations(ids: renderContext.workspaceIds, models: renderContext.tabs.map(\.cloudBindingState)) { refreshExtensionSidebarSnapshot() }
+            .sidebarWorkspaceSetObservation(ids: renderContext.workspaceIds) { refreshExtensionSidebarSnapshot() }
             .sidebarProcessTitleObservations(ids: renderContext.workspaceIds, models: renderContext.tabs.map(\.sidebarProcessTitleObservation)) { refreshExtensionSidebarSnapshot() }
             .onAppear { refreshExtensionSidebarObservationPublishers(tabs: renderContext.tabs) }
             .onChange(of: renderContext.workspaceIds) { _, _ in
@@ -15851,15 +15662,6 @@ private struct SidebarHelpMenuButton: View {
                 accessibilityIdentifier: "SidebarHelpMenuOptionWelcome",
                 isExternalLink: false
             )
-            if let offer = ProUpgradePresenter.currentUpgradeOffer {
-                helpOptionButton(
-                    title: ProUpgradePresenter.upgradeMenuTitle(for: offer),
-                    action: .upgrade,
-                    accessibilityIdentifier: "SidebarHelpMenuOptionUpgrade",
-                    isExternalLink: false,
-                    trailingSystemImage: "sparkles"
-                )
-            }
             helpOptionButton(
                 title: String(localized: "menu.app.settings", defaultValue: "Settings…"),
                 action: .settings,
@@ -15982,7 +15784,7 @@ private struct SidebarHelpMenuButton: View {
                 }
             }
         case .upgrade:
-            ProUpgradePresenter.present(source: .sidebarHelpMenu)
+            break
         case .importBrowserData:
             isPopoverPresented = false
             DispatchQueue.main.async {

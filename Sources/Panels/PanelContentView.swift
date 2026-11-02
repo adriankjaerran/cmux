@@ -197,10 +197,8 @@ struct PanelContentView: View {
                     .onTapGesture { onRequestPanelFocus() }
             }
         case .cloudVMLoading:
-            if let loadingPanel = panel as? CloudVMLoadingPanel {
-                CloudVMLoadingPanelView(panel: loadingPanel)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+            // Cloud VMs went with Sources/Cloud (Phase 9.12); the case stays for old sessions.
+            EmptyView()
         case .mobilePairing:
             // Mobile pairing went with Sources/Mobile (Phase 9.14); the case stays for old sessions.
             EmptyView()
@@ -208,13 +206,8 @@ struct PanelContentView: View {
             // Sign-in went with Sources/Auth (Phase 9.13); the case stays for old sessions.
             EmptyView()
         case .cloudVPNSetup:
-            if let cloudVPNSetupPanel = panel as? CloudVPNSetupPanel {
-                CloudVPNSetupPanelView(
-                    model: cloudVPNSetupPanel.model,
-                    appearance: appearance,
-                    onRequestPanelFocus: onRequestPanelFocus
-                )
-            }
+            // The Cloud VPN setup went with Sources/Cloud (Phase 9.12); the case stays for old sessions.
+            EmptyView()
         case .chief:
             // Fork: Chief was removed; no Chief panel exists.
             EmptyView()

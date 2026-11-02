@@ -40,7 +40,7 @@ extension SurfaceCatalog {
             staleMachineIDs: Set(cloudStateObservations.filter { $0.value.freshness != .current }.keys),
             displayCreationMachines: displayCreationMachines.isEmpty ? nil : displayCreationMachines,
             pendingDisplayCreations: activeDisplayCreations.isEmpty ? nil : activeDisplayCreations,
-            cloudDisplayMemberships: cloudDisplayMemberships()
+            cloudDisplayMemberships: []
         )
     }
 
@@ -48,60 +48,8 @@ extension SurfaceCatalog {
     /// sidebar/CLI readers, so every entrypoint sees one optimistic tree.
     var snapshot: SurfaceCatalogSnapshot {
         var result = authoritativeSnapshot
-        applyPendingWorkspaceCreations(to: &result)
-        applyPendingDeletions(to: &result)
         applyPendingRenames(to: &result)
         return result
-    }
-
-    private func applyPendingWorkspaceCreations(to result: inout SurfaceCatalogSnapshot) {
-        var pending: [SurfaceMachineID: [String: UUID]] = [:]
-        for operation in cloudWorkspaceCreationCoordinator.operations.values {
-            guard let receipt = operation.receipt, let reservation = operation.reservation,
-                  let index = result.machines.firstIndex(where: { $0.id == operation.machine }) else { continue }
-            pending[operation.machine, default: [:]][receipt.workspace.id] = reservation.workspaceID
-            if result.machines[index].remoteWorkspaces?.contains(where: { $0.id == receipt.workspace.id }) != true {
-                result.machines[index].remoteWorkspaces = (result.machines[index].remoteWorkspaces ?? []) + [receipt.workspace]
-            }
-        }
-        result.pendingWorkspaceCreations = pending.isEmpty ? nil : pending
-    }
-
-    /// Hides workspaces admitted for deletion. Shared browser/display resources
-    /// keep their other placements. Terminals are killed resource-wide by the
-    /// established full-delete contract.
-    private func applyPendingDeletions(to result: inout SurfaceCatalogSnapshot) {
-        let entries = cloudWorkspaceDeletionLedger.entries
-        guard !entries.isEmpty else { return }
-        func hidden(_ machine: SurfaceMachineID, _ workspace: String) -> Bool {
-            entries[.init(machine: machine, workspaceID: workspace)] != nil
-        }
-        let terminalIDs = entries.values.reduce(into: Set<SurfaceResourceID>()) { $0.formUnion($1.terminalIDs) }
-        result.machines = result.machines.map { info in
-            var info = info
-            info.remoteWorkspaces = info.remoteWorkspaces?.filter { !hidden(info.id, $0.id) }
-            return info
-        }
-        let originalResourceIDs = Set(result.resources.map(\.id))
-        result.resources = result.resources.compactMap { resource in
-            if terminalIDs.contains(resource.id) { return nil }
-            let affected = resource.remoteWorkspaces.contains { hidden(resource.machine, $0.id) }
-            guard affected else { return resource }
-            if resource.kind == .terminal { return nil }
-            var resource = resource
-            if let views = resource.remoteViews {
-                resource.remoteViews = views.filter { !hidden(resource.machine, $0.workspace.id) }
-                resource.remoteWorkspace = resource.remoteViews?.first?.workspace
-                if resource.remoteViews?.isEmpty == true { return nil }
-            } else { return nil }
-            return resource
-        }
-        let hiddenIDs = originalResourceIDs.subtracting(result.resources.map(\.id)).union(terminalIDs)
-        result.projections.removeAll { projection in
-            hiddenIDs.contains(projection.resource)
-                || projection.remoteWorkspaceID.map { hidden(projection.resource.machine, $0) } == true
-        }
-        result.pendingWorkspaceDeletions = cloudWorkspaceDeletionLedger.pending
     }
 
     /// Names the person already chose, ahead of the daemon's accepted graph. The

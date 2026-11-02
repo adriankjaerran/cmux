@@ -649,7 +649,7 @@ extension TerminalController: ControlWorkspaceContext {
         // attach whichever verb carried it, so pre-minted daemon credentials
         // cannot route around the `vm.*` gate.
         if let managedCloudVMID, !managedCloudVMID.isEmpty {
-            return .err(code: ManagedCloudPolicy.socketErrorCode, message: CloudMachinesFeature.disabledMessage, data: nil)
+            return .err(code: ManagedCloudPolicy.socketErrorCode, message: CloudUnavailableMessage.text, data: nil)
         }
         guard let owner = AppDelegate.shared?.tabManagerFor(tabId: workspaceId),
               let workspace = owner.tabs.first(where: { $0.id == workspaceId }) else {

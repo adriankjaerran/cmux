@@ -117,7 +117,7 @@ extension BrowserPanel {
         let conditions = BrowserDiscardRestoreStrategy.Conditions(
             isExplicitReload: isExplicitReload,
             usesRemoteWorkspaceProxy: usesRemoteWorkspaceProxy,
-            usesCloudAccessRouting: retainsCloudResourceForDuplication || cloudBrowserMachineID != nil,
+            usesCloudAccessRouting: false,
             hasRecoverableWebContentTermination: hasRecoverableWebContentTermination,
             requiresInsecureHTTPConsent: browserShouldBlockInsecureHTTPURL(url)
         )
@@ -334,8 +334,6 @@ extension BrowserPanel {
     func persistableInteractionStateForSessionSnapshot() -> Data? {
         guard shouldPersistSessionSnapshot(),
               !usesRemoteWorkspaceProxy,
-              !retainsCloudResourceForDuplication,
-              cloudBrowserMachineID == nil,
               navigationDelegate?.activeErrorPageDisplayURL == nil else {
             return nil
         }

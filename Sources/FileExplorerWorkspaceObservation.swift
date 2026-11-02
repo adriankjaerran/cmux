@@ -29,25 +29,10 @@ final class FileExplorerWorkspaceObservation {
                 self.refresh()
             }
         }
-        catalogObserver = NotificationCenter.default.addObserver(
-            forName: SurfaceCatalog.didChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self, weak workspace] notification in
-            MainActor.assumeIsolated {
-                guard let self, let workspace,
-                      let machine = workspace.cloudVMBinding?.vmID else { return }
-                if let changedMachines = notification.userInfo?["machines"] as? [String],
-                   !changedMachines.contains(machine) { return }
-                self.refresh()
-            }
-        }
+        // One initial resolve (the removed Cloud binding stream replayed its revision once).
         bindingChangesTask = Task { @MainActor [weak self, weak workspace] in
-            guard let workspace else { return }
-            for await _ in workspace.cloudBindingState.changes() {
-                guard let self, self.workspace === workspace else { return }
-                self.refresh()
-            }
+            guard let self, let workspace, self.workspace === workspace else { return }
+            self.refresh()
         }
     }
 

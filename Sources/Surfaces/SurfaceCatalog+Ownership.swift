@@ -40,7 +40,7 @@ extension SurfaceCatalog {
     }
 
     func validateOwnership(of resources: [SurfaceResourceID], at destination: SurfaceDestination) throws {
-        guard let workspace = cloudWorkspaceRenameService.environment.workspace(destination.workspaceID)
+        guard let workspace = catalogWorkspace(destination.workspaceID)
                 ?? Workspace.liveWorkspace(id: destination.workspaceID) else {
             throw SurfaceCatalogError.destinationNotFound(destination.workspaceID.uuidString)
         }
@@ -89,7 +89,7 @@ extension SurfaceCatalog {
             return dock.machineOwningSurface(panelID) ?? resource.machine
         }
         if let projection = projection(forPanel: panelID),
-           let workspace = cloudWorkspaceRenameService.environment.workspace(projection.workspaceID)
+           let workspace = catalogWorkspace(projection.workspaceID)
                 ?? Workspace.liveWorkspace(id: projection.workspaceID),
            let machine = workspace.machineOwningSurface(panelID, catalog: self) {
             return machine

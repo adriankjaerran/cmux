@@ -20,8 +20,7 @@ extension Workspace {
         waitAfterCommand: Bool? = nil,
         replayScrollback: String? = nil,
         replayFileURL: URL? = nil,
-        allowTextBoxFocusDefault: Bool = true,
-        nativeReservation: CloudTerminalPaneReservation? = nil
+        allowTextBoxFocusDefault: Bool = true
     ) -> TerminalPanel? {
         guard !isRetiredFromOwningTabManager,
               let oldPanel = terminalPanel(for: panelId),
@@ -93,18 +92,7 @@ extension Workspace {
         oldPanel.removeOwnedSessionScrollbackReplayArtifact()
         oldPanel.surface.teardownSurface()
 
-        let replacementPanel: TerminalPanel
-        if let nativeReservation {
-            let inputRelay = nativeReservation.inputRelay
-            let surface = TerminalSurface(
-                id: panelId, tabId: id, context: launchContext, configTemplate: inheritedConfig,
-                tmuxStartCommand: replacementTmuxStartCommand, focusPlacement: focusPlacement,
-                ioMode: .manualMirror, manualInputHandler: { inputRelay.send($0) },
-                manualInputKeyNameResolver: { RemoteTmuxKeyName(inputEvent: $0)?.value }
-            )
-            replacementPanel = TerminalPanel(workspaceId: id, surface: surface)
-        } else {
-            replacementPanel = TerminalPanel(
+        let replacementPanel = TerminalPanel(
                 id: panelId,
                 workspaceId: id,
                 context: launchContext,
@@ -119,7 +107,6 @@ extension Workspace {
                 focusPlacement: focusPlacement,
                 isRemoteTerminal: oldPanel.surface.isRemoteTerminal
             )
-        }
         replacementPanel.adoptOwnedSessionScrollbackReplayArtifact(effectiveReplayFileURL)
         // Respawn replaces the panel object but keeps the logical tab identity.
         replacementPanel.adoptStableSurfaceId(oldPanel.stableSurfaceId)
@@ -127,7 +114,6 @@ extension Workspace {
             replacementPanel,
             allowTextBoxFocusDefault: shouldFocus && allowTextBoxFocusDefault
         )
-        if let nativeReservation { cloudPendingCreations[panelId] = nativeReservation }
         panels[panelId] = replacementPanel
         panelTitles[panelId] = replacementPanel.displayTitle
         if let customTitle {

@@ -14,8 +14,7 @@ struct FileExplorerWorkspaceRootResolver {
     func resolve(_ workspace: Workspace) -> FileExplorerWorkspaceRoot {
         if workspace.usesRemoteDirectoryProvenance {
             // A projection without an unambiguous workspace owner never becomes local or SSH.
-            if !workspace.cloudBindingState.projectedResources.isEmpty ||
-                catalog.projectionRecords(forWorkspace: workspace.id).contains(where: { !$0.resource.machine.isLocal }) {
+            if catalog.projectionRecords(forWorkspace: workspace.id).contains(where: { !$0.resource.machine.isLocal }) {
                 return .none
             }
             guard let configuration = workspace.remoteConfiguration,

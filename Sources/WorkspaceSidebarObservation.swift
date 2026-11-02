@@ -32,7 +32,6 @@ extension View {
         task(id: ids) { @MainActor in
             await withTaskGroup(of: Void.self) { group in
                 for (id, workspace) in zip(ids, workspaces) {
-                    let cloudChanges = workspace.cloudBindingState.changes()
                     let immediateChanges = workspace.sidebarImmediateObservationPublisher
                         .values
                     let debouncedChanges = workspace.sidebarObservationPublisher
@@ -44,13 +43,10 @@ extension View {
                         .receive(on: DispatchQueue.main)
                         .debounce(for: debouncedInterval, scheduler: DispatchQueue.main)
                         .values
-                    group.addTask { @MainActor in
-                        var first = true
-                        for await _ in cloudChanges {
-                            if Task.isCancelled { break }
-                            if first && !deliverInitialValue { first = false; continue }
-                            first = false
-                            onChange(id)
+                    // The removed Cloud binding stream delivered one initial value.
+                    if deliverInitialValue {
+                        group.addTask { @MainActor in
+                            if !Task.isCancelled { onChange(id) }
                         }
                     }
                     group.addTask { @MainActor in
@@ -76,24 +72,13 @@ extension View {
         }
     }
 
-    /// Keeps extension sidebar projections current using the same Cloud invalidation source.
-    func sidebarCloudBindingObservations(
+    /// Refreshes extension sidebar projections when the workspace set changes.
+    func sidebarWorkspaceSetObservation(
         ids: [UUID],
-        models: [WorkspaceCloudBindingState],
         onChange: @MainActor @escaping () -> Void
     ) -> some View {
         task(id: ids) { @MainActor in
-            await withTaskGroup(of: Void.self) { group in
-                for model in models {
-                    let changes = model.changes()
-                    group.addTask { @MainActor in
-                        for await _ in changes {
-                            if Task.isCancelled { break }
-                            onChange()
-                        }
-                    }
-                }
-            }
+            if !ids.isEmpty { onChange() }
         }
     }
 

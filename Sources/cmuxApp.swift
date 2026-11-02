@@ -554,10 +554,11 @@ struct cmuxApp: App {
                     appDelegate.openDebugScrollbackTab(nil)
                 }
 
-                IrohAndAgentSessionDebugMenuButtons(
+                AgentSessionDebugMenuButtons(
                     openReact: { appDelegate.openDebugAgentSessionReact(nil) },
                     openSolid: { appDelegate.openDebugAgentSessionSolid(nil) }
                 )
+                NotificationDebugMenuButtons()
 
                 Button("Open Workspaces for All Workspace Colors") {
                     appDelegate.openDebugColorComparisonWorkspaces(nil)
@@ -585,41 +586,6 @@ struct cmuxApp: App {
                     }
                     Button("Browser Import Hint Debug…") {
                         BrowserImportHintDebugWindowController.shared.show()
-                    }
-                    Button("Cloud Tree Style Gallery…") {
-                        CloudTreeStyleGalleryWindowController.shared.show()
-                    }
-                    Button(String(localized: "debug.menu.cloudSidebarSpacingLab", defaultValue: "Cloud Sidebar Spacing Lab…")) {
-                        AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
-                    }
-                    Menu("Cloud Terminal Error Style") {
-                        Button("Preview in Selected Terminal") {
-                            guard let workspace = activeTabManager.selectedWorkspace,
-                                  let panelID = workspace.focusedPanelId,
-                                  workspace.terminalPanel(for: panelID) != nil else { return }
-                            let failure = CloudPaneCreationFailure(
-                                machine: .cloud("preview"),
-                                error: CancellationError()
-                            )
-                            workspace.setCloudMaterializationFailure(
-                                surfaceID: panelID,
-                                detail: failure.errorText,
-                                reference: "Design preview"
-                            )
-                        }
-                        Divider()
-                        Button("Compact") {
-                            UserDefaults.standard.set("compact", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
-                        Button("Compact + 1px Border") {
-                            UserDefaults.standard.set("compact-bordered", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
-                        Button("Dialog") {
-                            UserDefaults.standard.set("dialog", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
-                        Button("Inline") {
-                            UserDefaults.standard.set("inline", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
                     }
                     Button(
                         String(
@@ -1578,7 +1544,6 @@ struct cmuxApp: App {
         BackgroundDebugWindowController.shared.show()
         StartupAppearanceDebugWindowController.shared.show()
         MenuBarExtraDebugWindowController.shared.show()
-        AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
         PDFPreviewChromeDebugWindowController.shared.show()
         FeedPreviewWindowController.shared.show()
         FeedTextEditorDebugWindowController.shared.show()
@@ -1608,10 +1573,8 @@ private struct MainWindowBootstrapView: View {
     }
 }
 private let cmuxAuxiliaryWindowIdentifiers: Set<String> = [
-    "cmux.newMachine",
     "cmux.settings",
     "cmux.about",
-    "cmux.cloud.welcome",
     "cmux.licenses",
     "cmux.browser-popup",
     "cmux.browserProfilePopoverDebug",
@@ -1634,8 +1597,6 @@ private let cmuxAuxiliaryWindowIdentifiers: Set<String> = [
     "cmux.sidebarDebug",
     "cmux.menubarDebug",
     "cmux.spinnerGallery",
-    "cmux.cloudTreeStyleGallery",
-    "cmux.cloudSidebarDebugLab",
     "cmux.backgroundDebug",
     "cmux.startupAppearanceDebug",
     "cmux.bonsplitTabBarDebug",
@@ -1643,7 +1604,6 @@ private let cmuxAuxiliaryWindowIdentifiers: Set<String> = [
     "cmux.devWindowDisplay",
     "cmux.mobilePairingWindow",
     "cmux.cloudPaneCreationFailure.card",
-    "cmux.cloudCreateTeam",
     "cmux.sudo.approval",
 ]
 
@@ -1846,9 +1806,6 @@ private struct DebugWindowControlsView: View {
                         Button("Menu Bar Extra Debug…") {
                             MenuBarExtraDebugWindowController.shared.show()
                         }
-                        Button(String(localized: "debug.menu.cloudSidebarSpacingLab", defaultValue: "Cloud Sidebar Spacing Lab…")) {
-                            AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
-                        }
                         Button(
                             String(
                                 localized: "debug.menu.pdfPreviewChromeDebug",
@@ -1884,7 +1841,6 @@ private struct DebugWindowControlsView: View {
                             BonsplitTabBarDebugWindowController.shared.show()
                             StartupAppearanceDebugWindowController.shared.show()
                             MenuBarExtraDebugWindowController.shared.show()
-                            AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
                             PDFPreviewChromeDebugWindowController.shared.show()
                             TabBarBackdropLabWindowController.shared.show()
                             FeedTextEditorDebugWindowController.shared.show()

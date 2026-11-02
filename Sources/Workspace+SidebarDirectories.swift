@@ -22,9 +22,7 @@ extension Workspace {
             }
         }
         let activeRemotePanelIds = panels.keys.filter {
-            isRemoteTerminalSurface($0) ||
-                cloudBindingState.projectedResources[$0]?.kind == .terminal ||
-                cloudProjectedResource(forPanel: $0)?.kind == .terminal
+            isRemoteTerminalSurface($0)
         }
         guard !activeRemotePanelIds.isEmpty else { return nil }
         let reportedDirectories = activeRemotePanelIds.compactMap { trustedReportedPanelDirectory(panelId: $0) }
@@ -60,8 +58,7 @@ extension Workspace {
 
     /// Returns whether a panel's directory belongs to a Cloud machine rather than this Mac.
     func cloudDirectoryProvenanceRequired(panelId: UUID) -> Bool {
-        cloudBindingState.projectedResources[panelId] != nil ||
-            SurfaceCatalog.shared.hasCloudProjection(panelID: panelId, workspaceID: id)
+        SurfaceCatalog.shared.hasCloudProjection(panelID: panelId, workspaceID: id)
     }
 
     /// Applies the cwd carried by a terminal in an accepted cloud snapshot.

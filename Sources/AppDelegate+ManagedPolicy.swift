@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import CmuxSettings
 import Foundation
@@ -24,9 +23,8 @@ extension AppDelegate {
             // No mobile host since Phase 9.14: nothing to tear down.
             enforceRemoteControlPolicy: {},
             enforceIncomingAccessPolicy: {},
-            enforceCloudPolicy: { [weak self] in
-                self?.applyManagedCloudPolicy()
-            },
+            // No Cloud since Phase 9.12: nothing to tear down.
+            enforceCloudPolicy: {},
             enforceRemoteConnectionsPolicy: { [weak self] in
                 self?.endRemoteConnectionsForManagedPolicy()
             },
@@ -34,40 +32,6 @@ extension AppDelegate {
                 self?.reconcileSocketListenerConfiguration(source: "managed_policy")
             }
         )
-        cloudFeatureFlagObserver = CloudFeatureAvailabilityObserver(
-            isEnabled: { CloudMachinesFeature.isEnabled },
-            didChange: { [weak self] enabled in self?.applyCloudFeatureFlag(enabled: enabled) }
-        )
-    }
-
-    /// Applies a remote Cloud flag transition at the owning attachment
-    /// boundary. Existing workspace configurations and catalog identities stay
-    /// persisted; only controllers, retries, and transport tasks are stopped.
-    func applyCloudFeatureFlag(enabled: Bool) {
-        if !enabled {
-            MachineCreateCoordinator.shared.cancelAllForAuthTransition(cleanupCreatedMachines: false)
-            CloudVMActionLauncher.shared.cancelAllForAuthTransition()
-            cloudWorkspaceOperationController?.cancelAll()
-            let detail = String(
-                localized: "cloud.feature.disabled",
-                defaultValue: "Cloud Machines are temporarily unavailable."
-            )
-            for manager in allTabManagersForManagedPolicyEnforcement() {
-                for workspace in manager.tabs where workspace.isManagedCloudVMWorkspace {
-                    workspace.disconnectRemoteConnection(
-                        clearConfiguration: false,
-                        disconnectedDetail: detail
-                    )
-                }
-            }
-        } else {
-            for manager in allTabManagersForManagedPolicyEnforcement() {
-                for workspace in manager.tabs where workspace.isManagedCloudVMWorkspace {
-                    guard let configuration = workspace.remoteConfiguration else { continue }
-                    _ = workspace.configureRemoteConnection(configuration, autoConnect: true)
-                }
-            }
-        }
     }
 
     /// `DisableRemoteConnections` activation. Every live cmux-created remote
@@ -89,30 +53,6 @@ extension AppDelegate {
             }
         }
         remoteTmuxController.detachAllForManagedPolicy()
-    }
-
-    /// `DisableCloud` transitions, both directions. Activation ends Cloud
-    /// access through the same path sign-out uses — Cloud workspaces, their
-    /// closed-history records, in-flight launcher children, and the managed
-    /// VPN configuration — after the surface registry drops its providers and
-    /// private-network links. Lifting the policy restarts Cloud discovery so
-    /// the sidebar and surface catalog return without a relaunch; every
-    /// per-call gate (`CloudMachinesFeature`, `VMClient`, the tunnel
-    /// coordinator, the socket verbs) already reads the live policy.
-    /// Transitions are serialized on ``managedCloudPolicyTask`` and the policy
-    /// is re-read after every suspension, so a lift that arrives while a
-    /// teardown is still running cannot be overtaken by it.
-    func applyManagedCloudPolicy() {
-        let previous = managedCloudPolicyTask
-        managedCloudPolicyTask = Task { @MainActor [weak self] in
-            _ = await previous?.value
-            guard let self else { return }
-            guard ManagedDevicePolicy().isEnforced(.disableCloud) else { return }
-            self.endCloudVMAccess(reason: .managedPolicy)
-            // endCloudVMAccess starts VPN removal too. Discovery cannot be
-            // re-armed until that part of the same transition has drained.
-            await self.cloudTunnelTeardownTask?.value
-        }
     }
 
     /// Closes every live browser pane — main area and Docks, across all

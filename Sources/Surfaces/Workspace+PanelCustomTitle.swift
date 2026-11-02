@@ -11,7 +11,7 @@ extension Workspace {
         propagateToCloud: Bool = true,
         catalog: SurfaceCatalog? = nil
     ) -> Bool {
-        let catalog = catalog ?? SurfaceCatalog.shared
+        _ = (propagateToCloud, catalog)
         guard panels[panelId] != nil else { return false }
         let previousWorkspaceTitle = self.title
         defer {
@@ -21,21 +21,13 @@ extension Workspace {
         }
         let trimmed = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let previous = panelCustomTitles[panelId]
-        let previousSource = panelCustomTitleSources[panelId]
-        let cloudResourceForPropagation = propagateToCloud && source != .remote
-            ? cloudProjectedResource(forPanel: panelId, catalog: catalog) : nil
-        if let resource = cloudResourceForPropagation, resource.kind == .terminal {
-            guard catalog.cloudWorkspaceRenameService.admitsTerminalRename(workspace: self,
-                panelID: panelId, resource: resource, source: source, catalog: catalog) else { return false }
-        }
         if source == .auto {
             guard !trimmed.isEmpty else { return false }
-            if previous != nil, (previousSource ?? .user) != .auto { return false }
+            if previous != nil, (panelCustomTitleSources[panelId] ?? .user) != .auto { return false }
         }
         var sameText = false
         if trimmed.isEmpty {
-            let canClearRemoteName = cloudResourceForPropagation?.kind == .terminal
-            guard previous != nil || canClearRemoteName else { return false }
+            guard previous != nil else { return false }
             if previous != nil {
                 panelCustomTitles.removeValue(forKey: panelId)
                 panelCustomTitleSources.removeValue(forKey: panelId)
@@ -71,20 +63,6 @@ extension Workspace {
         if propagateToRemoteTmux, isRemoteTmuxMirror {
             AppDelegate.shared?.remoteTmuxController.handleMirrorWindowRenamed(
                 workspaceId: id, panelId: panelId, title: trimmed
-            )
-        }
-        // A pane projecting a cloud terminal writes an admitted user/agent rename or clear through
-        // to the machine's daemon tab name (`tab rename`): persisted there,
-        // broadcast, and shown by every attached client (tree rows, other Macs,
-        // TUI tab bars).
-        if let resource = cloudResourceForPropagation, resource.kind == .terminal {
-            catalog.propagateCloudTerminalRename(
-                workspace: self,
-                panelID: panelId,
-                resource: resource,
-                name: trimmed,
-                previousCustomTitle: previous,
-                previousCustomTitleSource: previousSource
             )
         }
         return true

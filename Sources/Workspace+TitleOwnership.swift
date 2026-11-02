@@ -144,21 +144,15 @@ extension Workspace {
     /// tab label was reconciled, matching the pre-spinner-split contract.
     @discardableResult
     func updatePanelTitle(panelId: UUID, title: String, stableTitle: String? = nil) -> Bool {
-        let remote = cloudProjectedResource(forPanel: panelId).flatMap { $0.kind == .terminal ? $0 : nil }
-        let candidate = remote?.cloudProcessDisplayTitle ?? title
         let admitted = panels[panelId]?.panelType == .terminal
-            ? AutomaticTerminalTitle(candidate)?.value : candidate
+            ? AutomaticTerminalTitle(title)?.value : title
         guard let admitted else { return false }
         let trimmed = admitted.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, panels[panelId] != nil else { return false }
-        guard remote != nil || shouldApplyRestoredPanelTitle(panelId: panelId, rawTitle: trimmed) else {
+        guard shouldApplyRestoredPanelTitle(panelId: panelId, rawTitle: trimmed) else {
             return false
         }
-        // A cloud-projected terminal displays the cloud process title, so the
-        // local PTY's stable title must not leak into panelTitles or the
-        // workspace title there.
-        let trimmedStable = remote == nil
-            ? stableTitle?.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+        let trimmedStable = stableTitle?.trimmingCharacters(in: .whitespacesAndNewlines)
         let stable = trimmedStable.flatMap { $0.isEmpty ? nil : $0 } ?? trimmed
 
         // Runs on every frame, which is what keeps the animation. It still

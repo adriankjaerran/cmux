@@ -223,7 +223,6 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         // Keep that wait off the main actor.
         // Presents the Cloud tree style gallery window: one v2MainSync hop for
         // the presentation, like debug.window.screenshot's capture wait.
-        "debug.cloudtree.gallery",
         // Reads hint mode's labels: one v2MainSync hop, like the gallery.
         "debug.window_hints",
         // Browser automation methods that wait on page JavaScript, WebKit

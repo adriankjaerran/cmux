@@ -19,11 +19,11 @@ import Foundation
 // unread (`markBackgroundOpen`). The catalog never activates the app either way.
 extension TerminalController {
     private nonisolated func cloudDisabledSocketError(id: Any?) -> String? {
-        guard ManagedDevicePolicy().isEnforced(.disableCloud) || !CloudMachinesFeature.offMainIsEnabled() else { return nil }
+        // Cloud is gone from this fork: every Cloud machine request is refused.
         return v2Error(
             id: id,
             code: "cloud_disabled",
-            message: CloudMachinesFeature.disabledMessage
+            message: CloudUnavailableMessage.text
         )
     }
 

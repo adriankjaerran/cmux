@@ -10735,9 +10735,6 @@ final class GhosttySurfaceScrollView: NSView {
     private let notificationRingLayer: CAShapeLayer
     private let flashOverlayView: GhosttyFlashOverlayView
     private let flashLayer: CAShapeLayer
-    /// Holds the Cloud TUI mirror session binding for `Sources/Cloud` until that
-    /// folder is deleted; the reconnect overlay it used to drive is gone.
-    let cloudTerminalOverlay = CloudTerminalOverlayCoordinator()
     var hasVisibilityRevealRefreshScheduled = false
     var pendingVisibilityRefreshTransition: TerminalWorkContext.Transition = .unknown
     /// Active reconciliation origin; asynchronous refreshes capture it before return.
@@ -11615,9 +11612,6 @@ final class GhosttySurfaceScrollView: NSView {
         return true
     }
 
-    /// No-op: the Cloud reconnect overlay is gone. Kept for the `Sources/Cloud`
-    /// callers until that folder is deleted.
-    func synchronizeCloudTerminalReconnectOverlay() {}
 
     private func sizeApproximatelyEqual(_ lhs: CGSize, _ rhs: CGSize, epsilon: CGFloat = 0.0001) -> Bool {
         abs(lhs.width - rhs.width) <= epsilon && abs(lhs.height - rhs.height) <= epsilon
