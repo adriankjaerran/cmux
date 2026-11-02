@@ -81,6 +81,7 @@ To restore a backup: quit cmux Personal, copy the files from a `personal-backups
 | [docs/suggestions.md](docs/suggestions.md) | Suggested next steps |
 | [docs/plan.md](docs/plan.md) | What is ready to build, what needs a decision, and in what order |
 | [docs/removal-plan.md](docs/removal-plan.md) | What's left to remove from upstream, phase by phase, and what must keep working |
+| [docs/chief-cloud-removal-plan.md](docs/chief-cloud-removal-plan.md) | Step-by-step plan to remove Chief, Cloud, Account, Mobile and the rest tied to upstream servers |
 
 ## Licence
 
