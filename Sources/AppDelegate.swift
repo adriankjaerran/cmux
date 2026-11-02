@@ -1530,46 +1530,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         _ url: URL,
         delivery: AuthCallbackDelivery = .external
     ) async -> Bool {
-        let callbackRouter = auth?.callbackRouter ?? AuthCallbackRouter()
-        guard callbackRouter.isAuthCallbackURL(url) else {
-            AuthDebugLog().log("auth.callback rejected: URL is not an accepted callback")
-            return false
-        }
-        guard let accountFlow = auth?.accountFlow else {
-            AuthDebugLog().log("auth.callback dropped: auth graph not configured yet")
-            return false
-        }
-        let signedIn = await accountFlow.handleCallbackURL(url, delivery: delivery)
-        guard signedIn else {
-            AuthDebugLog().log("auth.callback did not complete sign-in")
-            return false
-        }
-        await NativePricingPlanRefresh.refreshForProWelcomeChecklist()
-        return true
+        // Sign-in is gone from this fork (Phase 9.10): no callback ever signs in.
+        false
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        #if DEBUG
-        AuthDebugLog().log("auth.openURLs.received count=\(urls.count) summaries=\(urls.map(Self.authURLDebugSummary).joined(separator: "|"))")
-        #endif
+        // Workspace links and `ssh` requests (`AppDelegate+CmuxSSHURL.swift`). There is
+        // no sign-in callback any more: other app-scheme URLs are ignored.
         if handleCmuxExternalURLs(from: urls) {
-            #if DEBUG
-            AuthDebugLog().log("auth.openURLs.handledByExternalRoutes count=\(urls.count)")
-            #endif
             return
-        }
-
-        // Before the auth graph is configured, fall back to a default router
-        // (built-in cmux schemes) so dropped callbacks are still detected.
-        let callbackRouter = auth?.callbackRouter ?? AuthCallbackRouter()
-        let authCallbacks = urls.filter(callbackRouter.isAuthCallbackURL)
-        #if DEBUG
-        AuthDebugLog().log("auth.openURLs.authCallbacks count=\(authCallbacks.count)")
-        #endif
-        for url in authCallbacks {
-            Task { @MainActor in
-                _ = await handleAuthCallbackURLInProcess(url, delivery: .external)
-            }
         }
         let externalFileURLs = externalOpenFileURLs(from: urls)
         let terminalFileRequests = TerminalDefaultFileOpenRequest.requests(from: externalFileURLs)
@@ -2064,8 +2033,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let hasOwnedRuntimeCleanup = !markedForKill.isEmpty
             || mirrorsOwingDetach > 0
         let hasLocalTerminalSurfaces = hasLocalTerminalSurfacesForQuit
-        guard hasOwnedRuntimeCleanup || hasLocalTerminalSurfaces
-            || CloudNotificationSyncHub.shared.persistenceStore.hasPendingWrites else { return false }
+        guard hasOwnedRuntimeCleanup || hasLocalTerminalSurfaces else { return false }
         if !isAwaitingTerminateCleanup {
             isAwaitingTerminateCleanup = true
             terminateCleanupPhase = .ownedRuntimeCleanup
@@ -2127,7 +2095,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                     await self.terminateAgentProcessesBeforeQuit(index: indexesForQuit.restorableAgentIndex)
                 }
                 guard !Task.isCancelled else { return }
-                await CloudNotificationSyncHub.shared.persistenceStore.drain()
                 self.terminationWatchdog.arm()
                 self.replyToTerminateOnce(true)
             }
@@ -2367,7 +2334,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         WebViewInspectorTeardown.closeAllInspectors(in: NSApp.windows)
     }
     func applicationWillTerminate(_ notification: Notification) {
-        cloudWorkspaceOperationController?.cancelAll()
         StartupBreadcrumbLog.append("appDelegate.willTerminate.begin")
         agentChatTranscriptService.shutdown()
         // Backstop for any terminate path that did not route through
@@ -2389,19 +2355,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         sentryStopMemoryContextRefresh()
         // Plain quit detaches local ssh clients; explicit close already killed marked sessions.
         remoteTmuxController.detachAll()
-        // Best-effort presence goodbye; unclean exits are covered by the
-        // service's missed-heartbeat timeout.
-        PresenceHeartbeatClient.shared.appWillTerminate()
-        connectivityInvalidationSubscriberCoordinator.appWillTerminate()
         closeAllWebInspectorsBeforeAppTeardown()
         sessionAutosaveCoordinator.stop()
-        CloudVMActionLauncher.shared.terminateAll()
-        // No Cloud session survives the app, so neither does the tunnel.
-        cloudTunnelCoordinator?.appWillTerminate()
-        CmuxTuiSurfaceProviderRegistry.shared.terminateWireGuardHubForAppQuit()
         CmuxSSHURLProcessLauncher.shared.terminateAll()
         caffeineController.setEnabled(false)
-        MobileHostService.shared.stop()
         TerminalController.shared.stopAutomationEngine()
         TerminalController.shared.stop(cleanupDiscoveryState: true)
         GhosttyApp.terminalPasteboard.cleanupAllOwnedTemporaryImageFiles()

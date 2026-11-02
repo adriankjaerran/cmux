@@ -784,7 +784,33 @@ assumes the binding exists; test with `--seed`.
   the baseline's 11 are all there, Personal has gained "Schjødt SWAT alts" and "Presentation" since). ⬜ Agents: manual.
 - ✅ Quit (osascript), edit nothing, reopen with `--no-build` twice: identical each time.
 
-### ⬜ 9.10 Stub: app composition, auth and URL routing (M–L, high risk)
+### ✅ 9.10 Stub: app composition, auth and URL routing (M–L, high risk)
+
+Done in two commits (see `git log`, "Phase 9.10 (1/2)" and "(2/2)"). Differs from plan:
+- (1/2) `cmuxApp` builds no `MacAuthComposition`, Cloud workspace composition or `MacDevicesComposition`
+  (both files deleted). **Trap:** `MacDevicesComposition` also built the Settings `UserDefaultsSettingsStore`; cmuxApp
+  now builds it directly. `SettingsRuntime` gets no `accountFlow` (nil); `HostSettingsActions` gets no
+  `computersActions` / `cloudActivationCoordinator`. `configure(…)` is down to tab manager, notification store,
+  sidebar state, settings runtime, automation engine and browser import. Its body no longer wires Cloud
+  telemetry/operations/tunnel, `VMClient`/`CoderouterClient.bootstrap`, `MobileHostService.configure(auth:)`, the
+  phone-reply inbox, connectivity subscribers, paired-Mac backup, `attachAuth` or `auth.start()`; the no-op
+  mobile-host settings observer went too.
+- **Kept, differs from plan:** the AppDelegate properties (`auth`, `cloudMachinePinStore`,
+  `cloudWorkspaceCoordinator`, `cloudWorkspaceOperationController`, `deviceWorkspaceCreationCoordinator`,
+  `newMachineSheetPresenter`, `devicesRegistry`, `cloudTunnelCoordinator`, `cloudOperations`, the lazy
+  `cloudActivationCoordinator`) and `TerminalController.shared.cloudTunnel` stay declared, always nil / never
+  built, because `Sources/Cloud`, `Surfaces`, `Devices`, `Hive` and the `AppDelegate+Cloud*`/`+Account*`/`+Team*`
+  files still read them (9.12–9.14 delete those readers). The files in the plan's "other users" list are
+  untouched for the same reason; with nil they take their signed-out/unavailable paths.
+  `ensureMobileWorkspaceListObserver` and `MobileTerminalRenderObserver.start()` are left for 9.14.
+- (2/2) Quit path: no `CloudNotificationSyncHub` pending-writes gate or drain (only Cloud/Devices wrote it), no
+  `MobileHostService.stop()`, `cloudWorkspaceOperationController?.cancelAll()`, presence goodbye, connectivity
+  teardown, `CloudVMActionLauncher.terminateAll()`, tunnel teardown or WireGuard hub stop. Read
+  `applicationShouldTerminate` → `deferTerminateForOwnedCleanupAndFreshSnapshot` (still saves the session before
+  replying) and `applicationWillTerminate` (backstop save, history/profile flushes) end to end: save order
+  unchanged. URL routing: `application(_:open:)` handles workspace/`ssh`/text links and files only, no auth
+  callback branch; `handleAuthCallbackURLInProcess` (still called by the browser's callback policy, which blocks
+  every callback since 9.8) returns `false`.
 
 **What it removes:** the auth graph and cloud coordinators that `cmuxApp` builds and hands to `AppDelegate`.
 
@@ -811,9 +837,12 @@ assumes the binding exists; test with `--seed`.
 **Risk:** high. A mistake here stops the app from launching or from saving on quit. Do it in two commits if it
 gets big: first `configure` and its callers, then the quit path and URL routing.
 
-- ⬜ Standard checks. ⌘Q **three times in a row**, reopen each time: layout comes back.
-- ⬜ Click a `cmux-dev-test://` workspace link from Safari: the test app handles it.
-- ⬜ Settings → App, Terminal, Sidebar, Automation, Keyboard Shortcuts all open.
+- ✅ Standard checks after each commit (build, `--version`, `config doctor` same as baseline, layout incl. groups
+  matches Personal's current session; Personal had meanwhile moved the Schjødt group up). ✅ Quit (osascript)
+  **three times in a row**, reopen with `--no-build` each time: identical layout. ⬜ Agents: manual.
+- ✅ `open "cmux-dev-test://workspace/<id>"` (two different workspaces): the test app selects that workspace.
+  ⬜ Clicking the link from Safari: manual.
+- ⬜ Settings → App, Terminal, Sidebar, Automation, Keyboard Shortcuts all open: manual.
 
 ### ⬜ 9.11 TerminalController and control socket: remove cloud, auth and mobile methods (M, medium risk)
 
