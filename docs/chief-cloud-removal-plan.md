@@ -1151,7 +1151,29 @@ into terminal output. Remove their hooks from `GhosttyTerminalView` / `TerminalC
 - ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`). ⬜ ⌘Q/reopen, agents, Settings: manual.
 - ✅ Run something chatty (`yes | head -100000`) and a full-screen app (`vim`): rendering is normal (read-screen).
 
-### ⬜ 9.15 Delete the Cloud and Auth packages and Stack Auth (M, low risk)
+### ✅ 9.15 Delete the Cloud and Auth packages and Stack Auth (M, low risk)
+
+**Done ("Phase 9.15").** Deleted `CmuxCloud`, `CmuxCloudBannerCore`, `CmuxCloudImagePaste`, `CmuxCloudMachines`,
+`CmuxCloudResizeCore`, `CmuxCloudTui`, `CmuxCloudTunnelCore`, `CMUXAuthCore`, `CmuxAuthRuntime`,
+`vendor/stack-auth-swift-sdk-prerelease`; pbxproj: 11 package refs, their products and Frameworks lines in `cmux`
+and `cmuxTests`; `Package.resolved`: `swift-crypto`, `swift-asn1` (nothing else used them). Differs from the plan:
+- **`CmuxPhonePush` went here too** (planned for 9.16): its `Package.swift` depends on `CmuxAuthRuntime`, and nothing
+  in the app imports it since 9.12 (F1).
+- **Moved into `CmuxSurfaceCatalogModel`** (the catalog's open point from 9.12 (F3)): `CloudRenameCoordinator`
+  (unchanged; `SurfaceCatalog.renameTerminal` lane), `SurfaceResource.catalogPrecedes`, `SurfaceProjection.isLocalWorkspaceView`
+  (the unused `localWorkspaceMembers` went). `CloudVMState`/`CloudVMStateObservation` already lived there.
+  `SurfaceAgentNaming.swift` deleted (no conformers; it named `CloudAgentNameContext`). `surface.catalog` unchanged
+  (`cloud_states: []`).
+- `BrowserAuthCallbackNavigationPolicy` no longer uses `AuthCallbackRouter`: the `<cmux-scheme>://auth-callback`
+  shape test is inlined (same rule), so auth-callback-shaped navigations are still blocked.
+  `AppDelegate.handleAuthCallbackURLInProcess` lost its `AuthCallbackDelivery` parameter (still returns false).
+- `DragOverlayRoutingPolicy.hasFileDropPayload` lost the `.cloudSidebarRow` pasteboard guard (no Cloud rows exist).
+- Left for 9.17: upstream CI/dev scripts that still name the packages (`scripts/setup-team-dev.sh`,
+  `scripts/stage-cloud-navigation-tests.py`, `scripts/ci/package-test-lane.sh`, `scripts/ci/cloud_capture_provision.py`,
+  `scripts/ci/build-cloud-tunnel.sh`, `scripts/e2e/backend-up.sh`); not used by `reload.sh`/`test-app.sh`.
+- Checks: build, `--version`, `config doctor` (clean), `tree --all`, 383 methods, `surface.catalog` keys
+  (`cloud_states` `[]`, `machines`, `projections`, `resources`) and `current.list` keys unchanged; scratch workspace
+  `send` + `read-screen`, closed after. ⬜ Manual: ⌘Q/reopen, agents, browser auth-callback block, drag-and-drop.
 
 **What it removes:** `Packages/macOS/CmuxCloud` (28,700 lines), `CmuxCloudBannerCore`, `CmuxCloudImagePaste`,
 `CmuxCloudMachines`, `CmuxCloudResizeCore`, `CmuxCloudTui` (unless SSH-TUI stays), `CmuxCloudTunnelCore`,
@@ -1164,8 +1186,8 @@ into terminal output. Remove their hooks from `GhosttyTerminalView` / `TerminalC
 
 **Risk:** low once 9.12–9.13 build.
 
-- ⬜ Standard checks. Stale-bundle check: no `swift-crypto_Crypto.bundle` in the app.
-- ⬜ `grep -rlE "import (CmuxCloud|CMUXAuthCore|CmuxAuthRuntime|StackAuth)" Sources CLI Packages` → nothing.
+- ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`). Stale-bundle check: no `swift-crypto_Crypto.bundle` in the app.
+- ✅ `grep -rlE "import (CmuxCloud|CMUXAuthCore|CmuxAuthRuntime|StackAuth)" Sources CLI Packages` → nothing.
 
 ### ⬜ 9.16 Delete the mobile, Iroh, Irx, Hive, presence and push packages (M, low–medium risk)
 

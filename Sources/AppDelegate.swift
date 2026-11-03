@@ -2,7 +2,6 @@ import CmuxSSHClipboardTrust
 import CmuxProductAnalytics
 import AppKit
 import CmuxAppKitSupportUI
-import CmuxAuthRuntime
 import CmuxBrowser
 import CmuxCommandPalette
 import CmuxPanes
@@ -1479,15 +1478,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // audit recoverable route lifecycle after a surface unregisters.
         GhosttyApp.terminalSurfaceRegistry.attachRouteRetirer(self)
     }
-    /// Shared native auth callback entrypoint for LaunchServices and embedded
-    /// browser handoffs. `delivery` must be `.trustedEmbeddedBrowser` only for
-    /// the embedded browser's policy-checked handoff; LaunchServices callbacks
-    /// are `.external`, so unsolicited stateless ones need user approval.
-    /// The returned value reflects completed sign-in.
+    /// Native auth callback entrypoint kept for the browser's callback policy.
+    /// The returned value reflects completed sign-in (never, in this fork).
     @MainActor
     func handleAuthCallbackURLInProcess(
-        _ url: URL,
-        delivery: AuthCallbackDelivery = .external
+        _ url: URL
     ) async -> Bool {
         // Sign-in is gone from this fork (Phase 9.10): no callback ever signs in.
         false

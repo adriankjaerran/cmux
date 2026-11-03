@@ -1,5 +1,4 @@
 import AppKit
-import CmuxAuthRuntime
 import CmuxBrowser
 import Foundation
 import WebKit
@@ -39,7 +38,6 @@ import WebKit
 ///   `web_return_to` query item (same-origin relative path only).
 @MainActor
 struct BrowserAuthCallbackNavigationPolicy {
-    private let router: AuthCallbackRouter
     private let ownCallbackScheme: String
     // Reuses the browser's normalized origin value (scheme/host/port
     // comparison rules are identical to the WebAuthn caller-origin check).
@@ -53,7 +51,6 @@ struct BrowserAuthCallbackNavigationPolicy {
     ) {
         trustedSourceOrigin = trustedSourcePageOrigin.flatMap { BrowserWebAuthnSecurityOrigin(url: $0) }
         ownCallbackScheme = callbackScheme.lowercased()
-        router = AuthCallbackRouter(extraAllowedScheme: callbackScheme)
     }
 
     func disposition(
@@ -83,8 +80,7 @@ struct BrowserAuthCallbackNavigationPolicy {
         guard targetFrameIsMainFrame,
               isLinkActivated,
               sourceOriginMatches,
-              url.scheme?.lowercased() == ownCallbackScheme,
-              router.isAuthCallbackURL(url) else {
+              url.scheme?.lowercased() == ownCallbackScheme else {
             return .block
         }
         return .deliverInApp
@@ -196,7 +192,7 @@ struct BrowserAuthCallbackNavigationPolicy {
     /// means the account flow completed, not merely that dispatch started.
     func deliverAuthCallbackInApp(_ url: URL) async -> Bool {
         guard let delegate = NSApp.delegate as? AppDelegate else { return false }
-        return await delegate.handleAuthCallbackURLInProcess(url, delivery: .trustedEmbeddedBrowser)
+        return await delegate.handleAuthCallbackURLInProcess(url)
     }
 
     /// Any cmux-family scheme pointing at the auth-callback target, including
@@ -206,6 +202,12 @@ struct BrowserAuthCallbackNavigationPolicy {
               scheme == "cmux" || scheme.hasPrefix("cmux-") else {
             return false
         }
-        return AuthCallbackRouter(extraAllowedScheme: scheme).isAuthCallbackURL(url)
+        // `<scheme>://auth-callback` (host), or `<scheme>:auth-callback` (path).
+        // Same rule as the removed CmuxAuthRuntime `AuthCallbackRouter`.
+        let host = url.host?.trimmingCharacters(in: CharacterSet(charactersIn: "/")).lowercased()
+        let target = (host?.isEmpty == false)
+            ? host!
+            : url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")).lowercased()
+        return target == "auth-callback"
     }
 }
