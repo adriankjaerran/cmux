@@ -15,9 +15,9 @@ Only the macOS app and what it needs to build were copied. Everything else staye
 | ✅ | `Resources/` | Info.plist, entitlements, shell integration, bundled web views, `sidebars/compact.js` (new) |
 | ✅ | `Assets.xcassets`, `AppIcon.icon` | Images and app icon |
 | ✅ | `cmux-Bridging-Header.h`, `ghostty.h` | C headers for Ghostty |
-| ✅ | `Packages/` | Local Swift packages (`macOS/`, `Shared/`, `iOS/`); the ones nothing linked were deleted later (see below) |
+| ✅ | `Packages/` | Local Swift packages (`macOS/`, `Shared/`; `iOS/` was copied too and is gone since Phase 9.16); the ones nothing linked were deleted later (see below) |
 | ✅ | `Native/` | Rust/C helpers built during the app build (e.g. command-palette search) |
-| ✅ | `vendor/stack-auth-swift-sdk-prerelease` | Vendored library |
+| ✅ | `vendor/stack-auth-swift-sdk-prerelease` | Vendored Stack Auth SDK; deleted in Phase 9.15 |
 | ✅ | `vendor/bonsplit` | Split-pane library, git submodule at `58b73fd` |
 | ✅ | `ghostty` | Terminal engine, git submodule at `ef4f157` (must match the prebuilt download) |
 | ✅ | `Examples/CmuxExtensionSidebarExamples` | Built-in sidebar providers the app links |
@@ -45,13 +45,14 @@ Only the macOS app and what it needs to build were copied. Everything else staye
 
 ## Still inside the app, but tied to upstream's services
 
-These build and ship today. They are the trimming list in [ideas.md](ideas.md).
+Nothing left that talks to upstream's servers (Phase 9 done, see "Removed after the copy"). What's left over is
+naming and dead code, listed in [ideas.md](ideas.md).
 
 | | Feature | Note |
 |---|---|---|
-| ⚠️ | Cloud, Auth, mobile pairing, `cmux vm` | `CmuxCloud*`, `CMUXAuthCore`, `CmuxAuthRuntime`, `CmuxMobile*`, Iroh (removal plan Phase 9) |
-| ⚠️ | CodeRouter CLI commands | `cmux coderouter` / `cmux cr` and the guide panel are still in the app; the binary is no longer downloaded |
-| ❌ | cmux-tui client (cloud Machines panel) | Skipped by `reload.sh` |
+| ❌ | Cloud, Auth, mobile pairing, `cmux vm` | Removed (Phase 9) |
+| ❌ | CodeRouter | Download off (`edbd4f6`), CLI commands and guide panel removed (`ccd7f4f`), socket methods removed (9.11) |
+| ❌ | cmux-tui client (cloud Machines panel) | Never bundled; the provider code went in Phase 9.12 |
 
 ## Fork changes so far
 
@@ -73,3 +74,5 @@ See the table in the [README](../README.md#whats-different-from-upstream-cmux) a
 | Simulator leftovers | The five "Simulator: …" shortcuts, "New Simulator Pane", `simulator.*` socket stubs (`b9f12ee`); `PanelType.simulator` stays so old layouts load |
 | Send Feedback | `CmuxFeedback`, the Help/sidebar items, `cmux feedback`, `feedback.open` / `feedback.submit` (`7e6c136`) |
 | Chief and Chief Home | `cmux chief`, `chief.*` socket methods, the Chief pane, Home group and sidebar rows, `Sources/Chief/`, the packages `CmuxChief`, `CmuxHomeCore`, `CmuxHomeRender`, `CmuxMessagesLab`, `CmuxAgentQuestion` (`bf3a1d0`, `945611c`, `7159ca8`, Phase 8.4); the `chief` config key and `PanelType.chief` stay so old configs and layouts load |
+| CodeRouter app code | `cmux coderouter` / `cmux cr`, the guide pane, `coderouter.*` socket methods (`ccd7f4f`, 9.11); `PanelType.coderouterGuide` stays |
+| Cloud, Account, Mobile, Devices, Iroh, SSH-TUI, `cmux vm`, pricing, Stack Auth | Phase 9.0–9.17 (see [chief-cloud-removal-plan.md](chief-cloud-removal-plan.md)): the cloud CLI commands and socket methods, `Sources/Cloud`, `Mobile`, `Devices`, `Hive`, `Auth`, `RemoteTui`, the cmux-tui provider, the packages `CmuxCloud*`, `CMUXAuthCore`, `CmuxAuthRuntime`, `CmuxPhonePush`, `CmuxHive`, `CmuxIrohTransport`, `CmuxIrxTransport`, `CmuxWorkspacePresence`, `Packages/iOS`, Stack Auth, `iroh-ffi`; the Iroh/Cloud `Info.plist` keys, build settings and `reload.sh` values. Kept: `CmuxMobileHost` (browser JS dialog broker), remote SSH / tmux, the app's own URL scheme, stored enum cases so old layouts load |

@@ -33,8 +33,7 @@ for arg in "$@"; do
 done
 
 if [[ "$build" -eq 1 ]]; then
-  (cd "$REPO_ROOT" && CMUX_DEV_BACKEND_MODE=local CMUX_DEV_CLOUD_ENABLED=0 \
-    ./scripts/reload.sh --tag "$TAG" --no-global-cli-links)
+  (cd "$REPO_ROOT" && ./scripts/reload.sh --tag "$TAG" --no-global-cli-links)
 fi
 [[ -d "$BUILT_APP" ]] || { echo "error: no build at $BUILT_APP" >&2; exit 1; }
 

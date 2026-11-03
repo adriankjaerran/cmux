@@ -39,8 +39,11 @@ telemetry or update feed.
 - ✅ Remove the VPN / Computer Use / Simulator leftovers.
 - ✅ Remove Send Feedback.
 - ⬜ Install all of the above into cmux Personal (removal plan Phase 0, then reinstall).
-- ⬜ Remove Chief and Chief Home (removal plan Phase 8).
-- ⬜ Stub out Cloud and Auth (removal plan Phase 9).
+- ✅ Remove Chief and Chief Home (removal plan Phase 8).
+- ✅ Remove Cloud, Account, Mobile, Devices, Iroh and Stack Auth (removal plan Phase 9, done in the test app).
+- ⬜ Later cleanups after Phase 9: shrink `CmuxMobileHost` to the browser dialog broker, the hidden Cloud/Mobile
+  Settings sections and `mobile.*` settings keys, the upstream iOS/Iroh/mobile dev scripts in `scripts/`, the
+  orphaned `.xcstrings` keys (see the 9.17 note in chief-cloud-removal-plan.md).
 
 ## cmux agent (from `~/Code/cmux-config`)
 

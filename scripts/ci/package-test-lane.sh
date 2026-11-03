@@ -121,12 +121,8 @@ PY
 
 select_packages() {
   PACKAGES=(
-    CMUXAuthCore
     CmuxBrowser
     CmuxCanvasUI
-    CmuxCloud
-    CmuxCloudMachines
-    CmuxCloudTui
     CmuxComputerUse
     CmuxCore
     CmuxRemoteDaemon
@@ -134,17 +130,10 @@ select_packages() {
     CmuxRemoteSession
     CmuxAgentChat
     CmuxAgentSessionStore
-    CmuxAuthRuntime
-    CmuxWorkspacePresence
-    CmuxIrohTransport
-    CmuxIrxTransport
-    CmuxHive
     CmuxCommandPalette
     CmuxControlSocket
     CmuxFoundation
     CmuxGit
-    CmuxMobileTerminalKit
-    CmuxMobileWorkspace
     CmuxNotifications
     CmuxSettings
     CmuxSettingsUI
@@ -164,15 +153,11 @@ select_packages() {
     CmuxSyntaxHighlighting
     CmuxAppKitSupportUI
     CmuxCanvas
-    CmuxCloudBannerCore
-    CmuxCloudImagePaste
-    CmuxCloudTunnelCore
     CMUXDebugLog
     CmuxExtensionKit
     CmuxFeedback
     CmuxLiveEval
     CmuxPanes
-    CmuxPhonePush
     CMUXProjectModel
     CmuxSidebar
     CmuxSidebarInterpreterService
@@ -220,7 +205,7 @@ select_packages() {
   output "selected_packages=$selected"
   output "selected_count=$count"
 
-  if grep -qxE 'CmuxTerminal|CmuxTerminalCore|CmuxCloudTui|CmuxCloud' "$selected"; then
+  if grep -qxE 'CmuxTerminal|CmuxTerminalCore' "$selected"; then
     needs_ghosttykit=true
   else
     needs_ghosttykit=false
@@ -456,10 +441,10 @@ run_package_tests() {
     # CmuxFoundation has several process-tree suites whose child
     # fixtures share global process resources; run each suite in its
     # own Swift Testing process just like the auth/transport suites.
-    CmuxAgentChat|CmuxAuthRuntime|CmuxFoundation|CmuxIrohTransport|CmuxIrxTransport)
+    CmuxAgentChat|CmuxFoundation)
       ./scripts/ci/run-swift-testing-suites.sh "$pkgdir" || return $?
       ;;
-    CmuxTerminal|CmuxTerminalCore|CmuxCloudTui|CmuxCloud)
+    CmuxTerminal|CmuxTerminalCore)
       run_swift_test
       if [ "$test_status" -ne 0 ]; then
         if [ "$test_status" -eq 1 ] \

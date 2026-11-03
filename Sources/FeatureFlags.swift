@@ -591,19 +591,10 @@ final class CmuxFeatureFlags {
         distinctID: String,
         personProperties: [String: String]
     ) -> URLRequest? {
-        guard let url = URL(string: "https://cmux.com/api/client-config") else { return nil }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 10
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let context: [String: Any] = personProperties.isEmpty
-            ? [:]
-            : ["personProperties": personProperties]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: [
-            "distinctId": distinctID,
-            "context": context,
-        ])
-        return request
+        // Fork: no remote feature-flag endpoint (Phase 3 stopped calling `start()`; Phase 9.17
+        // dropped upstream's cmux.com/api/client-config URL so the fetch can't be built at all).
+        _ = (distinctID, personProperties)
+        return nil
     }
 
     nonisolated private static func loadPostHogControlPlaneFlags(

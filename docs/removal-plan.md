@@ -35,7 +35,7 @@ Model for how to do a removal: `git show --stat 61dca2e` (Simulator, Computer Us
 | ✅ 6 | The 5 "Simulator: …" shortcuts and `simulator.*` stubs | M | low–medium | yes |
 | ✅ 7 | Send Feedback | S–M | low | yes |
 | ✅ 8 | Chief and Chief Home | M–L | medium | yes |
-| 9 | Cloud, Auth, mobile pairing, cmux-tui / Machines, `cmux vm` | L (several commits) | high | yes |
+| ✅ 9 | Cloud, Auth, mobile pairing, cmux-tui / Machines, `cmux vm` | L (several commits) | high | yes |
 
 Each phase is one commit, one test build, one reinstall. Never two phases in one build.
 
@@ -148,8 +148,8 @@ shortcut names you bind (`reopenPreviousSession`, `openFolder`, `focusSidebar`, 
 
 ### The build (`scripts/`)
 
-`install-personal.sh` and `test-app.sh` both run `reload.sh --tag <tag> --no-global-cli-links` with
-`CMUX_DEV_BACKEND_MODE=local CMUX_DEV_CLOUD_ENABLED=0`. In order, `reload.sh`:
+`install-personal.sh` and `test-app.sh` both run `reload.sh --tag <tag> --no-global-cli-links` (since Phase 9.17
+without `CMUX_DEV_BACKEND_MODE=local CMUX_DEV_CLOUD_ENABLED=0`: `reload.sh` no longer reads either). In order, `reload.sh`:
 
 1. Checks the tools (Xcode, Metal, Zig) and skips the cmux-tui client (fork change).
 2. `ensure-ghosttykit.sh`: downloads the prebuilt Ghostty terminal engine (checksum-checked). **Keep.**
@@ -419,7 +419,7 @@ you before; it goes with Phase 9. The profiling window keeps its saved email und
 sidebar rows, drag-and-drop and `Sources/Chief/` (`7159ca8`), then the packages `CmuxChief`, `CmuxHomeCore`,
 `CmuxHomeRender`, `CmuxMessagesLab`, `CmuxAgentQuestion` (Phase 8.4 commit). Kept: the `chief` config key and
 `chief.*` settings parsing, `PanelType.chief`, `SurfaceKind.chief`, `DockSurfaceKind.chief` (all restore or create
-nothing), `ChiefSettingsBridge.swift` (Mobile still reads it until Phase 9), the agent home code.
+nothing), `ChiefSettingsBridge.swift`, the agent home code.
 
 **What it is:** Chief is upstream's built-in "manager" agent with its own pane, memory and a "Home" group
 (`cmux.chief.home`) that can't be unpinned or deleted. You replaced it with the pinned cmux agent and have
@@ -454,7 +454,20 @@ have uncommitted changes). Then:
 - ✅ `cmux config doctor` is clean with `"chief": {"enabled": false}` still in `cmux.json`.
 - ⬜ `scripts/install-personal.sh`.
 
-## Phase 9: Cloud, Auth, mobile pairing, cmux-tui / Machines, `cmux vm` (L, high risk; several commits)
+## ✅ Phase 9: Cloud, Auth, mobile pairing, cmux-tui / Machines, `cmux vm` (L, high risk; several commits)
+
+**Done** in steps 9.0–9.17 of [chief-cloud-removal-plan.md](chief-cloud-removal-plan.md) (see its "Done:" notes and
+`git log`): entry points hidden, nothing cloud starts at launch, the cloud CLI commands and socket methods gone,
+the local pieces (current work, surface move rules, managed policies, the app link scheme, the agent transcript
+registry, `terminal.paste` / `terminal.input`) moved out first, then `Sources/Cloud`, `Mobile`, `Devices`, `Hive`,
+`Auth`, `RemoteTui`, the cmux-tui provider and the packages (`CmuxCloud*`, `CMUXAuthCore`, `CmuxAuthRuntime`, Stack
+Auth, `CmuxPhonePush`, `CmuxHive`, `CmuxIrohTransport`, `CmuxIrxTransport`, `CmuxWorkspacePresence`,
+`Packages/iOS`, `iroh-ffi`) deleted. 9.17 cleaned `Info.plist`, the pbxproj build settings, `reload.sh` and the
+cloud settings keys. Kept: `CmuxMobileHost` (the browser JS dialog broker lives there), `CMUXMobileCore`,
+`CmuxAgentChat`, `CmuxTerminalSharing`, `CmuxSSHClipboardTrust`, remote SSH / remote tmux, the
+`$(PRODUCT_BUNDLE_IDENTIFIER).auth` URL type and `CMUX_AUTH_CALLBACK_SCHEME` (the app's own link scheme), and the
+stored enum cases (`PanelType`, `SettingsSectionID`, `RightSidebarMode.machines`). Not installed into cmux
+Personal yet.
 
 **What it is:** everything that talks to upstream's servers: cloud machines (VMs you rent from cmux), the Machines
 panel and cmux-tui client, team sign-in (Stack Auth), the "Cloud" welcome screens, pairing an iPhone with the
@@ -494,10 +507,10 @@ Mobile, Cloud, Devices, Networking (Iroh) and their cards. Build: `CMUX_DEV_CLOU
 - Keep `CMUXMobileCore`, `CmuxAgentChat`, `CmuxTerminalSharing` (it also runs local terminal sizing:
   `LocalTerminalSizingHost`) and `CmuxSSHClipboardTrust` (plain SSH).
 
-- ⬜ After each sub-step: `scripts/test-app.sh --seed`; all groups and workspaces come back; zsh shows folder, branch,
-  PR; `claude` and `pi` report `run`/`wait`/`idle`; `open https://…` opens in cmux's browser; the cmux agent's
-  tools all work (`cmux_overview`, `cmux_sessions`, `cmux_send`, `cmux_config`).
-- ⬜ `cmux --version` from the built app; `cmux config doctor`.
+- ✅ After each sub-step: `scripts/test-app.sh --seed`; all groups and workspaces come back (`tree --all`). ⬜ zsh
+  folder/branch/PR, `claude`/`pi` states, `open https://…`, the cmux agent's tools: by hand (see "Manual checks left" in
+  chief-cloud-removal-plan.md).
+- ✅ `cmux --version` from the built app; `cmux config doctor`.
 - ⬜ `scripts/install-personal.sh`.
 
 ## Other candidates (not planned yet)

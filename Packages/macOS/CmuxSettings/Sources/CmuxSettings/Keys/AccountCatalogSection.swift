@@ -15,12 +15,6 @@ public struct AccountCatalogSection: SettingCatalogSection {
         userDefaultsKey: "cmux.settings.piiDisplayMode"
     )
 
-    public let selectedTeamID = DefaultsKey<String>(
-        id: "account.selectedTeamID",
-        defaultValue: "",
-        userDefaultsKey: "cmux.auth.selectedTeamID"
-    )
-
     public let welcomeShown = DefaultsKey<Bool>(
         id: "account.welcomeShown",
         defaultValue: false,

@@ -206,28 +206,6 @@ enum CmuxEmbeddedConfigSchema {
         }
       }
     },
-    "cloud": {
-      "x-cmux-scopes": ["global"],
-      "title": "cloud",
-      "description": "Cloud feature settings.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "beta": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "machines": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "enabled": { "type": "boolean", "default": false, "description": "Enable Cloud Machines." }
-              }
-            }
-          }
-        }
-      }
-    },
     "remoteTmux": {
       "x-cmux-scopes": ["global"],
       "title": "remoteTmux",

@@ -68,7 +68,7 @@ To restore a backup: quit cmux Personal, copy the files from a `personal-backups
 | The compact one-line sidebar is built in and is the default | `Resources/sidebars/compact.js`, `CmuxExtensionSidebarSelection.swift`, `CmuxMain.swift` |
 | Groups are folders: the header only opens/closes; its former session is the first row inside and can be moved or removed like any other | `Resources/sidebars/compact.js`, `WorkspaceGroupCoordinator.swift` |
 | The cmux agent workspace can't be closed or unpinned and stays on top; closing or killing its terminal starts a fresh agent (`cmux workspace-action --action set-agent-home --command <cmd>`, saved with the layout) | `TabManager+NonInteractiveClose.swift`, `Workspace+TerminalRespawn.swift`, `TabManager.swift` |
-| Builds without upstream's git history, team login or cmux-tui client | `scripts/reload.sh`, `scripts/install-personal.sh` |
+| Builds without upstream's git history, Chief, Cloud, Account, Mobile and Iroh | `scripts/reload.sh`, `scripts/install-personal.sh` |
 
 ## Docs
 

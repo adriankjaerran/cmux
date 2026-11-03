@@ -61,7 +61,7 @@ Session save/restore: `Sources/SessionPersistence.swift`.
   - Rendered by `CustomSidebarSurface` (`Packages/macOS/CmuxSidebarInterpreterService/.../CmuxSidebarRemoteRender`). JS runs in `SidebarJSRuntime` (JavaScriptCore, `Packages/macOS/CmuxSwiftRenderUI/.../Runtime`). Swift/JSON files go through `CmuxSwiftRender`. Sidebars run actions via `cmux(...)` calls, which become socket commands such as `workspace.reorder`.
 - Visibility and width: `SidebarState` (`Sources/Sidebar/SidebarState.swift`). Other sidebar pieces live in `Sources/Sidebar/` and `Packages/macOS/CmuxSidebar*`.
 
-**Right sidebar.** `RightSidebarPanelView` (`Sources/RightSidebarPanelView.swift`). Modes are listed in `RightSidebarMode.swift`: `files`, `find`, `sessions` ("Vault"), `feed`, `dock`, `machines` ("Cloud"), `customSidebar`.
+**Right sidebar.** `RightSidebarPanelView` (`Sources/RightSidebarPanelView.swift`). Modes are listed in `RightSidebarMode.swift`: `files`, `find`, `sessions` ("Vault"), `feed`, `dock`, `machines` (the old Cloud tab: kept so stored values and the digit shortcuts don't shift, never available), `customSidebar`.
 - File explorer: `FileExplorerView.swift`, `FileExplorerStore.swift`, `FileExplorerState.swift` (per window), `FileExplorerSearchController.swift`.
 - Custom mode mounts a `~/.config/cmux/sidebars/<name>` file through the same `CustomSidebarSurface`.
 
@@ -108,8 +108,9 @@ Session save/restore: `Sources/SessionPersistence.swift`.
 
 | Script | What it does |
 |---|---|
-| `scripts/reload.sh --tag <t> [--launch]` | Runs xcodebuild for a Debug build into `~/Library/Developer/Xcode/DerivedData/cmux-<t>`. The result is "cmux DEV <t>.app" with bundle id `com.cmuxterm.app.debug.<t>`, socket `/tmp/cmux-debug-<t>.sock` and log `/tmp/cmux-debug-<t>.log`. Each tag has its own settings, socket and data, so it runs next to other cmux apps. It calls `ensure-ghosttykit.sh`. Fork: it sets `CMUX_ZIG` to a private Zig 0.16.0. |
-| `scripts/install-personal.sh [--no-build] [--no-open]` | Runs `reload.sh --tag mine` (local backend, cloud off). It quits the running copy, rsyncs to `~/Applications/cmux Personal.app`, renames it to "cmux Personal", re-signs it ad hoc, and opens it. Bundle id `com.cmuxterm.app.debug.mine`, socket `/tmp/cmux-debug-mine.sock`. |
+| `scripts/reload.sh --tag <t> [--launch]` | Runs xcodebuild for a Debug build into `~/Library/Developer/Xcode/DerivedData/cmux-<t>`. The result is "cmux DEV <t>.app" with bundle id `com.cmuxterm.app.debug.<t>`, socket `/tmp/cmux-debug-<t>.sock` and log `/tmp/cmux-debug-<t>.log`. Each tag has its own settings, socket and data, so it runs next to other cmux apps. It calls `ensure-ghosttykit.sh`. Fork: it sets `CMUX_ZIG` to a private Zig 0.16.0, always uses the local dev origin (no shared backend, no Stack auth credentials, no Iroh or Cloud values) and writes `CMUX_AUTH_CALLBACK_SCHEME=cmux-dev-<t>`, the app's own link scheme. |
+| `scripts/test-app.sh [--seed] [--no-build] [--no-open]` | Runs `reload.sh --tag test --no-global-cli-links` and opens "cmux DEV test" (`--seed` copies cmux Personal's saved layout first). |
+| `scripts/install-personal.sh [--no-build] [--no-open]` | Runs `reload.sh --tag mine --no-global-cli-links`. It quits the running copy, rsyncs to `~/Applications/cmux Personal.app`, renames it to "cmux Personal", re-signs it ad hoc, and opens it. Bundle id `com.cmuxterm.app.debug.mine`, socket `/tmp/cmux-debug-mine.sock`. |
 | `scripts/build-app-bundled-resources.sh` | An Xcode build phase. It copies Ghostty resources, terminfo, shell integration, helper binaries and `Resources/sidebars` into the app bundle. |
 | `scripts/ensure-ghosttykit.sh` | Gets the GhosttyKit.xcframework that matches the `ghostty/` submodule commit. |
 
