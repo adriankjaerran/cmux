@@ -1189,7 +1189,22 @@ and `cmuxTests`; `Package.resolved`: `swift-crypto`, `swift-asn1` (nothing else 
 - ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`). Stale-bundle check: no `swift-crypto_Crypto.bundle` in the app.
 - ✅ `grep -rlE "import (CmuxCloud|CMUXAuthCore|CmuxAuthRuntime|StackAuth)" Sources CLI Packages` → nothing.
 
-### ⬜ 9.16 Delete the mobile, Iroh, Irx, Hive, presence and push packages (M, low–medium risk)
+### ✅ 9.16 Delete the mobile, Iroh, Irx, Hive, presence and push packages (M, low–medium risk)
+
+**Done ("Phase 9.16").** Deleted `CmuxHive`, `Packages/Shared/CmuxIrohTransport`, `CmuxIrxTransport`,
+`CmuxWorkspacePresence` and the whole `Packages/iOS/` folder (`CmuxMobileRPC`, `CmuxMobileTransport`,
+`CmuxMobilePairedMac`, `CmuxMobileShellModel`, `CmuxMobileSupport`, `CmuxMobileDiagnostics`: only `CmuxHive` reached
+them); pbxproj: 7 package refs (incl. the `XCRemoteSwiftPackageReference "iroh-ffi"` block), their products (`IrohLib`
+twice) and Frameworks lines; `Package.resolved`: `iroh-ffi`. Differs from the plan:
+- `CmuxPhonePush` already went in 9.15.
+- **`CmuxMobileHost` stays**: `BrowserPanel` (and its JS-dialog/HTTP-auth/recovery extensions) owns a
+  `MobileBrowserDialogBroker` that tracks every browser JS dialog, and `TerminalController` still holds
+  `MobileTaskFilesystemJobQuota` and the (unfed) `MobileViewportApplyGovernor`. Its deps (`CmuxFoundation`,
+  `CMUXMobileCore`, `CmuxAgentChat`) all stay. Shrinking it to the dialog broker (or moving the broker into
+  `CmuxBrowser`) is a later cleanup.
+- `Package.swift` walk: nothing left names a deleted package; `CMUXMobileCore`, `CmuxTerminalSizing`,
+  `CmuxTerminalSharing`, `CmuxAgentChat`, `CmuxAgentChatHost`, `CmuxSSHClipboardTrust`, `CmuxRemote*`,
+  `CmuxSurfaceCatalogModel`, `CmuxSettings` stay.
 
 **What it removes:** `Packages/macOS/CmuxMobileHost` (or all of it except `AgentChat/` if you shrank it in 9.5),
 `CmuxPhonePush`, `CmuxHive`, `Packages/Shared/CmuxIrohTransport` (30,400 lines), `CmuxIrxTransport` (13,900),
@@ -1206,9 +1221,13 @@ downloads it.
 
 **Risk:** low–medium. `IrohLib` is a binary; if a forgotten import remains, the link fails with a clear error.
 
-- ⬜ Standard checks.
-- ⬜ `rm -rf ~/Library/Developer/Xcode/DerivedData/cmux-test` once and do a clean `./scripts/test-app.sh --seed`
-  (about 10 minutes). The log shows no `iroh-ffi`, `stack-auth`, `swift-crypto` fetch.
+- ✅ Standard checks (build, `--version`, `config doctor` clean, `tree --all`, 383 methods, `surface.catalog`
+  same keys and identical `machines`, `cloud_states` `[]`, `current.list` same keys; scratch workspace `send` +
+  `read-screen`, closed after; no stale `Cloud`/`Iroh`/`crypto`/`Auth` bundles). ⬜ Manual: ⌘Q/reopen, agents,
+  browser JS dialogs.
+- ✅ `rm -rf ~/Library/Developer/Xcode/DerivedData/cmux-test` once and do a clean `./scripts/test-app.sh --seed`
+  (about 10 minutes). The log shows no `iroh-ffi`, `stack-auth`, `swift-crypto` fetch (only swift-markdown-ui,
+  swift-argument-parser, Highlightr, swift-cmark, swift-syntax, NetworkImage).
 
 ### ⬜ 9.17 Info.plist, build scripts, schema and docs (S–M, low risk)
 
