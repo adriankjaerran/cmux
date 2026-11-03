@@ -1,7 +1,8 @@
 # Removal plan: Chief, Cloud, Account, Mobile and the rest of upstream's servers
 
 Written 2026-11-02 against `1654d6a`. This plan splits Phases 8 and 9 of [removal-plan.md](removal-plan.md)
-into small steps. Nothing in it is done yet.
+into small steps. **All steps are done in the test app** (cmux DEV test, last step 9.17 in `d85151c`). **cmux
+Personal isn't installed yet:** run `./scripts/install-personal.sh` after the checks in "Manual checks left" below.
 
 ✅ done · ⬜ open · Size: S = under an hour, M = a few hours, L = a day or more.
 
@@ -55,7 +56,7 @@ and rebuild. Check the same in `~/Applications/cmux Personal.app` after the fina
 
 ## Standard checks (do these after every step)
 
-- ⬜ `./scripts/test-app.sh --seed` (it runs `reload.sh --tag test --no-global-cli-links` with
+- ⬜ `./scripts/test-app.sh --seed` (it runs `reload.sh --tag test --no-global-cli-links`; until 9.17 also with
   `CMUX_DEV_BACKEND_MODE=local CMUX_DEV_CLOUD_ENABLED=0`) builds and opens **cmux DEV test** with your layout.
 - ⬜ All groups and workspaces come back, the pinned cmux row is first.
 - ⬜ A new zsh terminal shows folder and git branch in the sidebar.
@@ -1229,7 +1230,48 @@ downloads it.
   (about 10 minutes). The log shows no `iroh-ffi`, `stack-auth`, `swift-crypto` fetch (only swift-markdown-ui,
   swift-argument-parser, Highlightr, swift-cmark, swift-syntax, NetworkImage).
 
-### ⬜ 9.17 Info.plist, build scripts, schema and docs (S–M, low risk)
+### ✅ 9.17 Info.plist, build scripts, schema and docs (S–M, low risk)
+
+**Done ("Phase 9.17", `d85151c`).** Differs from the plan:
+- `sentry-cocoa` was already gone (9.0). `config/IrohRelayPolicyProduction.xcconfig` (used by `--prod-auth`) was never
+  copied, so `--prod-auth` was already broken; it went.
+- `Info.plist`: as planned; the `.auth` URL type has an XML comment saying it's the app's own link scheme
+  (`reload.sh`'s `set_plist_url_scheme` still rewrites `CFBundleURLTypes:1`, the order is unchanged).
+- `reload.sh`, beyond the plan: the shared dev backend lookup went (`scripts/lib/dev-backend-origin.sh` deleted; tagged
+  builds always use the local origin, so nothing reads `CMUX_DEV_BACKEND_MODE` and `test-app.sh` /
+  `install-personal.sh` pass neither variable now). **The Stack auth credential machinery went too**
+  (`--credentials-file`, `--auth-profile`, `--expected-account`, the `--launch` gate that demanded
+  `~/.secrets/cmuxterm-dev.env` from `setup-team-dev.sh`, `CMUX_AUTH_CREDENTIALS_FILE` / `CMUX_DEV_AUTH_PROFILE` in the
+  plist and launch env, the `dev-secrets.sh` source); nothing in the app reads them. `CMUX_AUTH_WWW_ORIGIN`,
+  `CMUX_VM_API_BASE_URL`, `CMUX_IROH_*`, `CMUX_DEV_BACKEND_*` and `CMUXCloudDogfoodEnabled` are no longer written.
+  Kept: `CMUX_AUTH_CALLBACK_SCHEME`, socket, tag, CLI paths, `CMUX_PORT*`, and (unread, left for later)
+  `CMUX_WWW_ORIGIN` / `CMUX_API_BASE_URL` and the "Dev web origin" printout. `install-personal.sh` was edited
+  (the env prefix only) and checked with `bash -n`, **not run**.
+- `CmuxSettings`: removed `DevicesCatalogSection`, `DevicesAccessCoordinator`, `UserDefaultsSettingsStore.setMacHidden`
+  (+ their 3 package tests), `betaFeatures.cloudMachines` (`cloud.beta.machines.enabled`: catalog, file-store parser,
+  supported path, `RightSidebarBetaFeatureSettings.isCloudMachinesEnabled`), `account.selectedTeamID`, and the `cloud`
+  object in `CmuxConfigSchema.generated.swift` (edited by hand: its source `web/data/cmux.schema.json` isn't in this
+  repo). Your `cmux.json` has no `cloud`, `mobile` or `devices` key (checked read-only); `config doctor` is clean.
+  `chief` kept. **Left:** `MobileCatalogSection` and the `mobile` schema object (`mobile.artifactFolderAccess`,
+  `mobile.browserTunnel.allowOtherHosts` are still parsed from `cmux.json`), `AccountCatalogSection.piiDisplayMode` /
+  `welcomeShown` (the welcome flag is read by `TabManager`), `ComputerUseCatalogSection` (local).
+- **Found by the `strings` check:** `https://cmux.com/api/client-config` was still in the dead remote-flag fetch
+  (`FeatureFlags.postHogControlPlaneRequest`, unreachable since Phase 3). It now returns `nil` without a URL.
+- The six CI/dev scripts from the 9.15 note: **deleted** `scripts/setup-team-dev.sh` (+ `setup-team-dev.test.mjs`),
+  `scripts/stage-cloud-navigation-tests.py`, `scripts/ci/cloud_capture_provision.py`, `scripts/ci/build-cloud-tunnel.sh`
+  (all Cloud/Stack-auth only) and **the whole `scripts/e2e/` folder** (it is the iOS/Iroh E2E harness;
+  `backend-up.sh` was one of 8 files that only serve each other; there is no `.github/workflows` here). **Edited**
+  `scripts/ci/package-test-lane.sh` (a generic lane): dropped the 15 deleted package names (incl. the long-gone
+  `CmuxMobileTerminalKit`, `CmuxMobileWorkspace`) and the Cloud/Auth/Iroh case patterns.
+- Checks (against the test app, `/tmp/cmux-debug-test.sock`): two `./scripts/test-app.sh --seed` builds (no errors),
+  `identify` = `com.cmuxterm.app.debug.test`, `--version`, `config doctor` clean, `tree --all` 13 workspaces (same as
+  Personal's session file), 383 methods (same as 9.16), `config get chief.enabled` → `false`, `vm list` → unknown
+  command, `current.list` answers, `--help` has no cloud / vm / auth / chief entries (only the local "Socket Auth"
+  password section and `claude-teams` / `codex-teams`), `plutil -lint Resources/Info.plist` OK, the built
+  `Info.plist` has no Iroh/Cloud/dogfood/VM keys and the `cmux-dev-test` scheme, `open -a <test app>
+  cmux-dev-test://workspace/<id>` selected that workspace, `strings` on `cmux DEV`, `cmux DEV.debug.dylib` and
+  `bin/cmux` → nothing, no stale Chief/Cloud/Iroh/crypto/Auth bundles. `bash -n` on `reload.sh`, `test-app.sh`,
+  `install-personal.sh`, `package-test-lane.sh`.
 
 **What it removes:** leftover build settings and keys.
 
@@ -1253,8 +1295,47 @@ downloads it.
   "What's different" row ("Builds without upstream's … team login or cmux-tui client" → "without Chief, Cloud,
   Account, Mobile and Iroh").
 
-- ⬜ Standard checks. `plutil -lint Resources/Info.plist`. `config doctor` clean.
-- ⬜ `strings "<test app>/Contents/MacOS/cmux DEV test" | grep -E "relay\.cmux\.dev|iroh\.link|stack-auth|api/client-config"` → nothing.
+- ✅ Standard checks (build, `--version`, `config doctor`, `tree --all`; the clicking ones are in "Manual checks left").
+  `plutil -lint Resources/Info.plist`. `config doctor` clean.
+- ✅ `strings "<test app>/Contents/MacOS/cmux DEV test" | grep -E "relay\.cmux\.dev|iroh\.link|stack-auth|api/client-config"` → nothing.
+  (The executable is `Contents/MacOS/cmux DEV`; the Debug code is in `cmux DEV.debug.dylib`. Both checked, and `bin/cmux`.)
+
+---
+
+## Manual checks left (before and after installing cmux Personal)
+
+Gathered from every step's ⬜ items, deduplicated. Do them in **cmux DEV test** (`./scripts/test-app.sh --seed`),
+then install, then the last block in cmux Personal.
+
+In the test app:
+- ⬜ Layout: all groups and workspaces back, the pinned cmux row first. ⌘Q and reopen: everything comes back.
+- ⬜ A new zsh terminal (⌘T by keyboard too) shows folder and git branch in the sidebar.
+- ⬜ `claude` and `pi` start through the shims and show `run` / `wait` / `idle`; a notification shows the red number.
+- ⬜ The cmux agent itself: `cmux_overview`, `cmux_sessions`, `cmux_send` with multi-line text, `cmux_message_agent`,
+  `cmux_config`; pi-cmux verbs from a real Pi session.
+- ⬜ Pinned cmux row: can't close, can't unpin, stays on top; closing its terminal starts a fresh agent.
+- ⬜ Another group (e.g. Obsidian) can be unpinned and deleted.
+- ⬜ ⌘⇧P "chief" finds nothing; View menu has no "Open Chief"; no Cloud menu; Help menu has no Cloud/pricing items.
+- ⬜ Settings opens on App; the list has no Account, Mobile, Cloud, Devices, Networking; App, Terminal, Sidebar,
+  Automation (no Chief card), Notifications (no iPhone forwarding row), Keyboard Shortcuts (no "Open Chief") open.
+- ⬜ Shortcuts: ⌘O, ⌥⌘↑ / ⌥⌘↓, tab shortcuts.
+- ⬜ Sidebar footer: same buttons as before minus account / mobile / cloud / upgrade; compact sidebar rows unchanged.
+- ⬜ Drag a tab between panes and between workspaces; close a workspace and reopen it with ⇧⌘T.
+- ⬜ Drag a file into a terminal; paste a screenshot into `claude`; plain text paste.
+- ⬜ Right sidebar: Files content, Find, file preview (also an SSH file preview); ⌘P global search lists Claude/Pi sessions.
+- ⬜ Browser: a JS `alert`/`confirm` dialog shows natively, a popup, a download.
+- ⬜ Feed "send text" reply and a notification reply land in the terminal.
+- ⬜ A remote tmux workspace still connects (if you use one).
+- ⬜ "Copy workspace link", paste it in Safari: the test app opens that workspace.
+
+Install and after (cmux Personal):
+- ⬜ Finish or note running agent work (terminals restart), then `./scripts/install-personal.sh` (backs up the layout
+  to `personal-backups/<date>/`).
+- ⬜ Stale bundles: `ls ~/Applications/cmux\ Personal.app/Contents/Resources | grep -E "Chief|HomeRender|MessagesLab|AgentQuestion|Cloud|Iroh|PostHog|crypto"` → nothing.
+- ⬜ Layout and agents come back as above; run `pin-cmux-agent.sh` once (palette "cmux agent: open pinned workspace")
+  so `set-agent-home` is set.
+- ⬜ Optional: delete `~/Library/Application Support/cmux/mobile-host-device-id`, the `mobileHost.deviceID` default and
+  any `com.cmuxterm.app.auth*` Keychain items.
 
 ---
 
