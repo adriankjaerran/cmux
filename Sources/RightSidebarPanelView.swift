@@ -237,6 +237,16 @@ struct RightSidebarPanelView: View {
                             selectionNamespace: modeBarSelectionNamespace
                         ) {
                             let mode = item.mode
+                            // Clicking the tab that's already showing closes the sidebar.
+                            if fileExplorerState.isVisible,
+                               item.isSelected(mode: fileExplorerState.mode) {
+                                if AppDelegate.shared?.toggleRightSidebarInActiveMainWindow(
+                                    preferredWindow: NSApp.keyWindow ?? NSApp.mainWindow
+                                ) != true {
+                                    fileExplorerState.isVisible = false
+                                }
+                                return
+                            }
                             if AppDelegate.shared?.focusRightSidebarInActiveMainWindow(
                                 mode: mode,
                                 focusFirstItem: true,

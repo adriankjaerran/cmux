@@ -1,10 +1,6 @@
 import AppKit
-import CmuxWorkspaces
-import SwiftUI
 
-// MARK: - Closure menu item
-
-/// NSMenuItem driven by a closure (the lanes menu has no long-lived target).
+/// NSMenuItem driven by a closure (menus with no long-lived target).
 @MainActor
 final class SidebarRowClosureMenuItem: NSMenuItem {
     private let handler: () -> Void

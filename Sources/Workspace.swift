@@ -14969,6 +14969,8 @@ extension Workspace: BonsplitDelegate {
                             .flatMap { panelIdFromSurfaceId($0.id) }
                     )
                 }
+            case .toggleRightSidebar:
+                _ = AppDelegate.shared?.toggleRightSidebarInActiveMainWindow(preferredWindow: presentingWindow)
             case .newTerminal, .newBrowser, .splitRight, .splitDown:
                 break
             }

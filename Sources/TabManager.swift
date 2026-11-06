@@ -2984,6 +2984,13 @@ class TabManager: ObservableObject {
         return closeWorkspaceIfRunningProcess(workspace, source: .tabCloseButton)
     }
 
+    /// Backspace in sidebar keyboard mode, after its own "Delete workspace?"
+    /// sheet: no second prompt.
+    @discardableResult
+    func closeWorkspaceConfirmedFromSidebarKeyboard(_ workspace: Workspace) -> Bool {
+        closeWorkspaceIfRunningProcess(workspace, requiresConfirmation: false, closeAlreadyConfirmed: true)
+    }
+
     @discardableResult
     func closeWorkspaceWithConfirmation(tabId: UUID) -> Bool {
         guard let workspace = tabs.first(where: { $0.id == tabId }) else { return false }

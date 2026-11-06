@@ -6023,10 +6023,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         if isRightSidebarFocusResponder(responder, in: window) {
             return false
         }
-        // Focus Sidebar hands the workspace list the keyboard on purpose.
-        if let table = responder as? SidebarWorkspaceTableViewImpl, table.window === window {
-            return false
-        }
         return focusedTerminalKeyRepairNeeded(
             responderIsWindow: responder is NSWindow,
             responderHasViableKeyRoutingOwner: responderHasViableKeyRoutingOwner(responder, in: window),
@@ -17002,6 +16998,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 )
                 if workspace != nil { onExecuted?() }
                 return workspace != nil
+            case .toggleRightSidebar:
+                guard toggleRightSidebarInActiveMainWindow(preferredWindow: resolvedWindow(for: context)) else { return false }
+                onExecuted?()
+                return true
             case .newTerminal:
                 context.tabManager.newSurface()
                 onExecuted?()

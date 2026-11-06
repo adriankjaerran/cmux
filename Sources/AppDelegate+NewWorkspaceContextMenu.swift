@@ -107,8 +107,8 @@ extension AppDelegate {
         isAuthenticated: Bool? = nil
     ) -> Bool {
         switch action {
-        case .cloudVM, .mobileConnect:
-            // Cloud and Mobile are being removed in this fork.
+        case .cloudVM, .mobileConnect, .toggleRightSidebar:
+            // Not a "new" action. Cloud and Mobile are being removed in this fork.
             return false
         case .newBrowser, .newAgentChat:
             return BrowserAvailabilitySettings.isEnabled()

@@ -261,6 +261,7 @@ const flatEntries = computed(() => {
 //   return/space  open the workspace (focus its terminal, mode ends) or
 //                 toggle the folder
 //   c             collapse all folders, or expand all when none is open
+//   delete        close the workspace under the cursor (the host asks first)
 //   escape        back to the terminal (as does cmd+O again)
 // Any other key ends the mode and goes on to the terminal as usual.
 // Navigation itself is the runtime's pure sidebarKeyNav (unit-tested).
@@ -319,6 +320,12 @@ onKey((e) => {
     setCursorId(current);
     toggleCollapseAll();
     return true;
+  }
+  if (e.key === "delete") {
+    setCursorId(current);
+    // Folder headers: nothing (Delete Group stays in the context menu).
+    if (!current || current.startsWith("h:")) return true;
+    return { close: current };
   }
   const r = sidebarKeyNav(rows, current, e.key);
   if (!r.handled) return false;

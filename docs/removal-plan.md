@@ -36,6 +36,7 @@ Model for how to do a removal: `git show --stat 61dca2e` (Simulator, Computer Us
 | ✅ 7 | Send Feedback | S–M | low | yes |
 | ✅ 8 | Chief and Chief Home | M–L | medium | yes |
 | ✅ 9 | Cloud, Auth, mobile pairing, cmux-tui / Machines, `cmux vm` | L (several commits) | high | yes |
+| 10 | Native left sidebar (compact.js only) | L | medium | yes |
 
 Each phase is one commit, one test build, one reinstall. Never two phases in one build.
 
@@ -511,6 +512,50 @@ Mobile, Cloud, Devices, Networking (Iroh) and their cards. Build: `CMUX_DEV_CLOU
   folder/branch/PR, `claude`/`pi` states, `open https://…`, the cmux agent's tools: by hand (see "Manual checks left" in
   chief-cloud-removal-plan.md).
 - ✅ `cmux --version` from the built app; `cmux config doctor`.
+- ⬜ `scripts/install-personal.sh`.
+
+## Phase 10: native left sidebar removal (L, medium risk)
+
+**Built, not committed yet** (2026-11-04). The left sidebar is now always a custom sidebar; `compact.js`
+(`cmux.sidebar.custom.compact`) is the default and the only bundled one. ~33,000 lines, 137 app files plus the
+`Examples/CmuxExtensionSidebarExamples` package.
+
+**Removed:**
+- The native workspace list: the SwiftUI rows (`TabItemView`, `SidebarWorkspaceRowView`, metadata rows, group
+  headers, drop delegates and overlays, inline rename, status slots/badges/spinners, row snapshots and caches) and
+  the AppKit table (`Sources/Sidebar/AppKitList/`). `VerticalTabsSidebar` went from ~4,300 lines to ~200.
+- The other built-in providers: `cmux.sidebar.default`, Conversations (`cmux.sidebar.conversations`,
+  `ConversationSidebarView`), the hosted-extensions sidebar (`cmux.sidebar.extensions`,
+  `CMUXInstalledExtensionSidebarHostView`, `ExtensionSidebarWorkspaceRowView`), the bundled example providers
+  (`SidebarExamples.providers`) and their browser-stack / tree rendering in `ContentView`.
+- The Conversation Sidebar beta toggle in Settings, the `sidebar_overlay_gate` debug socket command, the
+  native-table branches in Focus Sidebar (`AppDelegate+SidebarKeyboardFocus.swift`) and the terminal key repair.
+
+**Kept:** `VerticalTabsSidebar` as the shell (footer, chrome border, `CustomSidebarBonsplitTabDropOverlay`),
+`SidebarState`, the resizer, `SidebarSelection` (saved in the session), `BonsplitTabDragPayload`,
+`SidebarTabDragPayload`, the move APIs in `AppDelegate` and the group APIs in `TabManager`, everything the right
+sidebar's custom mode uses, the checklist/status popovers (the Todo pane uses them), `SidebarRowClosureMenuItem`
+(Vault menu), `WorkspaceTodoPaletteCommands` (file renamed from `TabItemView+WorkspaceTodo.swift`). Config keys
+stay: `sidebar.compactStatusIcons` (only the key names, `SidebarCompactStatusGlyph.IconSlot`), the sidebar row
+settings and `sidebar.beta.conversations.enabled` are still parsed so `cmux.json` stays valid.
+
+**Selection:** `CmuxExtensionSidebarSelection.effectiveProviderId(_:)` uses the stored
+`cmux.sidebar.custom.<name>` when its file exists, else compact. At launch
+`normalizeRemovedProviderSelection` rewrites any stored non-custom id (old default, Conversations, extensions,
+examples) to compact. If no sidebar file is found the sidebar shows "Sidebar unavailable" instead of a list. The
+picker menu and the "Sidebar: …" palette commands list only the custom sidebar files.
+
+**Left for later:** the Extensions beta (extension browser panel, footer button) now has nowhere to show a
+sidebar extension; `SidebarDropPlanner` (CmuxFoundation) and `CmuxSidebarProviderDescriptor.defaultWorkspaces`
+(CmuxSidebarProviderKit) have no app callers; `FeatureFlags` `isAppKitSidebarListEnabled` /
+`isConversationSidebarAvailable`; the `Workspace` sidebar observation publishers; stale pbxproj entries for old
+`cmuxTests` files (`SidebarWorkspaceTable*Tests.swift`); `scripts/check-workspace-package-groups.py` still names
+the Examples group; the MDM `DisableCustomSidebars` policy no longer hides the left sidebar (only the picker).
+
+- ✅ `./scripts/test-app.sh --no-open` builds.
+- ⬜ In the test app: compact sidebar shows, select/reorder/rename/groups through compact.js, drop a tab onto a
+  row, Focus Sidebar, footer buttons; ⌘Q and reopen.
+- ⬜ A stored `cmuxExtensionSidebarProviderId = cmux.sidebar.default` lands on compact.
 - ⬜ `scripts/install-personal.sh`.
 
 ## Other candidates (not planned yet)

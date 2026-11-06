@@ -20,7 +20,7 @@ Only the macOS app and what it needs to build were copied. Everything else staye
 | ✅ | `vendor/stack-auth-swift-sdk-prerelease` | Vendored Stack Auth SDK; deleted in Phase 9.15 |
 | ✅ | `vendor/bonsplit` | Split-pane library, git submodule at `58b73fd` |
 | ✅ | `ghostty` | Terminal engine, git submodule at `ef4f157` (must match the prebuilt download) |
-| ✅ | `Examples/CmuxExtensionSidebarExamples` | Built-in sidebar providers the app links |
+| ✅ | `Examples/CmuxExtensionSidebarExamples` | Built-in sidebar providers the app linked; deleted in Phase 10 |
 | ✅ | `workers/cmux-paste-text` | Plain-text paste helper bundled in the app |
 | ✅ | `scripts/` | Build scripts (`reload.sh`, `ensure-ghosttykit.sh`, …) plus `install-personal.sh` (new) |
 | ✅ | `LICENSE`, `THIRD_PARTY_LICENSES.md` | Required by the GPL |
@@ -38,7 +38,7 @@ Only the macOS app and what it needs to build were copied. Everything else staye
 | ❌ | `cmuxTests/`, `cmuxUITests/`, `cmuxCLITests/`, `cmuxCLITestSupport/`, `tests/`, `tests_v2/` | App test suites (package tests under `Packages/*/Tests` were kept) |
 | ❌ | `docs/`, `design/`, `plans/`, `Prototypes/`, `experiments/`, `dogfood/`, `artifacts/`, `KeyboardPinningLab/` | Upstream docs and experiments |
 | ❌ | `skills/` | Upstream's agent skills; `cmux-architecture` and `cmux-dev-workflow` are worth reading |
-| ❌ | `Examples/` (except the sidebar examples), `schemas/`, `config/` | Samples and CI config |
+| ❌ | `Examples/`, `schemas/`, `config/` | Samples and CI config (the sidebar examples were copied, then deleted in Phase 10) |
 | ❌ | `homebrew-cmux` | Homebrew tap (submodule) |
 | ❌ | `README*.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`, `TODO.md`, other root notes | Upstream docs |
 | ❌ | `package.json`, `bun.lock`, `biome.json`, `skills.sh`, `glaeda.apple.json` | JS tooling for the parts left behind |
@@ -76,3 +76,4 @@ See the table in the [README](../README.md#whats-different-from-upstream-cmux) a
 | Chief and Chief Home | `cmux chief`, `chief.*` socket methods, the Chief pane, Home group and sidebar rows, `Sources/Chief/`, the packages `CmuxChief`, `CmuxHomeCore`, `CmuxHomeRender`, `CmuxMessagesLab`, `CmuxAgentQuestion` (`bf3a1d0`, `945611c`, `7159ca8`, Phase 8.4); the `chief` config key and `PanelType.chief` stay so old configs and layouts load |
 | CodeRouter app code | `cmux coderouter` / `cmux cr`, the guide pane, `coderouter.*` socket methods (`ccd7f4f`, 9.11); `PanelType.coderouterGuide` stays |
 | Cloud, Account, Mobile, Devices, Iroh, SSH-TUI, `cmux vm`, pricing, Stack Auth | Phase 9.0–9.17 (see [chief-cloud-removal-plan.md](chief-cloud-removal-plan.md)): the cloud CLI commands and socket methods, `Sources/Cloud`, `Mobile`, `Devices`, `Hive`, `Auth`, `RemoteTui`, the cmux-tui provider, the packages `CmuxCloud*`, `CMUXAuthCore`, `CmuxAuthRuntime`, `CmuxPhonePush`, `CmuxHive`, `CmuxIrohTransport`, `CmuxIrxTransport`, `CmuxWorkspacePresence`, `Packages/iOS`, Stack Auth, `iroh-ffi`; the Iroh/Cloud `Info.plist` keys, build settings and `reload.sh` values. Kept: `CmuxMobileHost` (browser JS dialog broker), remote SSH / tmux, the app's own URL scheme, stored enum cases so old layouts load |
+| Native left sidebar | Phase 10: the native workspace list (SwiftUI rows, `TabItemView`, the AppKit table `Sources/Sidebar/AppKitList`), the Conversations and hosted-extensions sidebars, `Examples/CmuxExtensionSidebarExamples`. The left sidebar is always a custom sidebar (`compact.js` by default) |

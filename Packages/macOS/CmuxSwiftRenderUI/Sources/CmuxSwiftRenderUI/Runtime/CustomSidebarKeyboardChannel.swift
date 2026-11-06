@@ -64,11 +64,14 @@ public struct SidebarKeyResult: Equatable, Sendable {
     public var exit: Bool
     /// Leave keyboard mode, select this workspace id and focus its terminal.
     public var openWorkspaceId: String?
+    /// Ask to close this workspace id (the host confirms first).
+    public var closeWorkspaceId: String?
 
-    public init(handled: Bool, exit: Bool = false, openWorkspaceId: String? = nil) {
+    public init(handled: Bool, exit: Bool = false, openWorkspaceId: String? = nil, closeWorkspaceId: String? = nil) {
         self.handled = handled
         self.exit = exit
         self.openWorkspaceId = openWorkspaceId
+        self.closeWorkspaceId = closeWorkspaceId
     }
 
     public static let unhandled = SidebarKeyResult(handled: false)
@@ -83,7 +86,8 @@ public struct SidebarKeyResult: Equatable, Sendable {
         self.init(
             handled: object["handled"] as? Bool ?? false,
             exit: object["exit"] as? Bool ?? false,
-            openWorkspaceId: object["open"] as? String
+            openWorkspaceId: object["open"] as? String,
+            closeWorkspaceId: object["close"] as? String
         )
     }
 }

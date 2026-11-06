@@ -4,11 +4,7 @@ import CmuxSwiftRenderUI
 /// Focus Sidebar (cx-zjtn.5): the workspace list takes the keyboard, as in
 /// cmux-next. The shortcut toggles: pressing it again hands the keyboard back.
 ///
-/// Native sidebar: the workspace table becomes first responder; Down/Up
-/// select the next/previous workspace, Return or Escape hand the keyboard
-/// back to the selected workspace.
-///
-/// Custom JS sidebar (the fork's compact sidebar): "sidebar keyboard mode"
+/// The left sidebar is always a custom JS sidebar (the fork's compact sidebar): "sidebar keyboard mode"
 /// (``CustomSidebarKeyboardMode``). The window's first responder is cleared
 /// so the terminal gets no keys, and the shortcut router hands every
 /// key-down to the sidebar program's `onKey` handler through the window's
@@ -28,22 +24,15 @@ extension AppDelegate {
             endCustomSidebarKeyboardMode(restoreFocus: true)
             return true
         }
-        if let table = window.firstResponder as? SidebarWorkspaceTableViewImpl,
-           !table.isHiddenOrHasHiddenAncestor {
-            focusSelectedWorkspacePanel(manager: context.tabManager, window: window)
-            return true
-        }
         if !context.sidebarState.isVisible {
             context.sidebarState.toggle()
         }
         let channel = context.sidebarState.customSidebarKeyboard
         if channel.acceptsKeys {
             beginCustomSidebarKeyboardMode(in: window, channel: channel)
-        } else if Self.sidebarTable(in: window.contentView) == nil, context.sidebarState.isVisible {
+        } else if context.sidebarState.isVisible {
             // A custom sidebar revealed by this call mounts on a later pass.
             beginCustomSidebarKeyboardModeWhenMounted(in: window, channel: channel, attemptsLeft: 5)
-        } else {
-            focusSidebarTable(in: window, attemptsLeft: 5)
         }
         return true
     }
@@ -98,7 +87,9 @@ extension AppDelegate {
             endCustomSidebarKeyboardMode(restoreFocus: true)
             return false
         }
-        if let openId = result.openWorkspaceId {
+        if let closeId = result.closeWorkspaceId {
+            confirmCloseWorkspaceFromSidebarKeyboard(id: closeId, in: window)
+        } else if let openId = result.openWorkspaceId {
             endCustomSidebarKeyboardMode(restoreFocus: false)
             openWorkspaceFromSidebarKeyboard(id: openId, in: window)
         } else if result.exit {
@@ -141,14 +132,57 @@ extension AppDelegate {
             guard let self, let window else { return }
             if channel.acceptsKeys {
                 self.beginCustomSidebarKeyboardMode(in: window, channel: channel)
-            } else if let table = Self.sidebarTable(in: window.contentView), !table.isHiddenOrHasHiddenAncestor {
-                window.makeFirstResponder(table)
             } else {
                 self.beginCustomSidebarKeyboardModeWhenMounted(
                     in: window,
                     channel: channel,
                     attemptsLeft: attemptsLeft - 1
                 )
+            }
+        }
+    }
+
+    /// Backspace in sidebar keyboard mode: a small "Delete workspace?" sheet
+    /// (Return or click deletes, Esc cancels), then back into keyboard mode so
+    /// the next row can be deleted the same way.
+    private func confirmCloseWorkspaceFromSidebarKeyboard(id: String, in window: NSWindow) {
+        guard let manager = contextForMainTerminalWindow(window)?.tabManager,
+              let uuid = UUID(uuidString: id),
+              let workspace = manager.tabs.first(where: { $0.id == uuid }) else { return }
+        guard manager.canCloseWorkspace(workspace, allowPinned: true) else {
+            NSSound.beep()
+            return
+        }
+        // The sheet takes key status, which would end the mode anyway.
+        endCustomSidebarKeyboardMode(restoreFocus: false)
+        DispatchQueue.main.async { [weak self, weak window, weak manager, weak workspace] in
+            guard let self, let window, let manager, let workspace else { return }
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            let title = workspace.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            alert.messageText = title.isEmpty
+                ? String(localized: "sidebar.keyboard.deleteWorkspace.untitled", defaultValue: "Delete this workspace?")
+                : String(
+                    format: String(localized: "sidebar.keyboard.deleteWorkspace.title", defaultValue: "Delete workspace “%@”?"),
+                    title
+                )
+            alert.informativeText = String(
+                localized: "sidebar.keyboard.deleteWorkspace.message",
+                defaultValue: "Its terminals and tabs will be closed."
+            )
+            let deleteButton = alert.addButton(withTitle: String(localized: "sidebar.keyboard.deleteWorkspace.delete", defaultValue: "Delete"))
+            deleteButton.keyEquivalent = "\r"
+            deleteButton.hasDestructiveAction = true
+            let cancelButton = alert.addButton(withTitle: String(localized: "common.cancel", defaultValue: "Cancel"))
+            cancelButton.keyEquivalent = "\u{1b}"
+            alert.window.initialFirstResponder = deleteButton
+            let confirmed = alert.runCmuxModal(presentingWindow: window) == .alertFirstButtonReturn
+            if confirmed {
+                manager.closeWorkspaceConfirmedFromSidebarKeyboard(workspace)
+            }
+            // Back to the list (the cursor lands on the now-selected row).
+            if window.isVisible, !CustomSidebarKeyboardMode.shared.isActive(in: window) {
+                _ = self.focusSidebarForKeyboard(preferredWindow: window)
             }
         }
     }
@@ -163,57 +197,6 @@ extension AppDelegate {
         focusSelectedWorkspacePanel(manager: manager, window: window)
     }
 
-    // MARK: - Native sidebar
-
-    /// Handles a key typed while the workspace list has focus.
-    ///
-    /// - Returns: `false` for keys the list leaves to AppKit.
-    func handleSidebarKeyboardKey(_ event: NSEvent, in table: NSTableView) -> Bool {
-        guard event.modifierFlags.isDisjoint(with: [.command, .option, .control, .shift]),
-              let window = table.window,
-              let manager = contextForMainTerminalWindow(window)?.tabManager else {
-            return false
-        }
-        switch event.keyCode {
-        case 125: // Down
-            manager.selectNextTab()
-        case 126: // Up
-            manager.selectPreviousTab()
-        case 36, 76, 53: // Return, keypad Enter, Escape
-            focusSelectedWorkspacePanel(manager: manager, window: window)
-            return true
-        default:
-            return false
-        }
-        // Selecting a workspace restores its panel's focus; keep the list
-        // focused so the next arrow keeps stepping.
-        keepKeyboard(on: table, in: window)
-        return true
-    }
-
-    private func focusSidebarTable(in window: NSWindow, attemptsLeft: Int) {
-        if let table = Self.sidebarTable(in: window.contentView), !table.isHiddenOrHasHiddenAncestor {
-            window.makeFirstResponder(table)
-            return
-        }
-        // A sidebar revealed by this call mounts on a later pass.
-        guard attemptsLeft > 1 else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self, weak window] in
-            guard let window else { return }
-            self?.focusSidebarTable(in: window, attemptsLeft: attemptsLeft - 1)
-        }
-    }
-
-    private func keepKeyboard(on table: NSTableView, in window: NSWindow) {
-        window.makeFirstResponder(table)
-        for delay in [0.0, 0.15] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak table, weak window] in
-                guard let table, let window, window.firstResponder !== table else { return }
-                window.makeFirstResponder(table)
-            }
-        }
-    }
-
     private func focusSelectedWorkspacePanel(manager: TabManager, window: NSWindow) {
         _ = window.makeFirstResponder(nil)
         guard let workspace = manager.selectedWorkspace,
@@ -223,15 +206,6 @@ extension AppDelegate {
         }
         noteMainPanelKeyboardFocusIntent(workspaceId: workspace.id, panelId: panelId, in: window)
         workspace.focusPanel(panelId, focusIntent: panel.preferredFocusIntentForActivation())
-    }
-
-    private static func sidebarTable(in view: NSView?) -> SidebarWorkspaceTableViewImpl? {
-        guard let view else { return nil }
-        if let table = view as? SidebarWorkspaceTableViewImpl { return table }
-        for subview in view.subviews {
-            if let table = sidebarTable(in: subview) { return table }
-        }
-        return nil
     }
 }
 

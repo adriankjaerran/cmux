@@ -600,7 +600,7 @@
     runPending();
   };
 
-  // Returns a JSON string { handled, exit, open } for the host.
+  // Returns a JSON string { handled, exit, open, close } for the host.
   g.__key = (json) => {
     if (!keyHandler) return JSON.stringify({ handled: false });
     let result;
@@ -612,10 +612,12 @@
     if (result === true) return JSON.stringify({ handled: true });
     if (!result || typeof result !== "object") return JSON.stringify({ handled: false });
     const open = result.open === undefined || result.open === null ? null : String(result.open);
+    const close = result.close === undefined || result.close === null ? null : String(result.close);
     return JSON.stringify({
-      handled: result.handled !== false || open !== null || !!result.exit,
+      handled: result.handled !== false || open !== null || close !== null || !!result.exit,
       exit: !!result.exit || open !== null,
       open,
+      close,
     });
   };
 

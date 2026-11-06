@@ -52,13 +52,23 @@ Session save/restore: `Sources/SessionPersistence.swift`.
 
 ## 3. Sidebars
 
-**Left (workspace) sidebar.** The setting `cmuxExtensionSidebarProviderId` picks which "provider" draws it. Logic: `Sources/CmuxExtensionSidebarSelection.swift`.
-- Built-in: `VerticalTabsSidebar` (in `ContentView.swift`). Its provider id is `CmuxSidebarProviderDescriptor.defaultWorkspacesID`. Other built-in providers come from `Examples/CmuxExtensionSidebarExamples` (`SidebarExamples.providers`).
-- Custom: files named `<name>.js|.swift|.json`. If two files share a name, the order of preference is js > swift > json. Provider id is `cmux.sidebar.custom.<name>`.
+**Left (workspace) sidebar.** Always a custom sidebar; there is no native workspace list (removed in Phase 10, see
+`removal-plan.md`). The setting `cmuxExtensionSidebarProviderId` picks which custom sidebar file draws it. Logic:
+`Sources/CmuxExtensionSidebarSelection.swift` (`effectiveProviderId(_:)`: a stored `cmux.sidebar.custom.<name>` whose
+file exists, else compact; `normalizeRemovedProviderSelection` rewrites old ids such as `cmux.sidebar.default` at launch).
+- Shell: `VerticalTabsSidebar` (in `ContentView.swift`): mounts `CustomSidebarSurface`, the footer
+  (`SidebarFooter` / `SidebarFooterButtons`, `VerticalTabsSidebar+EmptyAreasAndFooter.swift`), the window chrome
+  border and `CustomSidebarBonsplitTabDropOverlay` (drop a Bonsplit tab on a row; row frames come from
+  `SceneRowFrameReporter`). If no sidebar file is found it shows a short "Sidebar unavailable" note.
+- Files named `<name>.js|.swift|.json`. If two files share a name, the order of preference is js > swift > json.
+  Provider id is `cmux.sidebar.custom.<name>`.
   - User dir: `~/.config/cmux/sidebars/` (`customSidebarsDirectory`). A user file overrides a bundled file with the same name.
   - Bundled (fork): `Resources/sidebars/*.js` → `Contents/Resources/sidebars`. They are copied by `scripts/build-app-bundled-resources.sh`.
-  - **Fork default:** `cmux.sidebar.custom.compact` (`Resources/sidebars/compact.js`). Custom sidebars are on by default (`CmuxMain.installPersonalDefaults`).
+  - **Default:** `cmux.sidebar.custom.compact` (`Resources/sidebars/compact.js`). The custom-sidebars beta flag
+    (on by default, `CmuxMain.installPersonalDefaults`) now only gates the right sidebar's custom mode, the picker
+    menu extras and the palette; the left sidebar renders regardless.
   - Rendered by `CustomSidebarSurface` (`Packages/macOS/CmuxSidebarInterpreterService/.../CmuxSidebarRemoteRender`). JS runs in `SidebarJSRuntime` (JavaScriptCore, `Packages/macOS/CmuxSwiftRenderUI/.../Runtime`). Swift/JSON files go through `CmuxSwiftRender`. Sidebars run actions via `cmux(...)` calls, which become socket commands such as `workspace.reorder`.
+  - Focus Sidebar (keyboard) uses custom-sidebar keyboard mode (`AppDelegate+SidebarKeyboardFocus.swift`).
 - Visibility and width: `SidebarState` (`Sources/Sidebar/SidebarState.swift`). Other sidebar pieces live in `Sources/Sidebar/` and `Packages/macOS/CmuxSidebar*`.
 
 **Right sidebar.** `RightSidebarPanelView` (`Sources/RightSidebarPanelView.swift`). Modes are listed in `RightSidebarMode.swift`: `files`, `find`, `sessions` ("Vault"), `feed`, `dock`, `machines` (the old Cloud tab: kept so stored values and the digit shortcuts don't shift, never available), `customSidebar`.
@@ -126,7 +136,7 @@ Session save/restore: `Sources/SessionPersistence.swift`.
 | Default left sidebar look (fork) | `Resources/sidebars/compact.js` |
 | Your own sidebar without rebuilding | `~/.config/cmux/sidebars/<name>.js` |
 | Sidebar selection/discovery logic | `Sources/CmuxExtensionSidebarSelection.swift` |
-| Built-in Swift sidebar | `VerticalTabsSidebar` in `Sources/ContentView.swift`, `Sources/Sidebar/` |
+| Left sidebar shell (footer, drop overlay) | `VerticalTabsSidebar` in `Sources/ContentView.swift`, `Sources/Sidebar/` |
 | Right sidebar modes / file explorer | `Sources/RightSidebarMode.swift`, `RightSidebarPanelView.swift`, `FileExplorer*.swift` |
 | Command palette commands | `ContentView.swift` (`commandPaletteCommandContributions`, `registerCommandPaletteHandlers`), `ContentView+*CommandPalette.swift` |
 | ⌘P switcher rows/order | `ContentView.swift` (`commandPaletteSwitcherEntries`, `commandPaletteOrderedSwitcherWorkspaces`), `CmuxCommandPalette/.../CommandPaletteWorkspaceOrdering.swift` |

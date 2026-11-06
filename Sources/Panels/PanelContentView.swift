@@ -259,11 +259,40 @@ struct PanelFilePathHeader<TrailingContent: View>: View {
                 .truncationMode(.middle)
                 .copyOnlyTextSelection(for: filePath)
             Spacer(minLength: 8)
+            PanelFilePathCopyButton(filePath: filePath)
+            PanelHeaderIconButton(
+                systemName: "folder",
+                label: String(localized: "panel.filePath.revealInFinder", defaultValue: "Show in Finder"),
+                isDisabled: !FileManager.default.fileExists(atPath: filePath),
+                action: {
+                    NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: filePath)])
+                }
+            )
             trailingContent()
         }
         .padding(.horizontal, RightSidebarChromeMetrics.contentIconLeadingPadding)
         .frame(height: RightSidebarChromeMetrics.secondaryBarHeight)
         .background(Color.clear)
+    }
+}
+
+/// Copies the header's file path; the icon turns into a checkmark briefly.
+struct PanelFilePathCopyButton: View {
+    let filePath: String
+    @State private var copied = false
+
+    var body: some View {
+        PanelHeaderIconButton(
+            systemName: copied ? "checkmark" : "doc.on.doc",
+            label: String(localized: "panel.filePath.copyPath", defaultValue: "Copy Path"),
+            action: {
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                pasteboard.setString(filePath, forType: .string)
+                copied = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copied = false }
+            }
+        )
     }
 }
 

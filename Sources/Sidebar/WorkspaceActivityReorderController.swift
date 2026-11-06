@@ -31,7 +31,9 @@ final class WorkspaceActivityReorderController {
         mode: @escaping @MainActor () -> WorkspaceAutoReorderMode = {
             UserDefaultsSettingsClient(defaults: .standard).value(for: SettingCatalog().app.reorderOnNotification)
         },
-        isSidebarInteracting: @escaping @MainActor () -> Bool = { SidebarReorderInteractionState.shared.isInteracting },
+        // The native sidebar table that reported hover/drag was removed
+        // (Phase 10); the custom sidebar does not report interaction.
+        isSidebarInteracting: @escaping @MainActor () -> Bool = { false },
         tabManagerForWorkspace: @escaping @MainActor (UUID) -> TabManager? = { AppDelegate.shared?.tabManagerFor(tabId: $0) }
     ) {
         self.gate = WorkspaceActivityReorderGate(cooldown: cooldown)

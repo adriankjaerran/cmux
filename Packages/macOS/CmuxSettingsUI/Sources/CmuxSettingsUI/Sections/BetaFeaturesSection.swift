@@ -7,7 +7,6 @@ import SwiftUI
 @MainActor
 public struct BetaFeaturesSection: View {
     @State private var feed: DefaultsValueModel<Bool>
-    @State private var conversationSidebar: DefaultsValueModel<Bool>
     @State private var extensions: DefaultsValueModel<Bool>
     @State private var customSidebars: DefaultsValueModel<Bool>
     @State private var remoteTmux: DefaultsValueModel<Bool>
@@ -23,7 +22,6 @@ public struct BetaFeaturesSection: View {
 
     public init(defaultsStore: UserDefaultsSettingsStore, catalog: SettingCatalog) {
         _feed = State(initialValue: DefaultsValueModel(store: defaultsStore, key: catalog.betaFeatures.rightSidebarFeed))
-        _conversationSidebar = State(initialValue: DefaultsValueModel(store: defaultsStore, key: catalog.betaFeatures.conversationSidebar))
         _extensions = State(initialValue: DefaultsValueModel(store: defaultsStore, key: catalog.betaFeatures.extensions))
         _customSidebars = State(initialValue: DefaultsValueModel(store: defaultsStore, key: catalog.betaFeatures.customSidebars))
         _remoteTmux = State(initialValue: DefaultsValueModel(store: defaultsStore, key: catalog.betaFeatures.remoteTmux))
@@ -44,8 +42,6 @@ public struct BetaFeaturesSection: View {
                 )
                 SettingsCardDivider()
                 feedRow
-                SettingsCardDivider()
-                conversationSidebarRow
                 SettingsCardDivider()
                 extensionsRow
                 SettingsCardDivider()
@@ -78,7 +74,6 @@ public struct BetaFeaturesSection: View {
     private func startObservingSettings() {
         let models: [any SettingObservationStarting] = [
             feed,
-            conversationSidebar,
             extensions,
             customSidebars,
             remoteTmux,
@@ -90,23 +85,6 @@ public struct BetaFeaturesSection: View {
             clickByHint,
         ]
         models.forEach { $0.startObserving() }
-    }
-
-    @ViewBuilder
-    private var conversationSidebarRow: some View {
-        SettingsCardRow(
-            configurationReview: .json("sidebar.beta.conversations.enabled"),
-            searchAnchorID: "setting:betaFeatures:conversationSidebar",
-            String(localized: "settings.betaFeatures.conversationSidebar", defaultValue: "Conversation Sidebar"),
-            subtitle: conversationSidebar.current
-                ? String(localized: "settings.betaFeatures.conversationSidebar.subtitleOn", defaultValue: "Shows Conversations in the left sidebar picker.")
-                : String(localized: "settings.betaFeatures.conversationSidebar.subtitleOff", defaultValue: "Hides Conversations while preserving existing agent sessions.")
-        ) {
-            Toggle("", isOn: Binding(get: { conversationSidebar.current }, set: { conversationSidebar.set($0) }))
-                .labelsHidden()
-                .controlSize(.small)
-                .accessibilityIdentifier("SettingsBetaConversationSidebarToggle")
-        }
     }
 
     @ViewBuilder

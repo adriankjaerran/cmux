@@ -74,6 +74,7 @@ struct ReorderableColumnView: View {
 
     @Environment(\.sceneStore) private var store
     @Environment(\.sceneEventSink) private var sink
+    @Environment(\.sceneRowFrameReporter) private var frameReporter
     @State private var model = ReorderDragModel()
     @State private var localOrder: [String]?
     // Deliberately NOT @State: slot heights change EVERY FRAME during the
@@ -104,6 +105,8 @@ struct ReorderableColumnView: View {
 
     var body: some View {
         let order = displayOrder
+        let reporter = frameReporter
+        let rowKeys = reporter == nil ? [:] : itemKeysByChild()
         VStack(alignment: .leading, spacing: rowSpacing) {
             ForEach(Array(order.enumerated()), id: \.element) { index, childId in
                 ReorderableRowView(
@@ -115,6 +118,11 @@ struct ReorderableColumnView: View {
                 .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { height in
                     rowHeights.record(childId, height)
                 }
+                .modifier(RowFrameReportingModifier(
+                    reporter: reporter,
+                    nodeId: childId,
+                    meta: rowMeta(childId: childId, keys: rowKeys)
+                ))
                 // A `fixed` row is not draggable itself (masking to
                 // .subviews keeps its taps/chevrons working) UNLESS it is a
                 // block head (`fixed` + `block`): grabbing a head drags the
@@ -515,6 +523,28 @@ struct ReorderableColumnView: View {
         CGFloat(store?.node(id)?.double("marginLeading") ?? 0)
     }
 
+    /// Every row's item key in one decode (see ``itemKey(forChild:)``), for
+    /// the per-body frame reporting pass.
+    private func itemKeysByChild() -> [String: String] {
+        let rows = node.children.filter { store?.node($0)?.type != "contextMenu" }
+        guard let json = node.string("itemKeys"),
+              let data = json.data(using: .utf8),
+              let keys = try? JSONDecoder().decode([String].self, from: data),
+              rows.count == keys.count else {
+            return Dictionary(uniqueKeysWithValues: rows.map { ($0, $0) })
+        }
+        return Dictionary(zip(rows, keys), uniquingKeysWith: { first, _ in first })
+    }
+
+    private func rowMeta(childId: String, keys: [String: String]) -> SceneRowFrameReporter.RowMeta {
+        let rowNode = store?.node(childId)
+        return SceneRowFrameReporter.RowMeta(
+            key: keys[childId] ?? childId,
+            leadingInset: CGFloat(rowNode?.double("marginLeading") ?? 0),
+            cornerRadius: CGFloat(rowNode?.double("cornerRadius") ?? 8)
+        )
+    }
+
     /// The item key for a row, from the `itemKeys` JSON array prop the JS
     /// reconciler keeps parallel to `node.children`. Falls back to the child
     /// node id when absent.
@@ -528,6 +558,34 @@ struct ReorderableColumnView: View {
             return childId
         }
         return keys[authoritativeIndex]
+    }
+}
+
+/// Reports a row's layout slot to the host's ``SceneRowFrameReporter`` (when
+/// one is injected), in the host's named coordinate space. Applied outside the
+/// row's own drag offset, so in-sidebar reorder tracking reports nothing.
+private struct RowFrameReportingModifier: ViewModifier {
+    let reporter: SceneRowFrameReporter?
+    let nodeId: String
+    let meta: SceneRowFrameReporter.RowMeta
+
+    func body(content: Content) -> some View {
+        if let reporter {
+            content
+                .onGeometryChange(for: CGRect.self, of: {
+                    $0.frame(in: .named(SceneRowFrameReporter.coordinateSpaceName))
+                }) { frame in
+                    reporter.recordFrame(nodeId: nodeId, slot: frame, meta: meta)
+                }
+                .onChange(of: meta) { _, newMeta in
+                    reporter.updateMeta(nodeId: nodeId, meta: newMeta)
+                }
+                .onDisappear {
+                    reporter.remove(nodeId: nodeId)
+                }
+        } else {
+            content
+        }
     }
 }
 
